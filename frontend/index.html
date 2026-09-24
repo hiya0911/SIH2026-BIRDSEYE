@@ -54,6 +54,10 @@
                     <span class="tab-icon">⏳</span>
                     <span class="tab-text">Temporal Change</span>
                 </button>
+                <button class="tab-btn" data-tab="preprocessing">
+                    <span class="tab-icon">🧪</span>
+                    <span class="tab-text">Preprocessing Lab</span>
+                </button>
                 <button class="tab-btn" data-tab="clustering">
                     <span class="tab-icon">🌐</span>
                     <span class="tab-text">Landscape Clusters</span>
@@ -465,7 +469,230 @@
                 <div class="empty-state-card">
                     <div class="empty-icon">⏳</div>
                     <div class="empty-title">Select a Tile and Run Analysis</div>
-                    <p class="empty-desc">Choose any tile from the dropdown above and click "Analyze Temporal Delta" to run sub-pixel co-registration and multi-epoch matrix calculations.</p>
+                    <p class="empty-desc">Choose any tile from the dropdown above and click "Analyze Temporal Delta" to run sub-pixel co-registration, multi-epoch matrix calculations, and inspect the "Why Did AI Detect This Change?" explainability audit.</p>
+                </div>
+
+                <!-- PREVIEW BANNER: WHY DID AI DETECT THIS CHANGE -->
+                <div class="glass-card why-detected-board" style="margin-top: 1.5rem; opacity: 0.85;">
+                    <div class="card-header-bar">
+                        <div class="card-title-group">
+                            <span class="card-icon">🧠</span>
+                            <div>
+                                <h3 class="card-title">Why Did AI Detect This Change? &bull; Physical Explainability Audit</h3>
+                                <div class="sub-label">Deterministic spectral triggering rules, verifiable surface reflectance deltas &amp; canopy dynamics</div>
+                            </div>
+                        </div>
+                        <span class="badge-tag green">Zero Hallucination</span>
+                    </div>
+                    <div class="evidence-cards-grid">
+                        <div class="evidence-card">
+                            <div class="evidence-header">
+                                <span class="evidence-cat-name">Built-up Expansion Audit</span>
+                                <span class="evidence-trigger-chip">ΔBR &gt; 0.35 &amp; ΔNDVI &lt; -0.10</span>
+                            </div>
+                            <div class="evidence-basis-text">
+                                Triggered only upon simultaneous physical surface reflectance surge and canopy loss verified across cloud-free Sentinel-2 pixels.
+                            </div>
+                        </div>
+                        <div class="evidence-card">
+                            <div class="evidence-header">
+                                <span class="evidence-cat-name">Vegetation Loss vs Seasonal Drift</span>
+                                <span class="evidence-trigger-chip">ΔNDVI &lt; -0.20 (drift-compensated)</span>
+                            </div>
+                            <div class="evidence-basis-text">
+                                Distinguishes true land clearance from widespread seasonal phenological vegetation browning by subtracting regional drift baseline μ_pheno.
+                            </div>
+                        </div>
+                        <div class="evidence-card">
+                            <div class="evidence-header">
+                                <span class="evidence-cat-name">Confounder &amp; False-Alarm Suppression</span>
+                                <span class="evidence-trigger-chip">SCL + 3×3 Median Filter</span>
+                            </div>
+                            <div class="evidence-basis-text">
+                                Eliminates transient cloud shadows (SCL 3) and isolated single-pixel sensor noise via morphological median filtering.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- TAB: VISIBLE PREPROCESSING LAB & QUALITY ASSESSMENT -->
+        <!-- ========================================================= -->
+        <section id="preprocessing" class="tab-section">
+            <div class="section-hero">
+                <div class="badge-pill">VISIBLE LEVEL-2A INGESTION PIPELINE</div>
+                <h1 class="hero-headline">Visible Preprocessing Lab &amp; Quality Assessment</h1>
+                <p class="hero-description">
+                    Transparent, verifiable 8-stage Earth Observation data readiness pipeline: Raw Scene Ingestion → XML Telemetry Validation → Granule Verification → SCL Cloud/Shadow Masking → Radiometric Calibration (BOA) → FFT Sub-Pixel Co-Registration → Phenological Normalization → Analysis-Ready Product.
+                </p>
+            </div>
+
+            <!-- CONTROLLER CARD -->
+            <div class="glass-card control-card">
+                <div class="card-header-bar">
+                    <div class="card-title-group">
+                        <span class="card-icon">🧪</span>
+                        <h2 class="card-title">Configure Level-2A Preprocessing Pipeline</h2>
+                    </div>
+                    <span id="preprocessing-status-badge" class="badge-tag green">Pipeline Ready</span>
+                </div>
+
+                <div class="tile-picker-layout">
+                    <!-- Scene Selector -->
+                    <div class="form-group flex-1">
+                        <label class="form-label" for="prep-scene-select">
+                            <span>Target Sentinel-2 Scene Epoch:</span>
+                            <span class="label-hint">Official Copernicus SAFE products</span>
+                        </label>
+                        <div class="select-wrapper">
+                            <select id="prep-scene-select" class="glass-select">
+                                <option value="2024" selected>2024 — Sentinel-2B (45.86% Cloud, Orbit 33, Baseline 05.10)</option>
+                                <option value="2025">2025 — Sentinel-2B (2.66% Cloud, Orbit 33, Baseline 05.11)</option>
+                                <option value="2026">2026 — Sentinel-2C (0.00% Cloud, Orbit 33, Baseline 05.12)</option>
+                            </select>
+                            <span class="select-chevron">▼</span>
+                        </div>
+                    </div>
+
+                    <!-- Tile Selector -->
+                    <div class="form-group flex-1">
+                        <label class="form-label" for="prep-tile-select">
+                            <span>Spatial Window Tile (Optional):</span>
+                            <span class="label-hint">Pick from 909 indexed tiles or full granule center</span>
+                        </label>
+                        <div class="select-wrapper">
+                            <select id="prep-tile-select" class="glass-select">
+                                <option value="" selected>Default Granule Center (256×256 px / 6.55 km²)</option>
+                            </select>
+                            <span class="select-chevron">▼</span>
+                        </div>
+                    </div>
+
+                    <!-- Baseline Co-Registration Reference Epoch -->
+                    <div class="form-group" style="min-width: 180px;">
+                        <label class="form-label" for="prep-baseline-select">
+                            <span>Co-Registration Baseline:</span>
+                            <span class="label-hint">2D FFT Reference</span>
+                        </label>
+                        <div class="select-wrapper">
+                            <select id="prep-baseline-select" class="glass-select">
+                                <option value="2024" selected>2024 Baseline</option>
+                                <option value="2025">2025 Baseline</option>
+                            </select>
+                            <span class="select-chevron">▼</span>
+                        </div>
+                    </div>
+
+                    <div class="form-action-group">
+                        <button id="run-pipeline-btn" class="glow-button primary-button">
+                            <span class="btn-text">Execute Pipeline</span>
+                            <span class="btn-icon">⚡</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="tile-meta-preview" id="prep-scene-meta">
+                    <span class="meta-item"><strong>Platform:</strong> <span id="prep-meta-platform">Sentinel-2B</span></span>
+                    <span class="meta-item"><strong>ESA Product:</strong> <span id="prep-meta-safe" class="mono-font" style="font-size: 0.78rem;">S2B_MSIL2A_20240223T043809...SAFE</span></span>
+                    <span class="meta-item"><strong>Solar Zenith:</strong> <span id="prep-meta-zenith">39.31°</span></span>
+                    <span class="meta-item"><strong>Relative Orbit:</strong> <span id="prep-meta-orbit">R033</span></span>
+                </div>
+            </div>
+
+            <!-- QUALITY SUMMARY KPI CARDS -->
+            <div id="prep-kpi-row" class="kpi-summary-grid" style="margin-top: 1.5rem; display: none;">
+                <div class="kpi-card cyan">
+                    <div class="kpi-label">🛡️ Valid Pixel Ratio</div>
+                    <div class="kpi-value" id="kpi-prep-valid">100.0%</div>
+                    <div class="kpi-sub">Cloud &amp; shadow cleared</div>
+                </div>
+                <div class="kpi-card amber">
+                    <div class="kpi-label">☁️ SCL Cloud Contamination</div>
+                    <div class="kpi-value" id="kpi-prep-cloud">0.0%</div>
+                    <div class="kpi-sub">Medium/High prob &amp; cirrus</div>
+                </div>
+                <div class="kpi-card emerald">
+                    <div class="kpi-label">📡 Dynamic SNR Proxy</div>
+                    <div class="kpi-value" id="kpi-prep-snr">8.22</div>
+                    <div class="kpi-sub">Red band signal-to-noise</div>
+                </div>
+                <div class="kpi-card purple">
+                    <div class="kpi-label">📐 Co-Registration RMSE</div>
+                    <div class="kpi-value" id="kpi-prep-rmse">0.838 px</div>
+                    <div class="kpi-sub">Sub-pixel 2D FFT alignment</div>
+                </div>
+            </div>
+
+            <!-- DUAL COLUMN WORKSPACE: PIPELINE STAGES ON LEFT, PREVIEWS ON RIGHT -->
+            <div class="preprocessing-workspace-grid" style="margin-top: 1.5rem;">
+                <!-- Left: 8 Interactive Pipeline Stages -->
+                <div class="glass-card pipeline-stages-card">
+                    <div class="card-header-bar">
+                        <div class="card-title-group">
+                            <span class="card-icon">⚙️</span>
+                            <h2 class="card-title">8-Stage Execution Audit Trail</h2>
+                        </div>
+                        <span class="badge-tag">Zero Fabricated Data</span>
+                    </div>
+
+                    <div id="pipeline-stages-container" class="stages-flow-list">
+                        <div class="empty-state-card" style="padding: 2.5rem 1rem;">
+                            <div class="empty-icon small">🧪</div>
+                            <div class="empty-title">Pipeline Ready for Execution</div>
+                            <p class="empty-desc">Click "Execute Pipeline" above to run the 8-stage Level-2A ingestion and quality verification engine.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Interactive Visual Previewer -->
+                <div class="glass-card preview-card">
+                    <div class="card-header-bar">
+                        <div class="card-title-group">
+                            <span class="card-icon">👁️</span>
+                            <h2 class="card-title">Raw vs Processed Imagery</h2>
+                        </div>
+                        <!-- 3-Way Mode Switcher -->
+                        <div class="preview-mode-switcher">
+                            <button id="preview-mode-raw" class="preview-pill" data-mode="raw">
+                                <span>📷 Raw Sensor DN</span>
+                            </button>
+                            <button id="preview-mode-scl" class="preview-pill" data-mode="scl">
+                                <span>🎭 SCL Quality Mask</span>
+                            </button>
+                            <button id="preview-mode-ard" class="preview-pill active" data-mode="ard">
+                                <span>🛰️ Analysis-Ready BOA</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="preview-viewer-box">
+                        <div id="preview-loading-overlay" class="preview-loading" style="display: none;">
+                            <div class="spinner"></div>
+                            <span>Executing Level-2A calibration...</span>
+                        </div>
+                        <img id="prep-preview-img" class="prep-display-img" src="" alt="Preprocessing Preview" style="display: none;">
+                        <div id="prep-preview-placeholder" class="empty-inspector">
+                            <div class="empty-icon">🛰️</div>
+                            <p>Execute pipeline to view calibrated Level-2A imagery with interactive raw vs mask comparison.</p>
+                        </div>
+                    </div>
+
+                    <div id="preview-caption-box" class="preview-caption-banner" style="display: none;">
+                        <span id="preview-mode-label" class="caption-mode-title">Analysis-Ready Surface Reflectance (BOA)</span>
+                        <p id="preview-mode-desc" class="caption-mode-desc">Calibrated using physical BOA formula ρ = DN / 10000. SCL cloud, shadow, and saturated pixels are highlighted.</p>
+                    </div>
+
+                    <!-- SCL Color Legend (visible when in SCL mode) -->
+                    <div id="scl-legend-box" class="scl-legend-grid" style="display: none;">
+                        <div class="scl-legend-item"><span class="scl-swatch" style="background: #10b981;"></span> Vegetation (SCL 4)</div>
+                        <div class="scl-legend-item"><span class="scl-swatch" style="background: #d97706;"></span> Non-Veg / Soil (SCL 5)</div>
+                        <div class="scl-legend-item"><span class="scl-swatch" style="background: #2563eb;"></span> Water (SCL 6)</div>
+                        <div class="scl-legend-item"><span class="scl-swatch" style="background: #1e1b4b;"></span> Cloud Shadow (SCL 3)</div>
+                        <div class="scl-legend-item"><span class="scl-swatch" style="background: #f1f5f9;"></span> Cloud (SCL 8, 9, 10)</div>
+                        <div class="scl-legend-item"><span class="scl-swatch" style="background: #334155;"></span> Dark / Saturated</div>
+                    </div>
                 </div>
             </div>
         </section>

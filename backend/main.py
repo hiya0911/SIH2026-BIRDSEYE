@@ -12,7 +12,8 @@ from schemas import (
     SemanticSearchRequest, 
     ImageSearchRequest,
     AOIQueryRequest,
-    AOIAnalyzeRequest
+    AOIAnalyzeRequest,
+    PreprocessingPipelineRequest
 )
 from services import (
     calculate_change,
@@ -679,10 +680,61 @@ def get_tri_epoch_change(tile_id: str):
             "stats_cumulative": res.get("stats_cumulative", {}),
             "stats_24_25": res.get("stats_24_25", {}),
             "stats_25_26": res.get("stats_25_26", {}),
+            "temporal_persistence": res.get("temporal_persistence", {}),
+            "explainability": res.get("stats_cumulative", {}).get("explainability", {}),
             "time_series": res.get("time_series", {})
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# =========================================================
+# PREPROCESSING LAB (PHASE 2)
+# =========================================================
+
+@app.get("/api/preprocessing/scenes")
+def get_preprocessing_scenes():
+    """
+    Returns available Sentinel-2 SAFE products and real ESA XML metadata.
+    """
+    try:
+        from services import get_preprocessing_lab_engine
+        engine = get_preprocessing_lab_engine()
+        return {
+            "status": "success",
+            "scenes": engine.get_available_scenes()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/preprocessing/pipeline")
+def run_preprocessing_pipeline(request: PreprocessingPipelineRequest):
+    """
+    Executes the visible 8-stage preprocessing pipeline with real telemetry
+    and raw vs processed visual previews.
+    """
+    try:
+        from services import get_preprocessing_lab_engine
+        engine = get_preprocessing_lab_engine()
+        
+        target_bbox = request.bbox
+        if not target_bbox and request.tile_id:
+            doc = tiles_collection.find_one({"tile_id": request.tile_id})
+            if doc:
+                target_bbox = doc.get("bbox")
+                
+        result = engine.run_pipeline(
+            year=request.year,
+            tile_id=request.tile_id,
+            bbox=target_bbox,
+            baseline_year=request.baseline_year
+        )
+        return {
+            "status": "success",
+            "pipeline": result
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 # =========================================================
 # STATIC FILE MOUNTS & TILE IMAGES

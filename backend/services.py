@@ -31,6 +31,16 @@ def get_change_engine():
         change_engine = TemporalChangeEngine()
     return change_engine
 
+# Lazy load preprocessing lab engine
+preprocessing_lab_engine = None
+def get_preprocessing_lab_engine():
+    global preprocessing_lab_engine
+    if preprocessing_lab_engine is None:
+        from preprocessing import PreprocessingLabEngine
+        preprocessing_lab_engine = PreprocessingLabEngine()
+    return preprocessing_lab_engine
+
+
 def calculate_change(
     query: str,
     location: str,

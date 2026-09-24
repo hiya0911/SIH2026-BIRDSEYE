@@ -32,3 +32,9 @@ class AOIQueryRequest(BaseModel):
 class AOIAnalyzeRequest(BaseModel):
     bbox: Optional[list] = None
     tile_id: Optional[str] = None
+
+class PreprocessingPipelineRequest(BaseModel):
+    year: int = 2024
+    tile_id: Optional[str] = None
+    bbox: Optional[list] = None
+    baseline_year: int = 2024

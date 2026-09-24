@@ -299,5 +299,8 @@ class AOIEngine:
             "stats_cumulative": res.get("stats_cumulative", {}),
             "stats_24_25": res.get("stats_24_25", {}),
             "stats_25_26": res.get("stats_25_26", {}),
+            "temporal_persistence": res.get("temporal_persistence", {}),
+            "explainability": res.get("stats_cumulative", {}).get("explainability", {}),
             "time_series": res.get("time_series", {})
         }
+
