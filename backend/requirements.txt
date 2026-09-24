@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+pymongo
+python-dotenv
+pydantic
+pydantic[email]
+dnspython
+rasterio
+numpy
+scipy
+faiss-cpu
+torch
+torchvision
+transformers
+pillow

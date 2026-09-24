@@ -1,0 +1,117 @@
+# =====================================================================
+# BIRDSΣY3 - Git Ignore Configuration
+# =====================================================================
+
+# ---------------------------------------------------------------------
+# 1. Environment & Confidential Configuration (Credentials / Secrets)
+# ---------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+*.crt
+*.pfx
+*.p12
+
+# ---------------------------------------------------------------------
+# 2. Large Geospatial Data & Satellite Imagery
+# (GitHub rejects files > 100MB; raw .SAFE packages are > 1GB each)
+# ---------------------------------------------------------------------
+*.SAFE/
+data/*.SAFE/
+data/**/*.SAFE/
+*.tif
+*.tiff
+*.jp2
+data/tiles/
+*.tar.gz
+*.zip
+*.7z
+*.rar
+
+# Vector Indices & Binary Embeddings
+*.bin
+*.pkl
+*.faiss
+data/index/
+backend/data/vector_index/
+
+# ---------------------------------------------------------------------
+# 3. Python Runtime & Bytecode
+# ---------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# ---------------------------------------------------------------------
+# 4. Virtual Environments
+# ---------------------------------------------------------------------
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# ---------------------------------------------------------------------
+# 5. Scratch & Temporary Development Scripts
+# ---------------------------------------------------------------------
+scratch/
+
+# ---------------------------------------------------------------------
+# 6. Database Files & Local Storage
+# ---------------------------------------------------------------------
+*.db
+*.sqlite
+*.sqlite3
+
+# ---------------------------------------------------------------------
+# 7. IDE & Editor Artifacts
+# ---------------------------------------------------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.gemini/
+
+# ---------------------------------------------------------------------
+# 8. OS-generated Files
+# ---------------------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ---------------------------------------------------------------------
+# 9. Logs & Diagnostics
+# ---------------------------------------------------------------------
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

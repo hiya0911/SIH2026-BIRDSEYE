@@ -1,0 +1,952 @@
+[
+  {
+    "filename": "INSPIRE.xml",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\INSPIRE.xml",
+    "type": "METADATA",
+    "size_bytes": 18647,
+    "status": "VALID",
+    "crs": "",
+    "resolution": "",
+    "bands": ""
+  },
+  {
+    "filename": "manifest.safe",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\manifest.safe",
+    "type": "METADATA",
+    "size_bytes": 68908,
+    "status": "VALID",
+    "crs": "",
+    "resolution": "",
+    "bands": ""
+  },
+  {
+    "filename": "MTD_MSIL2A.xml",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\MTD_MSIL2A.xml",
+    "type": "METADATA",
+    "size_bytes": 54608,
+    "status": "VALID",
+    "crs": "",
+    "resolution": "",
+    "bands": ""
+  },
+  {
+    "filename": "S2B_MSIL2A_20240223T043809_N0510_R033_T45QXF_20240223T070012-ql.jpg",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\S2B_MSIL2A_20240223T043809_N0510_R033_T45QXF_20240223T070012-ql.jpg",
+    "type": "OTHER",
+    "size_bytes": 37916,
+    "status": "UNSUITABLE",
+    "crs": "",
+    "resolution": "",
+    "bands": ""
+  },
+  {
+    "filename": "MTD_DS.xml",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\DATASTRIP\\DS_2BPS_20240223T070012_S20240223T044642\\MTD_DS.xml",
+    "type": "METADATA",
+    "size_bytes": 14573711,
+    "status": "VALID",
+    "crs": "",
+    "resolution": "",
+    "bands": ""
+  },
+  {
+    "filename": "FORMAT_CORRECTNESS.xml",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\DATASTRIP\\DS_2BPS_20240223T070012_S20240223T044642\\QI_DATA\\FORMAT_CORRECTNESS.xml",
+    "type": "METADATA",
+    "size_bytes": 3929,
+    "status": "VALID",
+    "crs": "",
+    "resolution": "",
+    "bands": ""
+  },
+  {
+    "filename": "GENERAL_QUALITY.xml",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\DATASTRIP\\DS_2BPS_20240223T070012_S20240223T044642\\QI_DATA\\GENERAL_QUALITY.xml",
+    "type": "METADATA",
+    "size_bytes": 5656,
+    "status": "VALID",
+    "crs": "",
+    "resolution": "",
+    "bands": ""
+  },
+  {
+    "filename": "GEOMETRIC_QUALITY.xml",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\DATASTRIP\\DS_2BPS_20240223T070012_S20240223T044642\\QI_DATA\\GEOMETRIC_QUALITY.xml",
+    "type": "METADATA",
+    "size_bytes": 8029,
+    "status": "VALID",
+    "crs": "",
+    "resolution": "",
+    "bands": ""
+  },
+  {
+    "filename": "RADIOMETRIC_QUALITY.xml",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\DATASTRIP\\DS_2BPS_20240223T070012_S20240223T044642\\QI_DATA\\RADIOMETRIC_QUALITY.xml",
+    "type": "METADATA",
+    "size_bytes": 6977,
+    "status": "VALID",
+    "crs": "",
+    "resolution": "",
+    "bands": ""
+  },
+  {
+    "filename": "SENSOR_QUALITY.xml",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\DATASTRIP\\DS_2BPS_20240223T070012_S20240223T044642\\QI_DATA\\SENSOR_QUALITY.xml",
+    "type": "METADATA",
+    "size_bytes": 4332,
+    "status": "VALID",
+    "crs": "",
+    "resolution": "",
+    "bands": ""
+  },
+  {
+    "filename": "MTD_TL.xml",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\MTD_TL.xml",
+    "type": "METADATA",
+    "size_bytes": 626760,
+    "status": "VALID",
+    "crs": "",
+    "resolution": "",
+    "bands": ""
+  },
+  {
+    "filename": "AUX_CAMSFO",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\AUX_DATA\\AUX_CAMSFO",
+    "type": "OTHER",
+    "size_bytes": 2970,
+    "status": "UNSUITABLE",
+    "crs": "",
+    "resolution": "",
+    "bands": ""
+  },
+  {
+    "filename": "AUX_ECMWFT",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\AUX_DATA\\AUX_ECMWFT",
+    "type": "OTHER",
+    "size_bytes": 1620,
+    "status": "UNSUITABLE",
+    "crs": "",
+    "resolution": "",
+    "bands": ""
+  },
+  {
+    "filename": "T45QXF_20240223T043809_AOT_10m.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\IMG_DATA\\R10m\\T45QXF_20240223T043809_AOT_10m.jp2",
+    "type": "RASTER",
+    "size_bytes": 450268,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 10.0,
+    "bands": 1
+  },
+  {
+    "filename": "T45QXF_20240223T043809_B02_10m.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\IMG_DATA\\R10m\\T45QXF_20240223T043809_B02_10m.jp2",
+    "type": "RASTER",
+    "size_bytes": 134732295,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 10.0,
+    "bands": 1
+  },
+  {
+    "filename": "T45QXF_20240223T043809_B03_10m.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\IMG_DATA\\R10m\\T45QXF_20240223T043809_B03_10m.jp2",
+    "type": "RASTER",
+    "size_bytes": 132327245,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 10.0,
+    "bands": 1
+  },
+  {
+    "filename": "T45QXF_20240223T043809_B04_10m.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\IMG_DATA\\R10m\\T45QXF_20240223T043809_B04_10m.jp2",
+    "type": "RASTER",
+    "size_bytes": 130958198,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 10.0,
+    "bands": 1
+  },
+  {
+    "filename": "T45QXF_20240223T043809_B08_10m.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\IMG_DATA\\R10m\\T45QXF_20240223T043809_B08_10m.jp2",
+    "type": "RASTER",
+    "size_bytes": 135284599,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 10.0,
+    "bands": 1
+  },
+  {
+    "filename": "T45QXF_20240223T043809_TCI_10m.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\IMG_DATA\\R10m\\T45QXF_20240223T043809_TCI_10m.jp2",
+    "type": "RASTER",
+    "size_bytes": 135179319,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 10.0,
+    "bands": 3
+  },
+  {
+    "filename": "T45QXF_20240223T043809_WVP_10m.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\IMG_DATA\\R10m\\T45QXF_20240223T043809_WVP_10m.jp2",
+    "type": "RASTER",
+    "size_bytes": 43641868,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 10.0,
+    "bands": 1
+  },
+  {
+    "filename": "T45QXF_20240223T043809_AOT_20m.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\IMG_DATA\\R20m\\T45QXF_20240223T043809_AOT_20m.jp2",
+    "type": "RASTER",
+    "size_bytes": 424168,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 20.0,
+    "bands": 1
+  },
+  {
+    "filename": "T45QXF_20240223T043809_B01_20m.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\IMG_DATA\\R20m\\T45QXF_20240223T043809_B01_20m.jp2",
+    "type": "RASTER",
+    "size_bytes": 26829600,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 20.0,
+    "bands": 1
+  },
+  {
+    "filename": "T45QXF_20240223T043809_B02_20m.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\IMG_DATA\\R20m\\T45QXF_20240223T043809_B02_20m.jp2",
+    "type": "RASTER",
+    "size_bytes": 33746587,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 20.0,
+    "bands": 1
+  },
+  {
+    "filename": "T45QXF_20240223T043809_B03_20m.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\IMG_DATA\\R20m\\T45QXF_20240223T043809_B03_20m.jp2",
+    "type": "RASTER",
+    "size_bytes": 33709283,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 20.0,
+    "bands": 1
+  },
+  {
+    "filename": "T45QXF_20240223T043809_B04_20m.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\IMG_DATA\\R20m\\T45QXF_20240223T043809_B04_20m.jp2",
+    "type": "RASTER",
+    "size_bytes": 33709398,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 20.0,
+    "bands": 1
+  },
+  {
+    "filename": "T45QXF_20240223T043809_B05_20m.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\IMG_DATA\\R20m\\T45QXF_20240223T043809_B05_20m.jp2",
+    "type": "RASTER",
+    "size_bytes": 33719037,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 20.0,
+    "bands": 1
+  },
+  {
+    "filename": "T45QXF_20240223T043809_B06_20m.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\IMG_DATA\\R20m\\T45QXF_20240223T043809_B06_20m.jp2",
+    "type": "RASTER",
+    "size_bytes": 33806501,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 20.0,
+    "bands": 1
+  },
+  {
+    "filename": "T45QXF_20240223T043809_B07_20m.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\IMG_DATA\\R20m\\T45QXF_20240223T043809_B07_20m.jp2",
+    "type": "RASTER",
+    "size_bytes": 33794363,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 20.0,
+    "bands": 1
+  },
+  {
+    "filename": "T45QXF_20240223T043809_B11_20m.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\IMG_DATA\\R20m\\T45QXF_20240223T043809_B11_20m.jp2",
+    "type": "RASTER",
+    "size_bytes": 33733114,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 20.0,
+    "bands": 1
+  },
+  {
+    "filename": "T45QXF_20240223T043809_B12_20m.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\IMG_DATA\\R20m\\T45QXF_20240223T043809_B12_20m.jp2",
+    "type": "RASTER",
+    "size_bytes": 33714201,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 20.0,
+    "bands": 1
+  },
+  {
+    "filename": "T45QXF_20240223T043809_B8A_20m.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\IMG_DATA\\R20m\\T45QXF_20240223T043809_B8A_20m.jp2",
+    "type": "RASTER",
+    "size_bytes": 33791760,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 20.0,
+    "bands": 1
+  },
+  {
+    "filename": "T45QXF_20240223T043809_SCL_20m.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\IMG_DATA\\R20m\\T45QXF_20240223T043809_SCL_20m.jp2",
+    "type": "RASTER",
+    "size_bytes": 4089773,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 20.0,
+    "bands": 1
+  },
+  {
+    "filename": "T45QXF_20240223T043809_TCI_20m.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\IMG_DATA\\R20m\\T45QXF_20240223T043809_TCI_20m.jp2",
+    "type": "RASTER",
+    "size_bytes": 33765406,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 20.0,
+    "bands": 3
+  },
+  {
+    "filename": "T45QXF_20240223T043809_WVP_20m.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\IMG_DATA\\R20m\\T45QXF_20240223T043809_WVP_20m.jp2",
+    "type": "RASTER",
+    "size_bytes": 14313562,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 20.0,
+    "bands": 1
+  },
+  {
+    "filename": "T45QXF_20240223T043809_AOT_60m.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\IMG_DATA\\R60m\\T45QXF_20240223T043809_AOT_60m.jp2",
+    "type": "RASTER",
+    "size_bytes": 122397,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 60.0,
+    "bands": 1
+  },
+  {
+    "filename": "T45QXF_20240223T043809_B01_60m.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\IMG_DATA\\R60m\\T45QXF_20240223T043809_B01_60m.jp2",
+    "type": "RASTER",
+    "size_bytes": 3759964,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 60.0,
+    "bands": 1
+  },
+  {
+    "filename": "T45QXF_20240223T043809_B02_60m.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\IMG_DATA\\R60m\\T45QXF_20240223T043809_B02_60m.jp2",
+    "type": "RASTER",
+    "size_bytes": 3735289,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 60.0,
+    "bands": 1
+  },
+  {
+    "filename": "T45QXF_20240223T043809_B03_60m.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\IMG_DATA\\R60m\\T45QXF_20240223T043809_B03_60m.jp2",
+    "type": "RASTER",
+    "size_bytes": 3735494,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 60.0,
+    "bands": 1
+  },
+  {
+    "filename": "T45QXF_20240223T043809_B04_60m.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\IMG_DATA\\R60m\\T45QXF_20240223T043809_B04_60m.jp2",
+    "type": "RASTER",
+    "size_bytes": 3735015,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 60.0,
+    "bands": 1
+  },
+  {
+    "filename": "T45QXF_20240223T043809_B05_60m.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\IMG_DATA\\R60m\\T45QXF_20240223T043809_B05_60m.jp2",
+    "type": "RASTER",
+    "size_bytes": 3736881,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 60.0,
+    "bands": 1
+  },
+  {
+    "filename": "T45QXF_20240223T043809_B06_60m.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\IMG_DATA\\R60m\\T45QXF_20240223T043809_B06_60m.jp2",
+    "type": "RASTER",
+    "size_bytes": 3753853,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 60.0,
+    "bands": 1
+  },
+  {
+    "filename": "T45QXF_20240223T043809_B07_60m.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\IMG_DATA\\R60m\\T45QXF_20240223T043809_B07_60m.jp2",
+    "type": "RASTER",
+    "size_bytes": 3753096,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 60.0,
+    "bands": 1
+  },
+  {
+    "filename": "T45QXF_20240223T043809_B09_60m.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\IMG_DATA\\R60m\\T45QXF_20240223T043809_B09_60m.jp2",
+    "type": "RASTER",
+    "size_bytes": 3730702,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 60.0,
+    "bands": 1
+  },
+  {
+    "filename": "T45QXF_20240223T043809_B11_60m.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\IMG_DATA\\R60m\\T45QXF_20240223T043809_B11_60m.jp2",
+    "type": "RASTER",
+    "size_bytes": 3758245,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 60.0,
+    "bands": 1
+  },
+  {
+    "filename": "T45QXF_20240223T043809_B12_60m.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\IMG_DATA\\R60m\\T45QXF_20240223T043809_B12_60m.jp2",
+    "type": "RASTER",
+    "size_bytes": 3734449,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 60.0,
+    "bands": 1
+  },
+  {
+    "filename": "T45QXF_20240223T043809_B8A_60m.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\IMG_DATA\\R60m\\T45QXF_20240223T043809_B8A_60m.jp2",
+    "type": "RASTER",
+    "size_bytes": 3752898,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 60.0,
+    "bands": 1
+  },
+  {
+    "filename": "T45QXF_20240223T043809_SCL_60m.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\IMG_DATA\\R60m\\T45QXF_20240223T043809_SCL_60m.jp2",
+    "type": "RASTER",
+    "size_bytes": 890101,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 60.0,
+    "bands": 1
+  },
+  {
+    "filename": "T45QXF_20240223T043809_TCI_60m.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\IMG_DATA\\R60m\\T45QXF_20240223T043809_TCI_60m.jp2",
+    "type": "RASTER",
+    "size_bytes": 3759667,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 60.0,
+    "bands": 3
+  },
+  {
+    "filename": "T45QXF_20240223T043809_WVP_60m.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\IMG_DATA\\R60m\\T45QXF_20240223T043809_WVP_60m.jp2",
+    "type": "RASTER",
+    "size_bytes": 2246738,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 60.0,
+    "bands": 1
+  },
+  {
+    "filename": "FORMAT_CORRECTNESS.xml",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\QI_DATA\\FORMAT_CORRECTNESS.xml",
+    "type": "METADATA",
+    "size_bytes": 7726,
+    "status": "VALID",
+    "crs": "",
+    "resolution": "",
+    "bands": ""
+  },
+  {
+    "filename": "GENERAL_QUALITY.xml",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\QI_DATA\\GENERAL_QUALITY.xml",
+    "type": "METADATA",
+    "size_bytes": 3953,
+    "status": "VALID",
+    "crs": "",
+    "resolution": "",
+    "bands": ""
+  },
+  {
+    "filename": "GEOMETRIC_QUALITY.xml",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\QI_DATA\\GEOMETRIC_QUALITY.xml",
+    "type": "METADATA",
+    "size_bytes": 4778,
+    "status": "VALID",
+    "crs": "",
+    "resolution": "",
+    "bands": ""
+  },
+  {
+    "filename": "L2A_QUALITY.xml",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\QI_DATA\\L2A_QUALITY.xml",
+    "type": "METADATA",
+    "size_bytes": 7706,
+    "status": "VALID",
+    "crs": "",
+    "resolution": "",
+    "bands": ""
+  },
+  {
+    "filename": "MSK_CLASSI_B00.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\QI_DATA\\MSK_CLASSI_B00.jp2",
+    "type": "RASTER",
+    "size_bytes": 95787,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 60.0,
+    "bands": 3
+  },
+  {
+    "filename": "MSK_CLDPRB_20m.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\QI_DATA\\MSK_CLDPRB_20m.jp2",
+    "type": "RASTER",
+    "size_bytes": 12075735,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 20.0,
+    "bands": 1
+  },
+  {
+    "filename": "MSK_CLDPRB_60m.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\QI_DATA\\MSK_CLDPRB_60m.jp2",
+    "type": "RASTER",
+    "size_bytes": 2125051,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 60.0,
+    "bands": 1
+  },
+  {
+    "filename": "MSK_DETFOO_B01.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\QI_DATA\\MSK_DETFOO_B01.jp2",
+    "type": "RASTER",
+    "size_bytes": 16005,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 60.0,
+    "bands": 1
+  },
+  {
+    "filename": "MSK_DETFOO_B02.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\QI_DATA\\MSK_DETFOO_B02.jp2",
+    "type": "RASTER",
+    "size_bytes": 69372,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 10.0,
+    "bands": 1
+  },
+  {
+    "filename": "MSK_DETFOO_B03.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\QI_DATA\\MSK_DETFOO_B03.jp2",
+    "type": "RASTER",
+    "size_bytes": 69460,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 10.0,
+    "bands": 1
+  },
+  {
+    "filename": "MSK_DETFOO_B04.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\QI_DATA\\MSK_DETFOO_B04.jp2",
+    "type": "RASTER",
+    "size_bytes": 69338,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 10.0,
+    "bands": 1
+  },
+  {
+    "filename": "MSK_DETFOO_B05.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\QI_DATA\\MSK_DETFOO_B05.jp2",
+    "type": "RASTER",
+    "size_bytes": 27804,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 20.0,
+    "bands": 1
+  },
+  {
+    "filename": "MSK_DETFOO_B06.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\QI_DATA\\MSK_DETFOO_B06.jp2",
+    "type": "RASTER",
+    "size_bytes": 27881,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 20.0,
+    "bands": 1
+  },
+  {
+    "filename": "MSK_DETFOO_B07.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\QI_DATA\\MSK_DETFOO_B07.jp2",
+    "type": "RASTER",
+    "size_bytes": 27899,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 20.0,
+    "bands": 1
+  },
+  {
+    "filename": "MSK_DETFOO_B08.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\QI_DATA\\MSK_DETFOO_B08.jp2",
+    "type": "RASTER",
+    "size_bytes": 69400,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 10.0,
+    "bands": 1
+  },
+  {
+    "filename": "MSK_DETFOO_B09.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\QI_DATA\\MSK_DETFOO_B09.jp2",
+    "type": "RASTER",
+    "size_bytes": 15991,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 60.0,
+    "bands": 1
+  },
+  {
+    "filename": "MSK_DETFOO_B10.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\QI_DATA\\MSK_DETFOO_B10.jp2",
+    "type": "RASTER",
+    "size_bytes": 16003,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 60.0,
+    "bands": 1
+  },
+  {
+    "filename": "MSK_DETFOO_B11.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\QI_DATA\\MSK_DETFOO_B11.jp2",
+    "type": "RASTER",
+    "size_bytes": 27896,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 20.0,
+    "bands": 1
+  },
+  {
+    "filename": "MSK_DETFOO_B12.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\QI_DATA\\MSK_DETFOO_B12.jp2",
+    "type": "RASTER",
+    "size_bytes": 27877,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 20.0,
+    "bands": 1
+  },
+  {
+    "filename": "MSK_DETFOO_B8A.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\QI_DATA\\MSK_DETFOO_B8A.jp2",
+    "type": "RASTER",
+    "size_bytes": 27860,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 20.0,
+    "bands": 1
+  },
+  {
+    "filename": "MSK_QUALIT_B01.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\QI_DATA\\MSK_QUALIT_B01.jp2",
+    "type": "RASTER",
+    "size_bytes": 14784,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 60.0,
+    "bands": 8
+  },
+  {
+    "filename": "MSK_QUALIT_B02.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\QI_DATA\\MSK_QUALIT_B02.jp2",
+    "type": "RASTER",
+    "size_bytes": 58216,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 10.0,
+    "bands": 8
+  },
+  {
+    "filename": "MSK_QUALIT_B03.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\QI_DATA\\MSK_QUALIT_B03.jp2",
+    "type": "RASTER",
+    "size_bytes": 59267,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 10.0,
+    "bands": 8
+  },
+  {
+    "filename": "MSK_QUALIT_B04.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\QI_DATA\\MSK_QUALIT_B04.jp2",
+    "type": "RASTER",
+    "size_bytes": 61403,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 10.0,
+    "bands": 8
+  },
+  {
+    "filename": "MSK_QUALIT_B05.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\QI_DATA\\MSK_QUALIT_B05.jp2",
+    "type": "RASTER",
+    "size_bytes": 16897,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 20.0,
+    "bands": 8
+  },
+  {
+    "filename": "MSK_QUALIT_B06.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\QI_DATA\\MSK_QUALIT_B06.jp2",
+    "type": "RASTER",
+    "size_bytes": 16825,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 20.0,
+    "bands": 8
+  },
+  {
+    "filename": "MSK_QUALIT_B07.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\QI_DATA\\MSK_QUALIT_B07.jp2",
+    "type": "RASTER",
+    "size_bytes": 16292,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 20.0,
+    "bands": 8
+  },
+  {
+    "filename": "MSK_QUALIT_B08.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\QI_DATA\\MSK_QUALIT_B08.jp2",
+    "type": "RASTER",
+    "size_bytes": 79925,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 10.0,
+    "bands": 8
+  },
+  {
+    "filename": "MSK_QUALIT_B09.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\QI_DATA\\MSK_QUALIT_B09.jp2",
+    "type": "RASTER",
+    "size_bytes": 14764,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 60.0,
+    "bands": 8
+  },
+  {
+    "filename": "MSK_QUALIT_B10.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\QI_DATA\\MSK_QUALIT_B10.jp2",
+    "type": "RASTER",
+    "size_bytes": 16298,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 60.0,
+    "bands": 8
+  },
+  {
+    "filename": "MSK_QUALIT_B11.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\QI_DATA\\MSK_QUALIT_B11.jp2",
+    "type": "RASTER",
+    "size_bytes": 13997,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 20.0,
+    "bands": 8
+  },
+  {
+    "filename": "MSK_QUALIT_B12.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\QI_DATA\\MSK_QUALIT_B12.jp2",
+    "type": "RASTER",
+    "size_bytes": 17455,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 20.0,
+    "bands": 8
+  },
+  {
+    "filename": "MSK_QUALIT_B8A.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\QI_DATA\\MSK_QUALIT_B8A.jp2",
+    "type": "RASTER",
+    "size_bytes": 17894,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 20.0,
+    "bands": 8
+  },
+  {
+    "filename": "MSK_SNWPRB_20m.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\QI_DATA\\MSK_SNWPRB_20m.jp2",
+    "type": "RASTER",
+    "size_bytes": 24261,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 20.0,
+    "bands": 1
+  },
+  {
+    "filename": "MSK_SNWPRB_60m.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\QI_DATA\\MSK_SNWPRB_60m.jp2",
+    "type": "RASTER",
+    "size_bytes": 13364,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 60.0,
+    "bands": 1
+  },
+  {
+    "filename": "SENSOR_QUALITY.xml",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\QI_DATA\\SENSOR_QUALITY.xml",
+    "type": "METADATA",
+    "size_bytes": 3209,
+    "status": "VALID",
+    "crs": "",
+    "resolution": "",
+    "bands": ""
+  },
+  {
+    "filename": "T45QXF_20240223T043809_PVI.jp2",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\GRANULE\\L2A_T45QXF_A036381_20240223T044642\\QI_DATA\\T45QXF_20240223T043809_PVI.jp2",
+    "type": "RASTER",
+    "size_bytes": 165706,
+    "status": "VALID",
+    "crs": "EPSG:32645",
+    "resolution": 320.0,
+    "bands": 3
+  },
+  {
+    "filename": "banner_1.png",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\HTML\\banner_1.png",
+    "type": "OTHER",
+    "size_bytes": 42377,
+    "status": "UNSUITABLE",
+    "crs": "",
+    "resolution": "",
+    "bands": ""
+  },
+  {
+    "filename": "banner_2.png",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\HTML\\banner_2.png",
+    "type": "OTHER",
+    "size_bytes": 58643,
+    "status": "UNSUITABLE",
+    "crs": "",
+    "resolution": "",
+    "bands": ""
+  },
+  {
+    "filename": "banner_3.png",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\HTML\\banner_3.png",
+    "type": "OTHER",
+    "size_bytes": 44797,
+    "status": "UNSUITABLE",
+    "crs": "",
+    "resolution": "",
+    "bands": ""
+  },
+  {
+    "filename": "star_bg.jpg",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\HTML\\star_bg.jpg",
+    "type": "OTHER",
+    "size_bytes": 1890,
+    "status": "UNSUITABLE",
+    "crs": "",
+    "resolution": "",
+    "bands": ""
+  },
+  {
+    "filename": "UserProduct_index.html",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\HTML\\UserProduct_index.html",
+    "type": "OTHER",
+    "size_bytes": 8380,
+    "status": "UNSUITABLE",
+    "crs": "",
+    "resolution": "",
+    "bands": ""
+  },
+  {
+    "filename": "UserProduct_index.xsl",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\HTML\\UserProduct_index.xsl",
+    "type": "OTHER",
+    "size_bytes": 10034,
+    "status": "UNSUITABLE",
+    "crs": "",
+    "resolution": "",
+    "bands": ""
+  },
+  {
+    "filename": "S2_PDI_Level-2A_Datastrip_Metadata.xsd",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\rep_info\\S2_PDI_Level-2A_Datastrip_Metadata.xsd",
+    "type": "OTHER",
+    "size_bytes": 1370,
+    "status": "UNSUITABLE",
+    "crs": "",
+    "resolution": "",
+    "bands": ""
+  },
+  {
+    "filename": "S2_PDI_Level-2A_Tile_Metadata.xsd",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\rep_info\\S2_PDI_Level-2A_Tile_Metadata.xsd",
+    "type": "OTHER",
+    "size_bytes": 929,
+    "status": "UNSUITABLE",
+    "crs": "",
+    "resolution": "",
+    "bands": ""
+  },
+  {
+    "filename": "S2_User_Product_Level-2A_Metadata.xsd",
+    "filepath": "c:\\Users\\Hiya\\OneDrive\\Desktop\\BIRDSEYE\\data\\rep_info\\S2_User_Product_Level-2A_Metadata.xsd",
+    "type": "OTHER",
+    "size_bytes": 1039,
+    "status": "UNSUITABLE",
+    "crs": "",
+    "resolution": "",
+    "bands": ""
+  }
+]
