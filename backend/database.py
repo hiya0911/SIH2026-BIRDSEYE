@@ -20,6 +20,8 @@ database = None
 tiles_collection = None
 searches_collection = None
 provenance_collection = None
+cases_collection = None
+reviews_collection = None
 
 # 1. Attempt Primary MongoDB Connection
 try:
@@ -37,6 +39,8 @@ try:
     tiles_collection = database["tiles"]
     searches_collection = database["searches"]
     provenance_collection = database["provenance"]
+    cases_collection = database["cases"]
+    reviews_collection = database["reviews"]
 
     count = tiles_collection.count_documents({})
     print(f"[MongoDB CONNECTED] Database: '{DB_NAME}' | URI: {MONGO_URI} | Active Tiles: {count}")
