@@ -23,3 +23,12 @@ class SemanticSearchRequest(BaseModel):
 class ImageSearchRequest(BaseModel):
     tile_id: str
     top_k: int = 5
+
+class AOIQueryRequest(BaseModel):
+    bbox: Optional[list] = None # [min_lon, min_lat, max_lon, max_lat]
+    polygon: Optional[list] = None # [[lon, lat], ...]
+    limit: Optional[int] = 30
+
+class AOIAnalyzeRequest(BaseModel):
+    bbox: Optional[list] = None
+    tile_id: Optional[str] = None

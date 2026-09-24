@@ -21,6 +21,10 @@
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
     
+    <!-- Leaflet GIS Engine (Local Offline Bundled) -->
+    <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+    <script src="vendor/leaflet/leaflet.js"></script>
+    
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -41,6 +45,10 @@
                 <button class="tab-btn active" data-tab="semantic">
                     <span class="tab-icon">🔍</span>
                     <span class="tab-text">Semantic Retrieval</span>
+                </button>
+                <button class="tab-btn" data-tab="map">
+                    <span class="tab-icon">🗺️</span>
+                    <span class="tab-text">Analyst Map / AOI</span>
                 </button>
                 <button class="tab-btn" data-tab="temporal">
                     <span class="tab-icon">⏳</span>
@@ -88,10 +96,21 @@
                 <div class="card-header-bar">
                     <div class="card-title-group">
                         <span class="card-icon">⚡</span>
-                        <h2 class="card-title">Query Specification</h2>
+                        <h2 class="card-title">Retrieval Specification</h2>
                     </div>
-                    <span class="badge-tag">Cross-Modal Embeddings (512-D)</span>
+                    <!-- Mode Switcher: Text vs Image-to-Image -->
+                    <div class="retrieval-mode-switcher">
+                        <button id="mode-text-btn" class="mode-pill active">
+                            <span>🔤 Natural-Language Prompt</span>
+                        </button>
+                        <button id="mode-image-btn" class="mode-pill">
+                            <span>🖼️ Image-to-Image Upload</span>
+                        </button>
+                    </div>
                 </div>
+
+                <!-- SUB-CONTAINER 1: TEXT QUERY MODE -->
+                <div id="text-search-controls" class="search-mode-panel active">
 
                 <!-- PRESET DROPDOWN -->
                 <div class="form-group">
@@ -181,6 +200,41 @@
                         </select>
                     </div>
                 </div>
+                </div> <!-- End #text-search-controls -->
+
+                <!-- SUB-CONTAINER 2: IMAGE-TO-IMAGE UPLOAD SEARCH -->
+                <div id="image-search-controls" class="search-mode-panel">
+                    <div class="image-upload-wrapper">
+                        <div id="image-dropzone" class="image-dropzone">
+                            <input type="file" id="image-file-input" accept=".tif,.tiff,.png,.jpg,.jpeg,.webp" style="display: none;">
+                            <div class="dropzone-content">
+                                <span class="dropzone-icon">🛰️</span>
+                                <div class="dropzone-title">Upload Reference Satellite Image or Tile</div>
+                                <p class="dropzone-sub">Drag &amp; drop a GeoTIFF (.tif), PNG, or JPEG patch, or <span class="highlight-link">browse from disk</span></p>
+                                <span class="badge-tag">Auto-normalized 512-D CLIP Embedding</span>
+                            </div>
+                        </div>
+
+                        <!-- Image Preview Box -->
+                        <div id="image-preview-card" class="image-preview-card" style="display: none;">
+                            <div class="preview-thumb-box">
+                                <img id="uploaded-preview-img" src="" alt="Uploaded reference preview">
+                            </div>
+                            <div class="preview-info-box">
+                                <div class="preview-filename" id="preview-filename">reference_patch.tif</div>
+                                <div class="preview-filesize" id="preview-filesize">0 KB</div>
+                                <div class="preview-meta-tag">Status: Ready for Embedding Extraction</div>
+                                <div class="preview-actions">
+                                    <button id="execute-image-search-btn" class="glow-button primary-button">
+                                        <span class="btn-text">Execute Visual Similarity Search</span>
+                                        <span class="btn-icon">⚡</span>
+                                    </button>
+                                    <button id="clear-upload-btn" class="glass-btn small-btn">Remove</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div> <!-- End #image-search-controls -->
             </div>
 
             <!-- RESULTS SECTION -->
@@ -198,6 +252,145 @@
                     <div class="empty-icon">🛰️</div>
                     <div class="empty-title">Ready for Multi-Modal Retrieval</div>
                     <p class="empty-desc">Choose a query from the dropdown above and click "Execute Retrieval" to query the 909-tile FAISS index.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- NEW TAB: ANALYST SATELLITE MAP & AOI CONSOLE -->
+        <!-- ========================================================= -->
+        <section id="map" class="tab-section">
+            <div class="section-hero">
+                <div class="badge-pill">GEOSPATIAL AREA OF INTEREST (AOI) ENGINE</div>
+                <h1 class="hero-headline">Interactive Satellite Analyst Map &amp; AOI System</h1>
+                <p class="hero-description">
+                    Navigate real Sentinel-2 Level-2A footprints across the Kolkata / Sundarbans theater. Draw rectangle or polygon AOIs, inspect intersecting catalog tiles, and trigger real multi-temporal change detection directly from geographic boundaries.
+                </p>
+            </div>
+
+            <!-- MAP CONTROL BAR -->
+            <div class="glass-card map-control-bar">
+                <div class="map-controls-row">
+                    <!-- Location Preset Quick Jump -->
+                    <div class="map-control-group flex-1">
+                        <label class="form-label" for="map-preset-select">
+                            <span>Strategic Theater Preset:</span>
+                        </label>
+                        <div class="select-wrapper">
+                            <select id="map-preset-select" class="glass-select">
+                                <option value="kolkata_core" selected>📍 Kolkata Urban Core &amp; CBD (22.57°N, 88.36°E)</option>
+                                <option value="hooghly_river">🌊 Hooghly River Channel &amp; Howrah Port Corridor</option>
+                                <option value="salt_lake">🏙️ Salt Lake Sector V &amp; New Town Tech Corridor</option>
+                                <option value="wetlands">🌿 East Kolkata Wetlands (Ramsar Biodiversity Zone)</option>
+                                <option value="baruipur">🚜 Baruipur Southern Peri-Urban Expansion Belt</option>
+                                <option value="barrackpore">🏗️ Barrackpore Northern Industrial Corridor</option>
+                            </select>
+                            <span class="select-chevron">▼</span>
+                        </div>
+                    </div>
+
+                    <!-- Manual Lat/Lon Coordinates Input -->
+                    <div class="map-control-group">
+                        <label class="form-label" for="coord-lat-input">
+                            <span>Latitude / Longitude:</span>
+                        </label>
+                        <div class="coord-inputs-pair">
+                            <input type="number" step="0.0001" id="coord-lat-input" class="glass-input small-input mono-font" value="22.5726" placeholder="Lat">
+                            <input type="number" step="0.0001" id="coord-lon-input" class="glass-input small-input mono-font" value="88.3639" placeholder="Lon">
+                            <button id="jump-coord-btn" class="glass-btn small-btn">Jump</button>
+                        </div>
+                    </div>
+
+                    <!-- AOI Drawing Action Tools -->
+                    <div class="map-control-group aoi-tools-group">
+                        <label class="form-label">
+                            <span>AOI Drawing Tools:</span>
+                        </label>
+                        <div class="aoi-btn-group">
+                            <button id="draw-rect-btn" class="aoi-tool-btn" title="Draw Rectangle AOI">
+                                <span>⬚ Draw Rectangle</span>
+                            </button>
+                            <button id="draw-poly-btn" class="aoi-tool-btn" title="Draw Polygon AOI">
+                                <span>⬡ Draw Polygon</span>
+                            </button>
+                            <button id="clear-aoi-btn" class="aoi-tool-btn danger" title="Clear Active AOI">
+                                <span>✕ Clear AOI</span>
+                            </button>
+                            <button id="toggle-footprints-btn" class="aoi-tool-btn active" title="Toggle 909 Tile Footprints">
+                                <span>🌐 Footprints: ON</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- REAL-TIME TELEMETRY HUD -->
+                <div class="map-hud-bar">
+                    <div class="hud-item">
+                        <span class="hud-label">COORDINATES:</span>
+                        <span id="hud-coords" class="hud-val mono-font">22.5726° N, 88.3639° E</span>
+                    </div>
+                    <div class="hud-item">
+                        <span class="hud-label">UTM 45N:</span>
+                        <span id="hud-utm" class="hud-val mono-font">639,820 E, 2,496,560 N</span>
+                    </div>
+                    <div class="hud-item">
+                        <span class="hud-label">ZOOM LEVEL:</span>
+                        <span id="hud-zoom" class="hud-val mono-font">12.0</span>
+                    </div>
+                    <div class="hud-item">
+                        <span class="hud-label">INDEXED TILES IN VIEW:</span>
+                        <span id="hud-tiles-count" class="hud-val highlight">909 Available</span>
+                    </div>
+                    <div class="hud-item">
+                        <span class="hud-label">OFFLINE STATUS:</span>
+                        <span class="status-pill verified">LOCAL ASSETS READY</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MAP & INSPECTOR DUAL-COLUMN WORKSPACE -->
+            <div class="map-workspace-grid">
+                <!-- Left: Interactive Leaflet Map Container -->
+                <div class="glass-card map-viewport-card">
+                    <div id="analyst-map" class="analyst-map-viewport"></div>
+                    <div class="map-hint-banner">
+                        <span>💡 <strong>Tip:</strong> Click "Draw Rectangle" or "Draw Polygon" to demarcate an AOI on the map, or click any tile boundary to inspect.</span>
+                    </div>
+                </div>
+
+                <!-- Right: AOI Intelligence & Selected Tiles Inspector -->
+                <div class="glass-card aoi-inspector-card">
+                    <div class="card-header-bar">
+                        <div class="card-title-group">
+                            <span class="card-icon">🎯</span>
+                            <h2 class="card-title">AOI Intelligence</h2>
+                        </div>
+                        <span id="aoi-matches-badge" class="badge-tag">No AOI Selected</span>
+                    </div>
+
+                    <!-- Active AOI Summary Box -->
+                    <div class="aoi-summary-box" id="aoi-summary-box">
+                        <div class="aoi-summary-empty">
+                            <div class="empty-icon small">🗺️</div>
+                            <p>Demarcate an Area of Interest on the map to calculate spatial intersections across the 909 Sentinel-2 tiles.</p>
+                        </div>
+                    </div>
+
+                    <!-- AOI Execute Analysis Action -->
+                    <div class="aoi-action-box" id="aoi-action-box" style="display: none;">
+                        <button id="analyze-aoi-btn" class="glow-button primary-button" style="width: 100%;">
+                            <span class="btn-text">⚡ Analyze Selected AOI</span>
+                            <span class="btn-icon">➔</span>
+                        </button>
+                    </div>
+
+                    <!-- Intersecting Tiles List -->
+                    <div class="aoi-tiles-header">
+                        <span class="sub-heading">Intersecting Sentinel-2 Tiles:</span>
+                    </div>
+                    <div id="aoi-intersecting-tiles-list" class="aoi-tiles-scroll-list">
+                        <div class="empty-hint">Intersecting tiles will appear here</div>
+                    </div>
                 </div>
             </div>
         </section>

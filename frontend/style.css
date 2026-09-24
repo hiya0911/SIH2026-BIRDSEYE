@@ -1680,3 +1680,491 @@ body {
     font-family: 'JetBrains Mono', monospace;
 }
 
+/* =========================================================
+   PHASE 1: RETRIEVAL MODE SWITCHER & IMAGE-TO-IMAGE SEARCH
+   ========================================================= */
+
+.retrieval-mode-switcher {
+    display: flex;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.4);
+    padding: 4px;
+    border-radius: 30px;
+    border: 1px solid var(--border-subtle);
+}
+
+.mode-pill {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    padding: 6px 14px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.mode-pill:hover {
+    color: #ffffff;
+}
+
+.mode-pill.active {
+    background: linear-gradient(135deg, rgba(0, 242, 254, 0.25) 0%, rgba(79, 172, 254, 0.35) 100%);
+    color: #00f2fe;
+    border: 1px solid rgba(0, 242, 254, 0.4);
+    box-shadow: 0 0 12px rgba(0, 242, 254, 0.2);
+}
+
+.search-mode-panel {
+    display: none;
+}
+
+.search-mode-panel.active {
+    display: block;
+}
+
+/* Image Upload Dropzone */
+.image-upload-wrapper {
+    margin-top: 1rem;
+}
+
+.image-dropzone {
+    border: 2px dashed rgba(0, 242, 254, 0.3);
+    border-radius: 14px;
+    background: rgba(15, 23, 42, 0.4);
+    padding: 2.2rem 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.image-dropzone:hover,
+.image-dropzone.dragover {
+    border-color: #00f2fe;
+    background: rgba(0, 242, 254, 0.08);
+    box-shadow: 0 0 20px rgba(0, 242, 254, 0.15);
+}
+
+.dropzone-icon {
+    font-size: 2.4rem;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.dropzone-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.3rem;
+}
+
+.dropzone-sub {
+    font-size: 0.88rem;
+    color: var(--text-muted);
+    margin-bottom: 0.8rem;
+}
+
+.highlight-link {
+    color: #00f2fe;
+    text-decoration: underline;
+    font-weight: 600;
+}
+
+.image-preview-card {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+    background: rgba(30, 41, 59, 0.6);
+    border: 1px solid rgba(0, 242, 254, 0.3);
+    border-radius: 12px;
+    padding: 1.2rem;
+    margin-top: 1rem;
+}
+
+.preview-thumb-box {
+    width: 120px;
+    height: 120px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #000;
+    flex-shrink: 0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.preview-thumb-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.preview-info-box {
+    flex: 1;
+}
+
+.preview-filename {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    word-break: break-all;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.preview-filesize {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 0.2rem;
+}
+
+.preview-meta-tag {
+    display: inline-block;
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    margin: 0.5rem 0;
+}
+
+.preview-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 0.6rem;
+}
+
+/* =========================================================
+   PHASE 1: ANALYST SATELLITE MAP & AOI SYSTEM
+   ========================================================= */
+
+.map-control-bar {
+    padding: 1.2rem 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.map-controls-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.2rem;
+    align-items: flex-end;
+}
+
+.map-control-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.coord-inputs-pair {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.small-input {
+    width: 110px;
+    padding: 8px 10px;
+    font-size: 0.85rem;
+}
+
+.aoi-btn-group {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.aoi-tool-btn {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-primary);
+    padding: 8px 14px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.aoi-tool-btn:hover {
+    background: rgba(0, 242, 254, 0.15);
+    border-color: rgba(0, 242, 254, 0.4);
+    color: #00f2fe;
+}
+
+.aoi-tool-btn.active {
+    background: rgba(0, 242, 254, 0.2);
+    border-color: #00f2fe;
+    color: #00f2fe;
+    box-shadow: 0 0 10px rgba(0, 242, 254, 0.25);
+}
+
+.aoi-tool-btn.danger:hover {
+    background: rgba(244, 63, 94, 0.15);
+    border-color: rgba(244, 63, 94, 0.4);
+    color: #f43f5e;
+}
+
+/* Map Telemetry HUD Bar */
+.map-hud-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    padding-top: 1rem;
+    margin-top: 1rem;
+    border-top: 1px solid var(--border-subtle);
+    font-size: 0.8rem;
+}
+
+.hud-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.hud-label {
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+}
+
+.hud-val {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.hud-val.highlight {
+    color: #00f2fe;
+    font-weight: 700;
+}
+
+/* Map & Inspector Layout Grid */
+.map-workspace-grid {
+    display: grid;
+    grid-template-columns: 2fr 1.1fr;
+    gap: 1.5rem;
+}
+
+@media (max-width: 1100px) {
+    .map-workspace-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.map-viewport-card {
+    padding: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.analyst-map-viewport {
+    height: 580px;
+    width: 100%;
+    background: #060913;
+    z-index: 10;
+}
+
+.map-hint-banner {
+    padding: 10px 16px;
+    background: rgba(3, 7, 18, 0.85);
+    border-top: 1px solid var(--border-subtle);
+    font-size: 0.82rem;
+    color: var(--text-muted);
+}
+
+/* AOI Inspector Sidebar */
+.aoi-inspector-card {
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem;
+    max-height: 640px;
+}
+
+.aoi-summary-box {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    font-size: 0.85rem;
+}
+
+.aoi-summary-empty {
+    text-align: center;
+    color: var(--text-muted);
+    padding: 0.8rem 0;
+}
+
+.aoi-summary-active {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.aoi-summary-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.82rem;
+}
+
+.aoi-summary-label {
+    color: var(--text-muted);
+}
+
+.aoi-summary-val {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.aoi-action-box {
+    margin-bottom: 1rem;
+}
+
+.aoi-tiles-header {
+    margin-bottom: 0.6rem;
+}
+
+.sub-heading {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+.aoi-tiles-scroll-list {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-right: 4px;
+}
+
+.aoi-tile-item {
+    display: flex;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    padding: 8px;
+    align-items: center;
+    transition: all 0.2s ease;
+}
+
+.aoi-tile-item:hover {
+    border-color: rgba(0, 242, 254, 0.4);
+    background: rgba(0, 242, 254, 0.05);
+}
+
+.aoi-tile-thumb {
+    width: 50px;
+    height: 50px;
+    border-radius: 6px;
+    object-fit: cover;
+    background: #000;
+    flex-shrink: 0;
+}
+
+.aoi-tile-details {
+    flex: 1;
+    overflow: hidden;
+}
+
+.aoi-tile-id {
+    font-size: 0.78rem;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.aoi-tile-meta {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.aoi-tile-overlap {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #34d399;
+}
+
+.aoi-tile-btn {
+    background: rgba(0, 242, 254, 0.15);
+    border: 1px solid rgba(0, 242, 254, 0.3);
+    color: #00f2fe;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+.aoi-tile-btn:hover {
+    background: #00f2fe;
+    color: #030712;
+}
+
+/* Leaflet Dark Customization */
+.leaflet-container {
+    background: #050811 !important;
+    font-family: 'Inter', sans-serif !important;
+}
+
+.leaflet-bar {
+    border: 1px solid var(--border-subtle) !important;
+    border-radius: 8px !important;
+    overflow: hidden !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+}
+
+.leaflet-bar a {
+    background-color: rgba(15, 23, 42, 0.85) !important;
+    color: #cbd5e1 !important;
+    border-bottom: 1px solid var(--border-subtle) !important;
+    transition: all 0.2s ease !important;
+}
+
+.leaflet-bar a:hover {
+    background-color: rgba(0, 242, 254, 0.2) !important;
+    color: #00f2fe !important;
+}
+
+.leaflet-popup-content-wrapper {
+    background: rgba(15, 23, 42, 0.95) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(0, 242, 254, 0.3) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6) !important;
+    backdrop-filter: blur(12px) !important;
+}
+
+.leaflet-popup-tip {
+    background: rgba(15, 23, 42, 0.95) !important;
+    border: 1px solid rgba(0, 242, 254, 0.3) !important;
+}
+
+.leaflet-popup-content {
+    margin: 12px 14px !important;
+    line-height: 1.4 !important;
+}
+
+.leaflet-control-attribution {
+    background: rgba(3, 7, 18, 0.7) !important;
+    color: #64748b !important;
+    font-size: 0.68rem !important;
+}
+
+.leaflet-control-attribution a {
+    color: #94a3b8 !important;
+}
+
+

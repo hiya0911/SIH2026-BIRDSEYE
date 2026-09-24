@@ -2,18 +2,26 @@ from typing import Optional
 from datetime import datetime, timezone
 
 from bson import ObjectId
-from fastapi import FastAPI, HTTPException, Query, BackgroundTasks
+from fastapi import FastAPI, HTTPException, Query, BackgroundTasks, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 
 from database import searches_collection, tiles_collection, provenance_collection
 from models import create_search_document, create_tile_document, create_provenance_document
-from schemas import SearchRequest, SemanticSearchRequest, ImageSearchRequest
+from schemas import (
+    SearchRequest, 
+    SemanticSearchRequest, 
+    ImageSearchRequest,
+    AOIQueryRequest,
+    AOIAnalyzeRequest
+)
 from services import (
     calculate_change,
     build_timeline,
     create_location_label,
     perform_semantic_search,
     perform_image_search,
+    perform_image_search_from_pil,
+    get_aoi_engine,
     get_embedder,
     vector_index
 )
@@ -237,6 +245,183 @@ def image_search(request: ImageSearchRequest):
             "results": results,
             "search_id": search_id,
             "saved_to_mongodb": True
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/search/image/upload")
+async def image_search_upload(
+    file: UploadFile = File(...),
+    top_k: int = Form(12)
+):
+    """
+    True Image-to-Image Search: Accepts an uploaded satellite image,
+    extracts 512-D CLIP embedding, queries FAISS index, and returns
+    ranked matching tiles with similarity scores and verified metadata.
+    """
+    # 1. Validate file extension and MIME type
+    allowed_exts = {".tif", ".tiff", ".png", ".jpg", ".jpeg", ".webp"}
+    filename = file.filename or "uploaded_image.png"
+    ext = os.path.splitext(filename)[1].lower()
+    
+    if ext not in allowed_exts:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Unsupported file format '{ext}'. Allowed formats: {', '.join(sorted(allowed_exts))}"
+        )
+
+    try:
+        # Read file contents (limit 20MB for security)
+        MAX_UPLOAD_SIZE = 20 * 1024 * 1024
+        contents = await file.read()
+        if len(contents) > MAX_UPLOAD_SIZE:
+            raise HTTPException(status_code=400, detail="File size exceeds maximum permitted limit (20MB).")
+        
+        # Load into PIL Image
+        # If GeoTIFF, try rasterio first or PIL
+        pil_img = None
+        if ext in {".tif", ".tiff"}:
+            try:
+                import io
+                with rasterio.open(io.BytesIO(contents)) as src:
+                    cnt = src.count
+                    if cnt >= 3:
+                        r, g, b = src.read(3), src.read(2), src.read(1)
+                    else:
+                        band = src.read(1)
+                        r, g, b = band, band, band
+                    def norm(a):
+                        return np.clip(a.astype(float) / 2500.0 * 255.0, 0, 255).astype(np.uint8)
+                    rgb = np.stack([norm(r), norm(g), norm(b)], axis=-1)
+                    pil_img = Image.fromarray(rgb)
+            except Exception:
+                pil_img = Image.open(io.BytesIO(contents)).convert("RGB")
+        else:
+            import io
+            pil_img = Image.open(io.BytesIO(contents)).convert("RGB")
+
+        # Create thumbnail preview base64 for direct frontend display
+        preview_buf = io.BytesIO()
+        thumb = pil_img.copy()
+        thumb.thumbnail((300, 300))
+        thumb.save(preview_buf, format="JPEG", quality=85)
+        preview_base64 = "data:image/jpeg;base64," + base64.b64encode(preview_buf.getvalue()).decode("utf-8")
+
+        # Perform embedding extraction & FAISS search
+        results = perform_image_search_from_pil(pil_img, top_k=top_k)
+
+        # Log provenance
+        prov_doc = create_provenance_document(
+            action="image_to_image_search_upload",
+            source_files=[filename],
+            output_files=[r["tile_id"] for r in results[:5]],
+            parameters={"filename": filename, "file_size_bytes": len(contents), "top_k": top_k}
+        )
+        provenance_collection.insert_one(prov_doc)
+
+        # Record in search history
+        search_record = {
+            "search_type": "image_upload_similarity",
+            "query": f"Image-to-Image Query: {filename}",
+            "filename": filename,
+            "top_k": top_k,
+            "results_count": len(results),
+            "top_results": [
+                {
+                    "tile_id": r["tile_id"],
+                    "similarity": r["similarity_percentage"]
+                }
+                for r in results[:5]
+            ],
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        res_mongo = searches_collection.insert_one(search_record)
+        search_id = str(getattr(res_mongo, "inserted_id", ""))
+
+        return {
+            "status": "success",
+            "filename": filename,
+            "file_size": len(contents),
+            "preview_image": preview_base64,
+            "results": results,
+            "search_id": search_id,
+            "saved_to_mongodb": True
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Image-to-Image search failed: {str(e)}")
+
+
+# =========================================================
+# AOI & GEOSPATIAL MAP ENDPOINTS
+# =========================================================
+
+@app.get("/api/aoi/footprints")
+def get_aoi_tile_footprints(limit: Optional[int] = Query(None)):
+    """
+    Returns GeoJSON FeatureCollection of tile boundaries in WGS84 for interactive map overlay.
+    """
+    try:
+        aoi_eng = get_aoi_engine()
+        return aoi_eng.get_footprints_geojson(limit=limit)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/aoi/query")
+def query_aoi_tiles(request: AOIQueryRequest):
+    """
+    Identifies intersecting Sentinel-2 tiles from the 909-tile catalog
+    based on a WGS84 bounding box or polygon coordinates.
+    """
+    try:
+        aoi_eng = get_aoi_engine()
+        
+        if request.polygon and len(request.polygon) >= 3:
+            matches = aoi_eng.query_by_polygon(request.polygon, limit=request.limit or 30)
+            query_type = "polygon"
+        elif request.bbox and len(request.bbox) == 4:
+            min_lon, min_lat, max_lon, max_lat = request.bbox
+            matches = aoi_eng.query_by_bbox(min_lon, min_lat, max_lon, max_lat, limit=request.limit or 30)
+            query_type = "bbox"
+        else:
+            raise HTTPException(status_code=400, detail="Must provide either valid 'bbox' [min_lon, min_lat, max_lon, max_lat] or 'polygon' [[lon, lat], ...].")
+
+        return {
+            "status": "success",
+            "query_type": query_type,
+            "total_matches": len(matches),
+            "tiles": matches
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/aoi/analyze")
+def analyze_selected_aoi(request: AOIAnalyzeRequest):
+    """
+    Executes tri-epoch multi-temporal change detection over the selected AOI or target tile.
+    """
+    try:
+        aoi_eng = get_aoi_engine()
+        result = aoi_eng.analyze_aoi(bbox_wgs84=request.bbox, tile_id=request.tile_id)
+        
+        # Log provenance
+        prov_doc = create_provenance_document(
+            action="aoi_temporal_analysis",
+            source_files=[result.get("tile_id", "")],
+            output_files=[],
+            parameters={"tile_id": result.get("tile_id"), "target_wgs_bbox": result.get("target_wgs_bbox")}
+        )
+        provenance_collection.insert_one(prov_doc)
+
+        return {
+            "status": "success",
+            "aoi_analysis": result
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -511,6 +696,12 @@ import numpy as np
 
 # Mount the static directory for Tech Spec
 app.mount("/static_docs", StaticFiles(directory=r"c:\Users\Hiya\OneDrive\Desktop\BIRDSEYE"), name="static_docs")
+
+# Mount frontend directory for one-click unified analyst console access
+frontend_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend")
+if os.path.exists(frontend_dir):
+    app.mount("/console", StaticFiles(directory=frontend_dir, html=True), name="console")
+
 
 @app.get("/api/image/{tile_id}")
 def get_tile_image(tile_id: str):

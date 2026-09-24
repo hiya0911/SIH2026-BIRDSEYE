@@ -36,16 +36,12 @@ class EmbeddingExtractor:
         rgb = np.clip(rgb, 0, 3000) / 3000.0 * 255.0
         return rgb.astype(np.uint8)
 
-    def extract_from_tile(self, tile_path: str):
+    def extract_from_pil(self, pil_image: Image.Image):
         """
-        Loads a GeoTIFF tile, converts to RGB PIL Image, and extracts CLIP embeddings.
-        Returns the embedding as a numpy array.
+        Extracts 512-D normalized CLIP visual embedding directly from a PIL Image.
         """
-        with rasterio.open(tile_path) as src:
-            data = src.read() # (C, H, W)
-            
-        rgb_image = self._normalize_image(data)
-        pil_image = Image.fromarray(rgb_image)
+        if pil_image.mode != "RGB":
+            pil_image = pil_image.convert("RGB")
 
         inputs = self.processor(images=pil_image, return_tensors="pt").to(self.device)
         
@@ -61,6 +57,18 @@ class EmbeddingExtractor:
         # Normalize the embedding
         image_features = image_features / image_features.norm(dim=-1, keepdim=True)
         return image_features.cpu().numpy()[0]
+
+    def extract_from_tile(self, tile_path: str):
+        """
+        Loads a GeoTIFF tile, converts to RGB PIL Image, and extracts CLIP embeddings.
+        Returns the embedding as a numpy array.
+        """
+        with rasterio.open(tile_path) as src:
+            data = src.read() # (C, H, W)
+            
+        rgb_image = self._normalize_image(data)
+        pil_image = Image.fromarray(rgb_image)
+        return self.extract_from_pil(pil_image)
 
     def extract_from_text(self, text: str, ensemble: bool = True):
         """

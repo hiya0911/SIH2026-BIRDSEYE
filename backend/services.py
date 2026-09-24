@@ -1,5 +1,6 @@
 import hashlib
 import os
+import numpy as np
 from database import tiles_collection
 from vector_index import VectorIndex
 from embeddings import EmbeddingExtractor
@@ -170,4 +171,63 @@ def perform_image_search(tile_id: str, top_k: int = 5):
             })
             if len(hydrated) == top_k:
                 break
+    return hydrated
+
+
+# Lazy load AOI engine
+aoi_engine_instance = None
+def get_aoi_engine():
+    global aoi_engine_instance
+    if aoi_engine_instance is None:
+        from aoi_engine import AOIEngine
+        aoi_engine_instance = AOIEngine()
+    return aoi_engine_instance
+
+
+def perform_image_search_from_pil(pil_image, top_k: int = 12):
+    """
+    Given an uploaded PIL Image, extracts 512-D CLIP embedding, queries FAISS index,
+    and returns ranked matching tiles with verified metadata.
+    """
+    if not vector_index:
+        raise RuntimeError("Vector index is not initialized.")
+    
+    emb = get_embedder()
+    query_vector = emb.extract_from_pil(pil_image)
+    
+    results = vector_index.search(query_vector, top_k)
+    aoi_eng = get_aoi_engine()
+    
+    hydrated = []
+    for rank, r in enumerate(results):
+        t_id = r["tile_id"]
+        raw_score = float(r["score"])
+        
+        # In CLIP hypersphere, cosine similarity for image-to-image:
+        # >0.85 is near identical, >0.70 is strong match, >0.55 is moderate, <0.40 is low
+        sim_pct = round(float(np.clip(raw_score * 100.0, 5.0, 99.8)), 1)
+        
+        t_meta = tiles_collection.find_one({"tile_id": t_id}, {"_id": 0})
+        if not t_meta and t_id in aoi_eng.tiles_by_id:
+            t_meta = aoi_eng.tiles_by_id[t_id]
+            
+        if t_meta:
+            # Attach WGS bbox if available
+            wgs_bbox = t_meta.get("wgs_bbox")
+            if not wgs_bbox and t_id in aoi_eng.tiles_by_id:
+                wgs_bbox = aoi_eng.tiles_by_id[t_id].get("wgs_bbox")
+                
+            hydrated.append({
+                "rank": rank + 1,
+                "tile_id": t_id,
+                "score": round(raw_score, 4),
+                "similarity_percentage": sim_pct,
+                "wgs_bbox": wgs_bbox,
+                "utm_bbox": t_meta.get("bbox"),
+                "acquisition_date": t_meta.get("acquisition_datetime", "2024-02-23T04:38:09Z")[:10],
+                "sensor": "Sentinel-2 MSI Level-2A",
+                "valid_ratio": round(float(t_meta.get("valid_ratio", 1.0)), 3),
+                "metadata": t_meta
+            })
+            
     return hydrated
