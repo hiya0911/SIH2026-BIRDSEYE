@@ -70,6 +70,10 @@
                     <span class="tab-icon">📊</span>
                     <span class="tab-text">Evaluation Metrics</span>
                 </button>
+                <button class="tab-btn" data-tab="investigation">
+                    <span class="tab-icon">🛡️</span>
+                    <span class="tab-text">Evidence & Investigation</span>
+                </button>
             </nav>
 
             <!-- Right: System Live Status Badge -->
@@ -1014,6 +1018,164 @@
 
             <!-- Back to top button -->
             <button id="metrics-back-to-top" class="back-to-top-btn" title="Back to top">↑</button>
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- TAB 8: EVIDENCE & INVESTIGATION CONSOLE (PHASE 3) -->
+        <!-- ========================================================= -->
+        <section id="investigation" class="tab-section">
+            <div class="section-hero">
+                <div class="badge-pill">ACTIVE LEARNING & AUDITABLE PROVENANCE</div>
+                <h1 class="hero-headline">Evidence Workspace & Analyst Review</h1>
+                <p class="hero-description">
+                    Conduct human-in-the-loop verification (CONFIRM / REJECT / FLAG), trace end-to-end 8-stage sensor provenance lineage, inspect Sentinel-1 SAR availability status, and export formal evidence reports.
+                </p>
+            </div>
+
+            <!-- CASE SELECTOR & ACTION BAR -->
+            <div class="glass-card case-selector-card">
+                <div class="case-bar-content">
+                    <div class="case-select-group">
+                        <label for="investigation-case-select" class="form-label">Active Investigation Case:</label>
+                        <select id="investigation-case-select" class="glass-select">
+                            <option value="">Loading cases...</option>
+                        </select>
+                    </div>
+                    <div class="case-actions-group">
+                        <button id="btn-refresh-cases" class="glass-btn small-btn">🔄 Refresh Cases</button>
+                        <button id="btn-create-case" class="glass-btn small-btn accent-btn">➕ New Case from Current Tile</button>
+                        <span id="case-status-badge" class="risk-pill low">STATUS: PENDING</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ANALYST REVIEW ACTION BOARD -->
+            <div class="glass-card analyst-review-card">
+                <div class="card-header-bar">
+                    <h3>✍️ Analyst Review & Feedback (Active Learning Loop)</h3>
+                    <span class="sub-tag">HUMAN-IN-THE-LOOP VERIFICATION</span>
+                </div>
+                <div class="review-controls-body">
+                    <p class="section-subtext">Select an analyst decision, provide your rationale/evidence observation, and record the review:</p>
+                    
+                    <div class="decision-buttons-grid">
+                        <button type="button" class="review-btn btn-confirm" id="btn-review-confirm" data-decision="CONFIRM">
+                            <span class="btn-icon">✓</span>
+                            <span class="btn-title">CONFIRM CHANGE</span>
+                            <span class="btn-sub">Verified real spectral/ground-truth change</span>
+                        </button>
+                        <button type="button" class="review-btn btn-reject" id="btn-review-reject" data-decision="REJECT">
+                            <span class="btn-icon">✗</span>
+                            <span class="btn-title">REJECT CHANGE</span>
+                            <span class="btn-sub">False alarm (cloud shadow, registration, noise)</span>
+                        </button>
+                        <button type="button" class="review-btn btn-flag" id="btn-review-flag" data-decision="FLAG">
+                            <span class="btn-icon">⚠️</span>
+                            <span class="btn-title">FLAG FOR REVIEW</span>
+                            <span class="btn-sub">Ambiguous feature needing senior verification</span>
+                        </button>
+                    </div>
+
+                    <div class="rationale-input-group">
+                        <label for="analyst-rationale-input" class="form-label">Analyst Rationale & Notes:</label>
+                        <textarea id="analyst-rationale-input" class="glass-textarea" rows="2" placeholder="Describe spectral triggers, visual ground-truth evidence, or false-alarm suppression reasons..."></textarea>
+                    </div>
+
+                    <div class="analyst-submit-bar">
+                        <div class="analyst-meta-field">
+                            <span class="field-label">Analyst ID / Role:</span>
+                            <input type="text" id="analyst-id-input" class="glass-input" value="Senior Satellite Analyst">
+                        </div>
+                        <button id="btn-submit-review" class="glass-btn primary-btn glow">💾 Record Analyst Review</button>
+                    </div>
+                    <div id="review-submission-status" class="status-msg"></div>
+                </div>
+            </div>
+
+            <!-- EVIDENCE WORKSPACE GRID -->
+            <div class="evidence-workspace-container">
+                <div class="evidence-grid-2col">
+                    <!-- Left: Imagery & Location -->
+                    <div class="glass-card workspace-card">
+                        <div class="card-header-bar">
+                            <h4>🗺️ AOI & Multi-Epoch Imagery Evidence</h4>
+                        </div>
+                        <div id="workspace-imagery-body" class="workspace-body">
+                            <div class="thumbnail-compare-row">
+                                <div class="thumb-box">
+                                    <div class="thumb-label">2024 Baseline (Sentinel-2B)</div>
+                                    <img id="ws-thumb-2024" src="" alt="2024 Baseline" class="thumb-img-display" />
+                                </div>
+                                <div class="thumb-box">
+                                    <div class="thumb-label">2026 Target (Sentinel-2C)</div>
+                                    <img id="ws-thumb-2026" src="" alt="2026 Target" class="thumb-img-display" />
+                                </div>
+                                <div class="thumb-box">
+                                    <div class="thumb-label">Change Mask Overlay</div>
+                                    <img id="ws-thumb-heatmap" src="" alt="Change Heatmap" class="thumb-img-display" />
+                                </div>
+                            </div>
+                            <div id="ws-location-meta" class="location-meta-box"></div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Preprocessing & SAR Status -->
+                    <div class="glass-card workspace-card">
+                        <div class="card-header-bar">
+                            <h4>📡 Preprocessing & Sentinel-1 SAR Status</h4>
+                        </div>
+                        <div class="workspace-body">
+                            <div id="ws-prep-meta" class="prep-meta-box"></div>
+                            
+                            <!-- SAR Panel -->
+                            <div class="sar-status-panel">
+                                <div class="sar-panel-header">
+                                    <span class="sar-icon">🛰️</span>
+                                    <span class="sar-title">Sentinel-1 C-SAR Status</span>
+                                    <span id="sar-badge" class="risk-pill low">NOT CACHED</span>
+                                </div>
+                                <div id="sar-status-message" class="sar-message-text"></div>
+                                <div class="sar-capabilities-list">
+                                    <div class="cap-item">⚡ VV/VH Dual-Polarization SAR Ready</div>
+                                    <div class="cap-item">☁️ All-Weather Cloud Penetration Architecture</div>
+                                    <div class="cap-item">🌐 Phase Interference & Backscatter Delta Supported</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Provenance Lineage Chain -->
+                <div class="glass-card workspace-card">
+                    <div class="card-header-bar">
+                        <h4>🔗 Traceable 8-Stage Provenance Lineage Chain</h4>
+                        <span class="sub-tag">END-TO-END REPRODUCIBILITY</span>
+                    </div>
+                    <div id="provenance-chain-container" class="provenance-chain-horizontal">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Report Export Bar -->
+                <div class="glass-card report-export-card">
+                    <div class="report-export-content">
+                        <div>
+                            <h3>📄 Automated Satellite Incident Evidence Report</h3>
+                            <p class="section-subtext">Generates a complete, verifiable audit document containing actual system measurements, preprocessing quality logs, explainability triggers, and analyst verdict.</p>
+                        </div>
+                        <button id="btn-export-report" class="glass-btn primary-btn glow">📥 Export Evidence Report</button>
+                    </div>
+                    <div id="export-report-modal" class="report-modal hidden">
+                        <div class="modal-header">
+                            <h4>Incident Report Preview & Export</h4>
+                            <button id="btn-close-report-modal" class="close-modal-btn">✕</button>
+                        </div>
+                        <div class="modal-body">
+                            <pre id="report-markdown-text" class="report-markdown-display"></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </section>
 
     </main>

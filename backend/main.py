@@ -13,8 +13,11 @@ from schemas import (
     ImageSearchRequest,
     AOIQueryRequest,
     AOIAnalyzeRequest,
-    PreprocessingPipelineRequest
+    PreprocessingPipelineRequest,
+    CaseCreateRequest,
+    AnalystReviewRequest
 )
+import cases_service
 from services import (
     calculate_change,
     build_timeline,
@@ -285,18 +288,21 @@ async def image_search_upload(
         if ext in {".tif", ".tiff"}:
             try:
                 import io
-                with rasterio.open(io.BytesIO(contents)) as src:
-                    cnt = src.count
-                    if cnt >= 3:
-                        r, g, b = src.read(3), src.read(2), src.read(1)
-                    else:
-                        band = src.read(1)
-                        r, g, b = band, band, band
-                    def norm(a):
-                        return np.clip(a.astype(float) / 2500.0 * 255.0, 0, 255).astype(np.uint8)
-                    rgb = np.stack([norm(r), norm(g), norm(b)], axis=-1)
-                    pil_img = Image.fromarray(rgb)
-            except Exception:
+                import rasterio.io
+                with rasterio.io.MemoryFile(contents) as memfile:
+                    with memfile.open() as src:
+                        cnt = src.count
+                        if cnt >= 3:
+                            r, g, b = src.read(3), src.read(2), src.read(1)
+                        else:
+                            band = src.read(1)
+                            r, g, b = band, band, band
+                        def norm(a):
+                            return np.clip(a.astype(float) / 2500.0 * 255.0, 0, 255).astype(np.uint8)
+                        rgb = np.stack([norm(r), norm(g), norm(b)], axis=-1)
+                        pil_img = Image.fromarray(rgb)
+            except Exception as ex:
+                print(f"[IMAGE UPLOAD] MemoryFile open fallback: {ex}")
                 pil_img = Image.open(io.BytesIO(contents)).convert("RGB")
         else:
             import io
@@ -808,5 +814,121 @@ def evaluate_system_metrics():
         return evaluator.run_full_evaluation()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# =========================================================
+# PHASE 3: ACTIVE LEARNING, REVIEWS, EVIDENCE WORKSPACE & SAR
+# =========================================================
+
+@app.get("/api/sar/status")
+def get_sar_status():
+    """
+    Returns honest SAR (Sentinel-1) status for the project environment.
+    """
+    return cases_service.get_sar_status()
+
+
+@app.post("/api/cases")
+def create_investigation_case(request: CaseCreateRequest):
+    """
+    Creates an investigation case and initializes Evidence Workspace.
+    """
+    try:
+        case = cases_service.create_case(
+            tile_id=request.tile_id,
+            aoi_name=request.aoi_name,
+            notes=request.notes
+        )
+        return {"status": "success", "case": case}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Case creation failed: {str(e)}")
+
+
+@app.get("/api/cases")
+def list_investigation_cases():
+    """
+    Lists all active investigation cases.
+    """
+    try:
+        cases = cases_service.get_all_cases()
+        return {"total": len(cases), "cases": cases}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Listing cases failed: {str(e)}")
+
+
+@app.get("/api/cases/{case_id}")
+def get_case_details(case_id: str):
+    """
+    Retrieves full Evidence Workspace for a case ID.
+    """
+    case = cases_service.get_case_by_id(case_id)
+    if not case:
+        raise HTTPException(status_code=404, detail=f"Case '{case_id}' not found.")
+    return {"status": "success", "case": case}
+
+
+@app.post("/api/cases/{case_id}/review")
+def submit_case_review(case_id: str, request: AnalystReviewRequest):
+    """
+    Submits analyst decision (CONFIRM, REJECT, FLAG) with rationale for a case.
+    """
+    try:
+        result = cases_service.submit_review(
+            case_id=case_id,
+            decision=request.decision,
+            rationale=request.rationale,
+            analyst_id=request.analyst_id,
+            tile_id=request.tile_id
+        )
+        return result
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Review submission failed: {str(e)}")
+
+
+@app.post("/api/reviews")
+def submit_direct_review(request: AnalystReviewRequest):
+    """
+    Direct endpoint for submitting analyst decisions from any UI view.
+    """
+    try:
+        result = cases_service.submit_review(
+            case_id=request.case_id,
+            decision=request.decision,
+            rationale=request.rationale,
+            analyst_id=request.analyst_id,
+            tile_id=request.tile_id
+        )
+        return result
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Review submission failed: {str(e)}")
+
+
+@app.get("/api/cases/{case_id}/provenance")
+def get_case_provenance(case_id: str):
+    """
+    Returns step-by-step end-to-end provenance lineage chain.
+    """
+    try:
+        prov = cases_service.get_case_provenance(case_id)
+        return prov
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Provenance retrieval failed: {str(e)}")
+
+
+@app.get("/api/cases/{case_id}/export")
+def export_case_report(case_id: str):
+    """
+    Exports comprehensive evidence & analyst report with actual system data.
+    """
+    try:
+        report = cases_service.export_case_report(case_id)
+        return report
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Report export failed: {str(e)}")
+
 
 

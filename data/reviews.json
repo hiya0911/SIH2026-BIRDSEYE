@@ -1,0 +1,29 @@
+[
+  {
+    "review_id": "REV-1e1af1f7",
+    "case_id": "CASE-2026-e87b4d6c",
+    "tile_id": "e87b4d6c-9cdb-4293-8a8b-7ad7a5af6e43",
+    "decision": "CONFIRM",
+    "rationale": "Ground-truth verified real vegetative clearing and infrastructure expansion.",
+    "analyst_id": "Senior Satellite Lead",
+    "timestamp": "2026-09-24T13:35:27.768151+00:00"
+  },
+  {
+    "review_id": "REV-08239f25",
+    "case_id": "CASE-2026-e87b4d6c",
+    "tile_id": "e87b4d6c-9cdb-4293-8a8b-7ad7a5af6e43",
+    "decision": "REJECT",
+    "rationale": "Cloud-shadow transient artifact; zero physical ground-cover alteration.",
+    "analyst_id": "Quality Audit Analyst",
+    "timestamp": "2026-09-24T13:35:27.788746+00:00"
+  },
+  {
+    "review_id": "REV-8b78a203",
+    "case_id": "CASE-2026-e87b4d6c",
+    "tile_id": "e87b4d6c-9cdb-4293-8a8b-7ad7a5af6e43",
+    "decision": "FLAG",
+    "rationale": "Ambiguous seasonal phenological drift. Escalating to domain specialist.",
+    "analyst_id": "Junior Remote Sensing Analyst",
+    "timestamp": "2026-09-24T13:35:27.796520+00:00"
+  }
+]

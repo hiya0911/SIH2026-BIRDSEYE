@@ -46,6 +46,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initTemporalAnalysis();
     initPreprocessingLab();
     initLiveBenchmarkEvaluation();
+    initInvestigationConsole();
 });
 
 function initTabs() {
@@ -2190,6 +2191,282 @@ function setPreviewMode(mode) {
         if (captionBox) captionBox.style.display = "block";
     }
 }
+
+// =========================================================
+// TAB 8: EVIDENCE & INVESTIGATION CONSOLE (PHASE 3)
+// =========================================================
+
+let activeCaseData = null;
+let selectedDecisionMode = "CONFIRM";
+
+function initInvestigationConsole() {
+    const caseSelect = document.getElementById("investigation-case-select");
+    const refreshBtn = document.getElementById("btn-refresh-cases");
+    const createCaseBtn = document.getElementById("btn-create-case");
+    const submitReviewBtn = document.getElementById("btn-submit-review");
+    const exportReportBtn = document.getElementById("btn-export-report");
+    const closeModalBtn = document.getElementById("btn-close-report-modal");
+
+    if (!caseSelect) return;
+
+    // 1. Setup Decision Buttons (CONFIRM / REJECT / FLAG)
+    const decisionBtns = document.querySelectorAll(".review-btn");
+    decisionBtns.forEach(btn => {
+        btn.addEventListener("click", () => {
+            decisionBtns.forEach(b => b.classList.remove("selected"));
+            btn.classList.add("selected");
+            selectedDecisionMode = btn.dataset.decision || "CONFIRM";
+        });
+    });
+    // Default select CONFIRM
+    const confirmBtn = document.getElementById("btn-review-confirm");
+    if (confirmBtn) confirmBtn.classList.add("selected");
+
+    // 2. Case Selector Change Event
+    caseSelect.addEventListener("change", () => {
+        const caseId = caseSelect.value;
+        if (caseId) {
+            loadCaseDetails(caseId);
+        }
+    });
+
+    // 3. Refresh Cases Button
+    if (refreshBtn) {
+        refreshBtn.addEventListener("click", () => loadCasesList());
+    }
+
+    // 4. Create Case from Current Tile Button
+    if (createCaseBtn) {
+        createCaseBtn.addEventListener("click", async () => {
+            const targetTile = state.selectedTileId || "e87b4d6c-9cdb-4293-8a8b-7ad7a5af6e43";
+            try {
+                const resp = await fetch(`${API_BASE}/cases`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        tile_id: targetTile,
+                        aoi_name: `Tile ${targetTile.substring(0, 8)} User Case`,
+                        notes: "Case initialized by analyst from current map selection."
+                    })
+                });
+                const data = await resp.json();
+                if (data.status === "success" && data.case) {
+                    await loadCasesList();
+                    caseSelect.value = data.case.case_id;
+                    loadCaseDetails(data.case.case_id);
+                }
+            } catch (err) {
+                console.error("Error creating case:", err);
+            }
+        });
+    }
+
+    // 5. Submit Review Button
+    if (submitReviewBtn) {
+        submitReviewBtn.addEventListener("click", async () => {
+            const caseId = caseSelect.value;
+            const rationale = document.getElementById("analyst-rationale-input").value;
+            const analystId = document.getElementById("analyst-id-input").value || "Senior Satellite Analyst";
+            const statusDiv = document.getElementById("review-submission-status");
+
+            if (!caseId) {
+                if (statusDiv) statusDiv.innerHTML = `<span style="color:#ef4444;">Please select or create an active case first.</span>`;
+                return;
+            }
+
+            try {
+                if (statusDiv) statusDiv.innerHTML = `<span style="color:#38bdf8;">Submitting review...</span>`;
+                const resp = await fetch(`${API_BASE}/cases/${caseId}/review`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        decision: selectedDecisionMode,
+                        rationale: rationale,
+                        analyst_id: analystId,
+                        case_id: caseId
+                    })
+                });
+                const data = await resp.json();
+                if (resp.ok && data.status === "success") {
+                    if (statusDiv) statusDiv.innerHTML = `<span style="color:#34d399;">✓ Review recorded! Decision: <strong>${selectedDecisionMode}</strong></span>`;
+                    loadCaseDetails(caseId);
+                    loadCasesList(caseId);
+                } else {
+                    if (statusDiv) statusDiv.innerHTML = `<span style="color:#ef4444;">Error: ${data.detail || 'Review submission failed'}</span>`;
+                }
+            } catch (err) {
+                if (statusDiv) statusDiv.innerHTML = `<span style="color:#ef4444;">Error submitting review: ${err.message}</span>`;
+            }
+        });
+    }
+
+    // 6. Export Report Button
+    if (exportReportBtn) {
+        exportReportBtn.addEventListener("click", async () => {
+            const caseId = caseSelect.value;
+            if (!caseId) return;
+            try {
+                const resp = await fetch(`${API_BASE}/cases/${caseId}/export`);
+                const data = await resp.json();
+                const reportModal = document.getElementById("export-report-modal");
+                const reportText = document.getElementById("report-markdown-text");
+                if (reportModal && reportText) {
+                    reportText.textContent = data.markdown_content || JSON.stringify(data, null, 2);
+                    reportModal.classList.remove("hidden");
+                }
+            } catch (err) {
+                console.error("Export report error:", err);
+            }
+        });
+    }
+
+    if (closeModalBtn) {
+        closeModalBtn.addEventListener("click", () => {
+            const reportModal = document.getElementById("export-report-modal");
+            if (reportModal) reportModal.classList.add("hidden");
+        });
+    }
+
+    // Load initial cases
+    loadCasesList();
+}
+
+async function loadCasesList(selectCaseId = null) {
+    const caseSelect = document.getElementById("investigation-case-select");
+    if (!caseSelect) return;
+
+    try {
+        const resp = await fetch(`${API_BASE}/cases`);
+        const data = await resp.json();
+        const cases = data.cases || [];
+
+        caseSelect.innerHTML = "";
+        if (cases.length === 0) {
+            caseSelect.innerHTML = `<option value="">No active cases found</option>`;
+            return;
+        }
+
+        cases.forEach(c => {
+            const opt = document.createElement("option");
+            opt.value = c.case_id;
+            opt.textContent = `${c.case_id} — ${c.aoi_name || c.tile_id} [${c.current_status || 'OPEN'}]`;
+            caseSelect.appendChild(opt);
+        });
+
+        const targetId = selectCaseId || (cases[0] ? cases[0].case_id : null);
+        if (targetId) {
+            caseSelect.value = targetId;
+            loadCaseDetails(targetId);
+        }
+    } catch (err) {
+        console.error("Error loading cases list:", err);
+    }
+}
+
+async function loadCaseDetails(caseId) {
+    try {
+        const resp = await fetch(`${API_BASE}/cases/${caseId}`);
+        const data = await resp.json();
+        if (!data || !data.case) return;
+
+        const c = data.case;
+        activeCaseData = c;
+
+        // Status Badge
+        const statusBadge = document.getElementById("case-status-badge");
+        if (statusBadge) {
+            statusBadge.textContent = `STATUS: ${c.current_status || 'OPEN'}`;
+            statusBadge.className = `risk-pill ${c.current_status === 'CONFIRMED' ? 'low' : c.current_status === 'REJECTED' ? 'elevated' : 'moderate'}`;
+        }
+
+        // Thumbnails
+        const thumbs = c.thumbnails || {};
+        const img2024 = document.getElementById("ws-thumb-2024");
+        const img2026 = document.getElementById("ws-thumb-2026");
+        const imgHeatmap = document.getElementById("ws-thumb-heatmap");
+
+        if (img2024 && thumbs.epoch_2024) img2024.src = thumbs.epoch_2024;
+        if (img2026 && thumbs.epoch_2026) img2026.src = thumbs.epoch_2026;
+        if (imgHeatmap && thumbs.change_heatmap) imgHeatmap.src = thumbs.change_heatmap;
+
+        // Location Meta
+        const locMeta = document.getElementById("ws-location-meta");
+        if (locMeta) {
+            const loc = c.location || {};
+            locMeta.innerHTML = `
+                <div><strong>Tile ID:</strong> <code>${c.tile_id}</code></div>
+                <div><strong>Center Lat/Lon:</strong> ${loc.center_lat}°N, ${loc.center_lon}°E</div>
+                <div><strong>CRS:</strong> ${loc.crs || 'EPSG:32645'}</div>
+                <div><strong>UTM Bounds:</strong> [${(loc.utm_bbox || []).map(n => Math.round(n)).join(', ')}]</div>
+            `;
+        }
+
+        // Preprocessing Meta
+        const prepMeta = document.getElementById("ws-prep-meta");
+        if (prepMeta) {
+            const prep = c.preprocessing_status || {};
+            const stats = c.change_mask_stats || {};
+            prepMeta.innerHTML = `
+                <div><strong>8-Stage Pipeline:</strong> ${prep.status || 'ANALYSIS_READY'}</div>
+                <div><strong>Valid Ratio:</strong> ${(prep.valid_pixel_ratio * 100).toFixed(1)}% | <strong>SNR Proxy:</strong> ${prep.snr_proxy || 8.22}</div>
+                <div><strong>Built-up Expansion:</strong> ${stats.built_up_expansion_pct || 0}% (${stats.built_up_expansion_pixels || 0} px)</div>
+                <div><strong>Vegetation Loss:</strong> ${stats.vegetation_loss_pct || 0}% (${stats.vegetation_loss_pixels || 0} px)</div>
+            `;
+        }
+
+        // SAR Status
+        const sar = c.sar_evidence || {};
+        const sarMsg = document.getElementById("sar-status-message");
+        const sarBadge = document.getElementById("sar-badge");
+        if (sarMsg) sarMsg.textContent = sar.status_message || "SAR imagery not cached.";
+        if (sarBadge) {
+            sarBadge.textContent = sar.available ? "AVAILABLE" : "NOT CACHED LOCALLY";
+            sarBadge.className = `risk-pill ${sar.available ? 'low' : 'moderate'}`;
+        }
+
+        // Provenance Lineage Chain
+        loadCaseProvenance(caseId);
+
+    } catch (err) {
+        console.error("Error loading case details:", err);
+    }
+}
+
+async function loadCaseProvenance(caseId) {
+    const chainContainer = document.getElementById("provenance-chain-container");
+    if (!chainContainer) return;
+
+    try {
+        const resp = await fetch(`${API_BASE}/cases/${caseId}/provenance`);
+        const data = await resp.json();
+        const chain = data.provenance_chain || [];
+
+        chainContainer.innerHTML = "";
+        chain.forEach(stage => {
+            const card = document.createElement("div");
+            card.className = "prov-stage-card";
+
+            let detailsHtml = "";
+            for (const [k, v] of Object.entries(stage.details || {})) {
+                detailsHtml += `<div><strong>${k}:</strong> ${v}</div>`;
+            }
+
+            card.innerHTML = `
+                <div class="prov-stage-header">
+                    <span class="prov-stage-idx">S${stage.stage_index}</span>
+                    <span class="prov-stage-title">${stage.icon || '📍'} ${stage.stage_name}</span>
+                </div>
+                <div class="prov-details-list">
+                    ${detailsHtml}
+                </div>
+            `;
+            chainContainer.appendChild(card);
+        });
+    } catch (err) {
+        console.error("Error loading provenance chain:", err);
+    }
+}
+
 
 
 

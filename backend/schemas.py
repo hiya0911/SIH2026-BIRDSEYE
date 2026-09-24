@@ -37,4 +37,17 @@ class PreprocessingPipelineRequest(BaseModel):
     year: int = 2024
     tile_id: Optional[str] = None
     bbox: Optional[list] = None
-    baseline_year: int = 2024
+    baseline_year: int = 2024
+
+class CaseCreateRequest(BaseModel):
+    tile_id: str
+    aoi_name: Optional[str] = None
+    notes: Optional[str] = None
+
+class AnalystReviewRequest(BaseModel):
+    decision: str  # CONFIRM, REJECT, FLAG
+    rationale: str
+    analyst_id: Optional[str] = "Senior Satellite Analyst"
+    case_id: Optional[str] = None
+    tile_id: Optional[str] = None
+
