@@ -1102,10 +1102,34 @@
                     <div class="case-actions-group">
                         <button id="btn-refresh-cases" class="glass-btn small-btn">🔄 Refresh Cases</button>
                         <button id="btn-create-case" class="glass-btn small-btn accent-btn">➕ New Case from Current Tile</button>
+                        <button id="btn-view-aoi-map" class="glass-btn small-btn accent-btn">🗺️ View AOI on Map</button>
                         <span id="case-status-badge" class="risk-pill low">STATUS: PENDING</span>
                     </div>
                 </div>
             </div>
+
+            <!-- INVESTIGATION PROCESS FLOW BANNER -->
+            <div class="glass-card process-flow-card" style="margin-top: 1rem; margin-bottom: 1.5rem; padding: 1rem 1.25rem;">
+                <div style="font-size: 0.8rem; font-weight: 700; color: #38bdf8; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 0.75rem;">
+                    🔍 EXPLAINABLE INVESTIGATION PROCESS LINEAGE:
+                </div>
+                <div class="investigation-pipeline-stepper" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+                    <div class="mini-stage-badge passed"><span class="stage-name">1. OBSERVATION</span></div>
+                    <div style="color: #64748b;">➔</div>
+                    <div class="mini-stage-badge passed"><span class="stage-name">2. PREPROCESSING</span></div>
+                    <div style="color: #64748b;">➔</div>
+                    <div class="mini-stage-badge passed"><span class="stage-name">3. CHANGE</span></div>
+                    <div style="color: #64748b;">➔</div>
+                    <div class="mini-stage-badge passed"><span class="stage-name">4. FALSE-ALARM CHECK</span></div>
+                    <div style="color: #64748b;">➔</div>
+                    <div class="mini-stage-badge passed"><span class="stage-name">5. EXPLANATION</span></div>
+                    <div style="color: #64748b;">➔</div>
+                    <div class="mini-stage-badge passed"><span class="stage-name">6. ANALYST DECISION</span></div>
+                    <div style="color: #64748b;">➔</div>
+                    <div class="mini-stage-badge passed"><span class="stage-name">7. EVIDENCE</span></div>
+                </div>
+            </div>
+
 
             <!-- ANALYST REVIEW ACTION BOARD -->
             <div class="glass-card analyst-review-card">
