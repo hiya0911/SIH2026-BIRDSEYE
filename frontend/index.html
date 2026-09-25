@@ -207,6 +207,19 @@
                             <option value="24">24 Tiles</option>
                         </select>
                     </div>
+
+                    <div class="sensor-selector">
+                        <label for="sensor-filter-select" class="option-label">Sensor Constellation:</label>
+                        <select id="sensor-filter-select" class="glass-select small-select">
+                            <option value="ALL" selected>ALL (Optical + SAR)</option>
+                            <option value="OPTICAL">Sentinel-2 MSI (Optical)</option>
+                            <option value="SAR">Sentinel-1 C-SAR (Radar)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="sar-sensor-notice" class="sar-sensor-notice hidden">
+                    🛰️ <strong>SENTINEL-1 SAR — NOT CACHED LOCALLY:</strong> Sentinel-1 C-SAR data is not currently available in local storage. Add compatible Sentinel-1 GRD data to enable SAR evidence.
                 </div>
                 </div> <!-- End #text-search-controls -->
 
@@ -540,7 +553,34 @@
                         <span class="card-icon">🧪</span>
                         <h2 class="card-title">Configure Level-2A Preprocessing Pipeline</h2>
                     </div>
+                    <div class="prep-modality-switcher">
+                        <button id="prep-mode-optical" class="mode-pill active">🧪 Optical (Sentinel-2)</button>
+                        <button id="prep-mode-sar" class="mode-pill">🛰️ Radar (Sentinel-1 SAR)</button>
+                    </div>
                     <span id="preprocessing-status-badge" class="badge-tag green">Pipeline Ready</span>
+                </div>
+
+                <!-- SAR Preprocessing Panel (Visible when Radar mode is active) -->
+                <div id="sar-prep-panel" class="sar-prep-panel hidden" style="padding: 1.25rem;">
+                    <div class="sar-notice-card" style="background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 10px; padding: 1rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                            <h3 style="font-size: 0.95rem; color: #38bdf8; margin: 0;">🛰️ SENTINEL-1 C-SAR PREPROCESSING PIPELINE</h3>
+                            <span class="risk-pill moderate">STATUS: NOT CACHED LOCALLY</span>
+                        </div>
+                        <p class="section-subtext" style="color: #cbd5e1; font-size: 0.8rem; line-height: 1.45;">
+                            Sentinel-1 SAR data is not currently available in local storage. When compatible Sentinel-1 IW GRDH GeoTIFF products are placed into project storage, the 8-stage SAR processing pipeline will execute automatically.
+                        </p>
+                    </div>
+                    <div class="prep-stages-mini-grid" style="margin-top: 1rem;">
+                        <div class="mini-stage-badge warning"><span class="stage-name">1. Product & Metadata Validation</span><span class="stage-status">NOT RUN</span></div>
+                        <div class="mini-stage-badge warning"><span class="stage-name">2. GRD Structure Verification</span><span class="stage-status">NOT RUN</span></div>
+                        <div class="mini-stage-badge warning"><span class="stage-name">3. Radiometric Calibration (σ⁰)</span><span class="stage-status">NOT RUN</span></div>
+                        <div class="mini-stage-badge warning"><span class="stage-name">4. Terrain & Geometric Prep</span><span class="stage-status">NOT RUN</span></div>
+                        <div class="mini-stage-badge warning"><span class="stage-name">5. Speckle Noise Suppression</span><span class="stage-status">NOT RUN</span></div>
+                        <div class="mini-stage-badge warning"><span class="stage-name">6. VV/VH Dual-Pol Preparation</span><span class="stage-status">NOT RUN</span></div>
+                        <div class="mini-stage-badge warning"><span class="stage-name">7. AOI Slice Extraction</span><span class="stage-status">NOT RUN</span></div>
+                        <div class="mini-stage-badge warning"><span class="stage-name">8. Analysis-Ready SAR Handoff</span><span class="stage-status">NOT RUN</span></div>
+                    </div>
                 </div>
 
                 <div class="tile-picker-layout">

@@ -172,5 +172,35 @@
     "rationale": "Automated Phase 3D verification of review trace.",
     "analyst_id": "Lead Auditor Analyst",
     "timestamp": "2026-09-25T00:52:41.084437+00:00"
+  },
+  {
+    "review_id": "REV-3987d351",
+    "case_id": "CASE-2026-e87b4d6c",
+    "tile_id": "e87b4d6c-9cdb-4293-8a8b-7ad7a5af6e43",
+    "change_id": "e87b4d6c-9cdb-4293-8a8b-7ad7a5af6e43",
+    "decision": "CONFIRM",
+    "rationale": "Phase 4B verification of analyst review persistence.",
+    "analyst_id": "SAR Environment Auditor",
+    "timestamp": "2026-09-25T01:00:57.713608+00:00"
+  },
+  {
+    "review_id": "REV-269adbc8",
+    "case_id": "CASE-2026-e87b4d6c",
+    "tile_id": "e87b4d6c-9cdb-4293-8a8b-7ad7a5af6e43",
+    "change_id": "e87b4d6c-9cdb-4293-8a8b-7ad7a5af6e43",
+    "decision": "CONFIRM",
+    "rationale": "Phase 4B verification of analyst review persistence.",
+    "analyst_id": "SAR Environment Auditor",
+    "timestamp": "2026-09-25T01:01:15.968541+00:00"
+  },
+  {
+    "review_id": "REV-244094c1",
+    "case_id": "CASE-2026-e87b4d6c",
+    "tile_id": "e87b4d6c-9cdb-4293-8a8b-7ad7a5af6e43",
+    "change_id": "e87b4d6c-9cdb-4293-8a8b-7ad7a5af6e43",
+    "decision": "CONFIRM",
+    "rationale": "Phase 4B verification of analyst review persistence.",
+    "analyst_id": "SAR Environment Auditor",
+    "timestamp": "2026-09-25T01:01:58.842438+00:00"
   }
 ]

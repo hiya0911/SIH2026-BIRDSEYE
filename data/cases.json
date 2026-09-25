@@ -2,8 +2,8 @@
   {
     "case_id": "CASE-2026-e87b4d6c",
     "analyst_decision": "CONFIRM",
-    "analyst_id": "Lead Auditor Analyst",
-    "analyst_rationale": "Automated Phase 3D verification of review trace.",
+    "analyst_id": "SAR Environment Auditor",
+    "analyst_rationale": "Phase 4B verification of analyst review persistence.",
     "aoi_name": "Kolkata Industrial Corridor (Primary Tile)",
     "change_mask_stats": {
       "total_pixels": 65536,
@@ -114,7 +114,7 @@
       "false_alarm_risk_score": "LOW",
       "false_alarm_verdict": "Zero cloud contamination on target, sub-pixel registration verified, phenological baseline subtracted"
     },
-    "latest_review_at": "2026-09-25T00:52:41.084437+00:00",
+    "latest_review_at": "2026-09-25T01:01:58.842438+00:00",
     "location": {
       "center_lat": 23.495,
       "center_lon": 87.995,
@@ -343,6 +343,36 @@
         "rationale": "Automated Phase 3D verification of review trace.",
         "analyst_id": "Lead Auditor Analyst",
         "timestamp": "2026-09-25T00:52:41.084437+00:00"
+      },
+      {
+        "review_id": "REV-3987d351",
+        "case_id": "CASE-2026-e87b4d6c",
+        "tile_id": "e87b4d6c-9cdb-4293-8a8b-7ad7a5af6e43",
+        "change_id": "e87b4d6c-9cdb-4293-8a8b-7ad7a5af6e43",
+        "decision": "CONFIRM",
+        "rationale": "Phase 4B verification of analyst review persistence.",
+        "analyst_id": "SAR Environment Auditor",
+        "timestamp": "2026-09-25T01:00:57.713608+00:00"
+      },
+      {
+        "review_id": "REV-269adbc8",
+        "case_id": "CASE-2026-e87b4d6c",
+        "tile_id": "e87b4d6c-9cdb-4293-8a8b-7ad7a5af6e43",
+        "change_id": "e87b4d6c-9cdb-4293-8a8b-7ad7a5af6e43",
+        "decision": "CONFIRM",
+        "rationale": "Phase 4B verification of analyst review persistence.",
+        "analyst_id": "SAR Environment Auditor",
+        "timestamp": "2026-09-25T01:01:15.968541+00:00"
+      },
+      {
+        "review_id": "REV-244094c1",
+        "case_id": "CASE-2026-e87b4d6c",
+        "tile_id": "e87b4d6c-9cdb-4293-8a8b-7ad7a5af6e43",
+        "change_id": "e87b4d6c-9cdb-4293-8a8b-7ad7a5af6e43",
+        "decision": "CONFIRM",
+        "rationale": "Phase 4B verification of analyst review persistence.",
+        "analyst_id": "SAR Environment Auditor",
+        "timestamp": "2026-09-25T01:01:58.842438+00:00"
       }
     ],
     "sar_evidence": {
@@ -386,6 +416,6 @@
       "change_heatmap": null
     },
     "tile_id": "e87b4d6c-9cdb-4293-8a8b-7ad7a5af6e43",
-    "updated_at": "2026-09-25T00:52:41.084437+00:00"
+    "updated_at": "2026-09-25T01:01:58.842438+00:00"
   }
 ]

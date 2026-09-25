@@ -123,10 +123,50 @@ function initQueryPresets() {
 function initSemanticSearch() {
     const searchBtn = document.getElementById("semantic-search-btn");
     const queryInput = document.getElementById("semantic-query-input");
+    const sensorSelect = document.getElementById("sensor-filter-select");
 
-    searchBtn.addEventListener("click", executeSemanticSearch);
-    queryInput.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") executeSemanticSearch();
+    if (searchBtn) searchBtn.addEventListener("click", executeSemanticSearch);
+    if (queryInput) {
+        queryInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") executeSemanticSearch();
+        });
+    }
+
+    if (sensorSelect) {
+        sensorSelect.addEventListener("change", () => {
+            const sarNotice = document.getElementById("sar-sensor-notice");
+            if (sensorSelect.value === "SAR") {
+                if (sarNotice) sarNotice.classList.remove("hidden");
+            } else {
+                if (sarNotice) sarNotice.classList.add("hidden");
+            }
+            executeSemanticSearch();
+        });
+    }
+
+    initPreprocessingLabModality();
+}
+
+function initPreprocessingLabModality() {
+    const opticalBtn = document.getElementById("prep-mode-optical");
+    const sarBtn = document.getElementById("prep-mode-sar");
+    const sarPanel = document.getElementById("sar-prep-panel");
+    const pickerLayout = document.querySelector(".tile-picker-layout");
+
+    if (!opticalBtn || !sarBtn) return;
+
+    opticalBtn.addEventListener("click", () => {
+        opticalBtn.classList.add("active");
+        sarBtn.classList.remove("active");
+        if (sarPanel) sarPanel.classList.add("hidden");
+        if (pickerLayout) pickerLayout.style.display = "";
+    });
+
+    sarBtn.addEventListener("click", () => {
+        sarBtn.classList.add("active");
+        opticalBtn.classList.remove("active");
+        if (sarPanel) sarPanel.classList.remove("hidden");
+        if (pickerLayout) pickerLayout.style.display = "none";
     });
 }
 
@@ -135,6 +175,7 @@ async function executeSemanticSearch() {
     const spectralGate = document.getElementById("spectral-gate-check").checked;
     const actionMode = document.getElementById("action-mode-check").checked;
     const topK = parseInt(document.getElementById("top-k-select").value) || 12;
+    const sensorFilter = document.getElementById("sensor-filter-select") ? document.getElementById("sensor-filter-select").value : "ALL";
     const container = document.getElementById("semantic-results-container");
     const countBadge = document.getElementById("results-count-badge");
     const metricsBar = document.getElementById("retrieval-metrics-bar");
@@ -148,8 +189,8 @@ async function executeSemanticSearch() {
     container.innerHTML = `
         <div class="empty-state-card">
             <div class="spinner"></div>
-            <div class="empty-title">Processing Dual-Stage Retrieval</div>
-            <p class="empty-desc">Computing 512-D CLIP text vector, querying FAISS index, and applying zero-hallucination spectral gating...</p>
+            <div class="empty-title">Processing ${sensorFilter} Retrieval</div>
+            <p class="empty-desc">Computing 512-D CLIP text vector, querying index, and evaluating sensor constraints...</p>
         </div>
     `;
     countBadge.textContent = "Querying...";
@@ -165,7 +206,8 @@ async function executeSemanticSearch() {
                 query: query,
                 top_k: topK,
                 spectral_gate: spectralGate,
-                action_mode: actionMode
+                action_mode: actionMode,
+                sensor_filter: sensorFilter
             })
         });
 
@@ -184,6 +226,19 @@ async function executeSemanticSearch() {
             items = data.results.results;
         } else if (Array.isArray(data)) {
             items = data;
+        }
+
+        // Check for SAR unavailable response
+        if (data.available === false || sensorFilter === "SAR") {
+            countBadge.textContent = "0 Results (SAR Not Cached)";
+            container.innerHTML = `
+                <div class="empty-state-card" style="border: 1px solid rgba(56, 189, 248, 0.3); background: rgba(15, 23, 42, 0.8);">
+                    <div class="empty-icon">🛰️</div>
+                    <div class="empty-title" style="color: #38bdf8;">SENTINEL-1 SAR — NOT CACHED LOCALLY</div>
+                    <p class="empty-desc" style="color: #cbd5e1;">${data.message || "Sentinel-1 C-SAR data is not currently available in local storage. Add compatible Sentinel-1 GRD data to enable SAR evidence."}</p>
+                </div>
+            `;
+            return;
         }
 
         if (!items || items.length === 0) {

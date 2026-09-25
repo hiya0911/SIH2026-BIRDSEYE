@@ -19,6 +19,7 @@ class SemanticSearchRequest(BaseModel):
     action_mode: bool = False
     query: str
     top_k: int = 5
+    sensor_filter: Optional[str] = "ALL"
 
 class ImageSearchRequest(BaseModel):
     tile_id: str

@@ -155,6 +155,18 @@ def search_satellite_data(request: SearchRequest):
 @app.post("/api/search/semantic")
 def semantic_search(request: SemanticSearchRequest):
     try:
+        sf = (request.sensor_filter or "ALL").upper()
+        if sf == "SAR":
+            return {
+                "query": request.query,
+                "sensor_filter": "SAR",
+                "available": False,
+                "results": [],
+                "total": 0,
+                "search_id": "sar_not_cached",
+                "message": "Sentinel-1 SAR C-band data is not currently available in local storage. Pipeline remains ready for future Sentinel-1 GRD ingestion."
+            }
+
         from services import get_advanced_engine
         adv_engine = get_advanced_engine()
         results = adv_engine.search(
@@ -653,10 +665,21 @@ def _pil_to_base64(img: Image.Image) -> str:
     return "data:image/jpeg;base64," + base64.b64encode(buf.getvalue()).decode("utf-8")
 
 @app.get("/api/tiles/list")
-def list_available_tiles(limit: int = 100):
+def list_available_tiles(limit: int = 100, sensor_filter: str = "ALL"):
+    sf = sensor_filter.upper()
+    if sf == "SAR":
+        return {
+            "total": 0,
+            "sensor_filter": "SAR",
+            "available": False,
+            "message": "Sentinel-1 SAR C-band data is not currently available in local storage.",
+            "tiles": []
+        }
     docs = list(tiles_collection.find({}, {"tile_id": 1, "bbox": 1, "valid_ratio": 1, "crs": 1, "_id": 0}).limit(limit))
     return {
         "total": tiles_collection.count_documents({}),
+        "sensor_filter": sf,
+        "available": True,
         "tiles": docs
     }
 
@@ -826,6 +849,29 @@ def get_sar_status():
     Returns honest SAR (Sentinel-1) status for the project environment.
     """
     return cases_service.get_sar_status()
+
+
+@app.get("/api/sar/products")
+def get_sar_products():
+    """
+    Returns list of local Sentinel-1 products discovered on disk.
+    Returns honest empty list when no local SAR data exists.
+    """
+    from sar_engine import discover_sar_products
+    return discover_sar_products()
+
+
+@app.get("/api/sar/tile/{tile_id}")
+def get_sar_tile_analysis_endpoint(tile_id: str):
+    """
+    Returns SAR analysis for a specific tile.
+    Returns 404 when no real local SAR raster exists for tile_id.
+    """
+    from sar_engine import get_sar_tile_analysis
+    res = get_sar_tile_analysis(tile_id)
+    if not res.get("available"):
+        raise HTTPException(status_code=404, detail=res.get("message", f"Sentinel-1 SAR raster is not cached locally for tile '{tile_id}'."))
+    return res
 
 
 @app.post("/api/cases")
