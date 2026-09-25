@@ -1213,8 +1213,8 @@
                 <!-- 6. Provenance Entry Point Card -->
                 <div id="ws-provenance-entry-card" class="glass-card workspace-card">
                     <div class="card-header-bar">
-                        <h4>🔗 Traceable 8-Stage Provenance Lineage Chain</h4>
-                        <span class="sub-tag">END-TO-END REPRODUCIBILITY</span>
+                        <h4>🔗 Traceable 9-Stage End-to-End Provenance & SHA-256 Lineage Chain</h4>
+                        <span class="sub-tag">END-TO-END REPRODUCIBILITY & HASH VERIFICATION</span>
                     </div>
                     <div id="provenance-chain-container" class="provenance-chain-horizontal">
                         <!-- Populated dynamically -->
@@ -1225,14 +1225,18 @@
                 <div class="glass-card report-export-card">
                     <div class="report-export-content">
                         <div>
-                            <h3>📄 Automated Satellite Incident Evidence Report</h3>
-                            <p class="section-subtext">Generates a complete, verifiable audit document containing actual system measurements, preprocessing quality logs, explainability triggers, and analyst verdict.</p>
+                            <h3>📄 Automated Satellite Incident Evidence Report & Package Export</h3>
+                            <p class="section-subtext">Generates complete 20-section audit document (Markdown) and structured JSON evidence package containing actual system measurements, SHA-256 hashes, preprocessing quality logs, explainability triggers, and analyst decision trace.</p>
+                            <div id="export-status-message" class="export-status-text"></div>
                         </div>
-                        <button id="btn-export-report" class="glass-btn primary-btn glow">📥 Export Evidence Report</button>
+                        <div class="export-btn-group">
+                            <button id="btn-export-report" class="glass-btn primary-btn glow">📄 Generate Evidence Report</button>
+                            <button id="btn-export-json" class="glass-btn accent-btn glow">📦 Export JSON Evidence</button>
+                        </div>
                     </div>
                     <div id="export-report-modal" class="report-modal hidden">
                         <div class="modal-header">
-                            <h4>Incident Report Preview & Export</h4>
+                            <h4 id="report-modal-title">Incident Report Preview & Export</h4>
                             <button id="btn-close-report-modal" class="close-modal-btn">✕</button>
                         </div>
                         <div class="modal-body">

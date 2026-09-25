@@ -942,25 +942,55 @@ def get_case_review_history(case_id: str):
 
 
 @app.get("/api/cases/{case_id}/provenance")
-def get_case_provenance(case_id: str):
+def get_case_provenance_endpoint(case_id: str):
     """
-    Returns step-by-step end-to-end provenance lineage chain.
+    Returns step-by-step 9-stage end-to-end provenance lineage chain with SHA-256 hashes and decision trace.
     """
     try:
-        prov = cases_service.get_case_provenance(case_id)
-        return prov
+        return cases_service.get_case_provenance(case_id)
+    except KeyError as ke:
+        raise HTTPException(status_code=404, detail=str(ke).strip("'"))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Provenance retrieval failed: {str(e)}")
 
 
-@app.get("/api/cases/{case_id}/export")
-def export_case_report(case_id: str):
+@app.get("/api/cases/{case_id}/report")
+def get_case_report_endpoint(case_id: str):
     """
-    Exports comprehensive evidence & analyst report with actual system data.
+    Generates structured 20-section Satellite Incident Evidence Report in Markdown format.
     """
     try:
-        report = cases_service.export_case_report(case_id)
-        return report
+        return cases_service.export_case_report(case_id)
+    except KeyError as ke:
+        raise HTTPException(status_code=404, detail=str(ke).strip("'"))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Report generation failed: {str(e)}")
+
+
+@app.get("/api/cases/{case_id}/evidence.json")
+def get_case_evidence_json_endpoint(case_id: str):
+    """
+    Returns complete structured JSON evidence & provenance package for external verification.
+    """
+    try:
+        return cases_service.get_case_evidence_json(case_id)
+    except KeyError as ke:
+        raise HTTPException(status_code=404, detail=str(ke).strip("'"))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Evidence JSON export failed: {str(e)}")
+
+
+@app.get("/api/cases/{case_id}/export")
+def export_case_report_endpoint(case_id: str, format: str = "markdown"):
+    """
+    Exports comprehensive evidence & analyst report with actual system data in markdown or json format.
+    """
+    try:
+        if format.lower() == "json":
+            return cases_service.get_case_evidence_json(case_id)
+        return cases_service.export_case_report(case_id)
+    except KeyError as ke:
+        raise HTTPException(status_code=404, detail=str(ke).strip("'"))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Report export failed: {str(e)}")
 
@@ -980,6 +1010,7 @@ def get_case_investigation(case_id: str):
         raise HTTPException(status_code=404, detail=str(ke).strip("'"))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Investigation workspace retrieval failed: {str(e)}")
+
 
 
 

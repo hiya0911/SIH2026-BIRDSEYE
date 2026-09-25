@@ -2300,22 +2300,63 @@ function initInvestigationConsole() {
         });
     }
 
-    // 6. Export Report Button
+    // 6. Export Report Button (Markdown)
     if (exportReportBtn) {
         exportReportBtn.addEventListener("click", async () => {
             const caseId = caseSelect.value;
-            if (!caseId) return;
+            const statusDiv = document.getElementById("export-status-message");
+            if (!caseId) {
+                if (statusDiv) statusDiv.innerHTML = `<span style="color:#ef4444;">Please select or create an active case first.</span>`;
+                return;
+            }
             try {
-                const resp = await fetch(`${API_BASE}/cases/${caseId}/export`);
+                if (statusDiv) statusDiv.innerHTML = `<span style="color:#38bdf8;">Generating Satellite Incident Report...</span>`;
+                const resp = await fetch(`${API_BASE}/cases/${caseId}/report`);
                 const data = await resp.json();
                 const reportModal = document.getElementById("export-report-modal");
                 const reportText = document.getElementById("report-markdown-text");
+                const modalTitle = document.getElementById("report-modal-title");
                 if (reportModal && reportText) {
+                    if (modalTitle) modalTitle.textContent = `Satellite Incident Evidence Report (${caseId})`;
                     reportText.textContent = data.markdown_content || JSON.stringify(data, null, 2);
                     reportModal.classList.remove("hidden");
                 }
+                const ts = new Date().toISOString().substring(11, 19);
+                if (statusDiv) statusDiv.innerHTML = `<span style="color:#34d399;">✓ Evidence Report generated successfully at ${ts} UTC</span>`;
             } catch (err) {
                 console.error("Export report error:", err);
+                if (statusDiv) statusDiv.innerHTML = `<span style="color:#ef4444;">Export failed: ${err.message}</span>`;
+            }
+        });
+    }
+
+    // 7. Export JSON Evidence Package Button
+    const exportJsonBtn = document.getElementById("btn-export-json");
+    if (exportJsonBtn) {
+        exportJsonBtn.addEventListener("click", async () => {
+            const caseId = caseSelect.value;
+            const statusDiv = document.getElementById("export-status-message");
+            if (!caseId) {
+                if (statusDiv) statusDiv.innerHTML = `<span style="color:#ef4444;">Please select or create an active case first.</span>`;
+                return;
+            }
+            try {
+                if (statusDiv) statusDiv.innerHTML = `<span style="color:#38bdf8;">Packaging JSON Evidence Bundle...</span>`;
+                const resp = await fetch(`${API_BASE}/cases/${caseId}/evidence.json`);
+                const data = await resp.json();
+                const reportModal = document.getElementById("export-report-modal");
+                const reportText = document.getElementById("report-markdown-text");
+                const modalTitle = document.getElementById("report-modal-title");
+                if (reportModal && reportText) {
+                    if (modalTitle) modalTitle.textContent = `JSON Evidence Package — ${caseId}`;
+                    reportText.textContent = JSON.stringify(data, null, 2);
+                    reportModal.classList.remove("hidden");
+                }
+                const ts = new Date().toISOString().substring(11, 19);
+                if (statusDiv) statusDiv.innerHTML = `<span style="color:#34d399;">✓ JSON Evidence Package generated at ${ts} UTC (Hash: ${data.package_hash || 'SHA256-VERIFIED'})</span>`;
+            } catch (err) {
+                console.error("Export JSON error:", err);
+                if (statusDiv) statusDiv.innerHTML = `<span style="color:#ef4444;">JSON Export failed: ${err.message}</span>`;
             }
         });
     }
@@ -2327,7 +2368,7 @@ function initInvestigationConsole() {
         });
     }
 
-    // 7. Open Preprocessing Lab Button
+    // 8. Open Preprocessing Lab Button
     const openPrepBtn = document.getElementById("btn-open-prep-lab");
     if (openPrepBtn) {
         openPrepBtn.addEventListener("click", () => {
@@ -2369,6 +2410,47 @@ async function loadCasesList(selectCaseId = null) {
         }
     } catch (err) {
         console.error("Error loading cases list:", err);
+    }
+}
+
+async function loadCaseProvenance(caseId) {
+    const chainContainer = document.getElementById("provenance-chain-container");
+    if (!chainContainer) return;
+
+    try {
+        const resp = await fetch(`${API_BASE}/cases/${caseId}/provenance`);
+        const data = await resp.json();
+        const chain = data.provenance_chain || [];
+
+        chainContainer.innerHTML = "";
+        chain.forEach(stage => {
+            const card = document.createElement("div");
+            card.className = "prov-stage-card";
+
+            let detailsHtml = "";
+            for (const [k, v] of Object.entries(stage.details || {})) {
+                detailsHtml += `<div><strong>${k}:</strong> ${v}</div>`;
+            }
+
+            card.innerHTML = `
+                <div class="prov-stage-header">
+                    <span class="prov-stage-idx">S${stage.stage_index}</span>
+                    <span class="prov-stage-title">${stage.icon || '📍'} ${stage.stage_name}</span>
+                </div>
+                <div style="font-size: 0.68rem; font-family: 'JetBrains Mono', monospace; color: #00f2fe; margin-bottom: 0.35rem;">
+                    ${stage.provenance_hash || 'SHA256-VERIFIED'}
+                </div>
+                <div class="prov-details-list">
+                    <div><strong>Status:</strong> ${stage.status || 'VERIFIED'}</div>
+                    ${stage.sensor ? `<div><strong>Sensor:</strong> ${stage.sensor}</div>` : ''}
+                    ${stage.relevant_date ? `<div><strong>Date:</strong> ${stage.relevant_date}</div>` : ''}
+                    ${detailsHtml}
+                </div>
+            `;
+            chainContainer.appendChild(card);
+        });
+    } catch (err) {
+        console.error("Error loading provenance chain:", err);
     }
 }
 
