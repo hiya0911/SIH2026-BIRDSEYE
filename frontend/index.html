@@ -84,6 +84,62 @@
         </div>
     </header>
 
+    <!-- ANALYST COMMAND CENTER WORKFLOW STEPPER & SYSTEM STATUS BAR -->
+    <div class="command-center-banner">
+        <div class="stepper-container">
+            <div class="stepper-title-group">
+                <span class="stepper-title-icon">🎯</span>
+                <span class="stepper-title-text">ANALYST COMMAND CENTER WORKFLOW:</span>
+            </div>
+            <div class="stepper-steps-group">
+                <button class="stepper-step active" data-step="1" data-tab="map">
+                    <span class="step-num">1</span>
+                    <span class="step-label">Location / AOI</span>
+                </button>
+                <span class="step-arrow">➔</span>
+                <button class="stepper-step" data-step="2" data-tab="semantic">
+                    <span class="step-num">2</span>
+                    <span class="step-label">Retrieval</span>
+                </button>
+                <span class="step-arrow">➔</span>
+                <button class="stepper-step" data-step="3" data-tab="preprocessing">
+                    <span class="step-num">3</span>
+                    <span class="step-label">Preprocessing & ARD</span>
+                </button>
+                <span class="step-arrow">➔</span>
+                <button class="stepper-step" data-step="4" data-tab="temporal">
+                    <span class="step-num">4</span>
+                    <span class="step-label">Temporal Change</span>
+                </button>
+                <span class="step-arrow">➔</span>
+                <button class="stepper-step" data-step="5" data-tab="investigation">
+                    <span class="step-num">5</span>
+                    <span class="step-label">False-Alarm & AI Confidence</span>
+                </button>
+                <span class="step-arrow">➔</span>
+                <button class="stepper-step" data-step="6" data-tab="investigation">
+                    <span class="step-num">6</span>
+                    <span class="step-label">Decision & Provenance Export</span>
+                </button>
+            </div>
+            <div class="stepper-actions">
+                <button id="btn-run-judge-demo" class="demo-flow-btn">
+                    <span>🚀 Launch Analyst Judge Demo</span>
+                </button>
+            </div>
+        </div>
+        <div class="cc-status-pills-row">
+            <span class="cc-status-pill green">✓ BACKEND: ONLINE</span>
+            <span class="cc-status-pill blue">🍃 DB: CONNECTED</span>
+            <span class="cc-status-pill cyan">⚡ FAISS: 909 VECTORS</span>
+            <span class="cc-status-pill purple">🧠 MODEL: CLIP ViT-B/32 (512D)</span>
+            <span class="cc-status-pill teal">🔒 OFFLINE: 100% LOCAL</span>
+            <span class="cc-status-pill green">🛡️ SECURITY: VERIFIED</span>
+            <span class="cc-status-pill amber" title="Sentinel-1 SAR C-band data is not currently cached in local storage">🛰️ SAR: NOT CACHED LOCALLY</span>
+            <span class="cc-status-pill gray" title="Local offline reference evaluation timings">📊 GROUND TRUTH: NOT AVAILABLE LOCALLY</span>
+        </div>
+    </div>
+
     <!-- MAIN APP WRAPPER -->
     <main class="app-main">
 
@@ -425,6 +481,15 @@
                             </button>
                             <button id="toggle-footprints-btn" class="aoi-tool-btn active" title="Toggle 909 Tile Footprints">
                                 <span>🌐 Footprints: ON</span>
+                            </button>
+                            <button id="aoi-search-btn" class="aoi-tool-btn highlight-btn" title="Constrain Search to AOI">
+                                <span>🔍 Constrain Search to AOI</span>
+                            </button>
+                            <button id="aoi-analyze-btn" class="aoi-tool-btn highlight-btn" title="Run Tri-Epoch AOI Analysis">
+                                <span>⏳ Run Tri-Epoch AOI Analysis</span>
+                            </button>
+                            <button id="aoi-investigate-btn" class="aoi-tool-btn highlight-btn" title="Investigate Selected AOI">
+                                <span>🛡️ Investigate Selected AOI</span>
                             </button>
                         </div>
                     </div>

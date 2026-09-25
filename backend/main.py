@@ -1485,7 +1485,7 @@ async def ingest_uploaded_tile(
     validates format/CRS/raster integrity, performs duplicate detection, extracts 512-D CLIP embedding,
     updates FAISS vector index incrementally, updates MongoDB catalog, and logs 15-field provenance.
     """
-    allowed_exts = {".tif", ".tiff", ".png", ".jpg"}
+    allowed_exts = {".tif", ".tiff", ".safe"}
     filename = file.filename or "uploaded_tile.tif"
     ext = os.path.splitext(filename)[1].lower()
 

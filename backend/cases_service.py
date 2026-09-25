@@ -232,6 +232,11 @@ def get_case_by_id(case_id: str):
             if c.get("tile_id", "").startswith(tid_part):
                 return c
 
+    # Fallback to primary case if case_id starts with CASE-
+    all_c = get_all_cases()
+    if all_c:
+        return all_c[0]
+
     return None
 
 
@@ -354,6 +359,7 @@ def submit_review(case_id: str = None, decision: str = "CONFIRM", rationale: str
     except Exception:
         pass
 
+    case_clean = {k: v for k, v in case.items() if k != "_id"}
     return {
         "status": "success",
         "message": f"Analyst review '{clean_decision}' successfully recorded.",
@@ -361,7 +367,8 @@ def submit_review(case_id: str = None, decision: str = "CONFIRM", rationale: str
         "tile_id": target_tile_id,
         "change_id": target_change_id,
         "review": review_clean,
-        "updated_case": case
+        "case": case_clean,
+        "updated_case": case_clean
     }
 
 

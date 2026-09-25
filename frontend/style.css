@@ -3232,6 +3232,192 @@ body {
     font-family: 'JetBrains Mono', monospace;
 }
 
+/* =========================================================
+   PHASE 4H: ANALYST COMMAND CENTER STEPPER & STATUS STYLES
+   ========================================================= */
+
+.command-center-banner {
+    background: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border-bottom: 1px solid var(--border-luminous);
+    padding: 0.65rem 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.stepper-container {
+    max-width: 1600px;
+    margin: 0 auto;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.stepper-title-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    color: var(--primary);
+    white-space: nowrap;
+}
+
+.stepper-steps-group {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex: 1;
+    overflow-x: auto;
+    padding-bottom: 2px;
+}
+
+.stepper-step {
+    background: rgba(30, 41, 59, 0.7);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    padding: 0.35rem 0.65rem;
+    color: #94a3b8;
+    font-size: 0.74rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    white-space: nowrap;
+    transition: var(--transition-smooth);
+}
+
+.stepper-step:hover {
+    border-color: var(--border-luminous);
+    color: #f8fafc;
+    background: rgba(30, 41, 59, 0.9);
+}
+
+.stepper-step.active {
+    background: rgba(0, 242, 254, 0.15);
+    border-color: #00f2fe;
+    color: #00f2fe;
+    box-shadow: 0 0 12px rgba(0, 242, 254, 0.25);
+}
+
+.step-num {
+    background: rgba(15, 23, 42, 0.8);
+    color: inherit;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.68rem;
+    font-weight: 700;
+}
+
+.step-arrow {
+    color: #64748b;
+    font-size: 0.7rem;
+}
+
+.demo-flow-btn {
+    background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+    border: 1px solid rgba(56, 189, 248, 0.5);
+    color: #ffffff;
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 0.4rem 0.9rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    box-shadow: 0 0 15px rgba(2, 132, 199, 0.3);
+    white-space: nowrap;
+}
+
+.demo-flow-btn:hover {
+    background: linear-gradient(135deg, #0369a1 0%, #0284c7 100%);
+    box-shadow: 0 0 20px rgba(0, 242, 254, 0.5);
+}
+
+.cc-status-pills-row {
+    max-width: 1600px;
+    margin: 0 auto;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    overflow-x: auto;
+    padding-top: 0.2rem;
+}
+
+.cc-status-pill {
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    border: 1px solid transparent;
+}
+
+.cc-status-pill.green {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+    border-color: rgba(16, 185, 129, 0.35);
+}
+
+.cc-status-pill.blue {
+    background: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+    border-color: rgba(59, 130, 246, 0.35);
+}
+
+.cc-status-pill.cyan {
+    background: rgba(0, 242, 254, 0.15);
+    color: #00f2fe;
+    border-color: rgba(0, 242, 254, 0.35);
+}
+
+.cc-status-pill.purple {
+    background: rgba(139, 92, 246, 0.15);
+    color: #c084fc;
+    border-color: rgba(139, 92, 246, 0.35);
+}
+
+.cc-status-pill.teal {
+    background: rgba(20, 184, 166, 0.15);
+    color: #2dd4bf;
+    border-color: rgba(20, 184, 166, 0.35);
+}
+
+.cc-status-pill.amber {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+    border-color: rgba(245, 158, 11, 0.35);
+}
+
+.cc-status-pill.gray {
+    background: rgba(148, 163, 184, 0.15);
+    color: #cbd5e1;
+    border-color: rgba(148, 163, 184, 0.35);
+}
+
+.aoi-tool-btn.highlight-btn {
+    background: rgba(0, 242, 254, 0.12);
+    border: 1px solid rgba(0, 242, 254, 0.4);
+    color: #00f2fe;
+    font-weight: 700;
+}
+
+.aoi-tool-btn.highlight-btn:hover {
+    background: rgba(0, 242, 254, 0.25);
+    box-shadow: 0 0 10px rgba(0, 242, 254, 0.3);
+}
+
 
 
 

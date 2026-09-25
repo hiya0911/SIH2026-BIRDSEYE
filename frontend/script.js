@@ -39,6 +39,8 @@ const state = {
 
 document.addEventListener("DOMContentLoaded", () => {
     initTabs();
+    initCommandCenterStepper();
+    initMapAOIHandoffs();
     initQueryPresets();
     initTilesCatalog();
     initSemanticSearch();
@@ -84,6 +86,122 @@ function initTabs() {
             }
         });
     });
+}
+
+// =========================================================
+// PHASE 4H: ANALYST COMMAND CENTER WORKFLOW & HANDOFFS
+// =========================================================
+
+function initCommandCenterStepper() {
+    const stepperBtns = document.querySelectorAll(".stepper-step");
+    stepperBtns.forEach(btn => {
+        btn.addEventListener("click", () => {
+            const targetTab = btn.dataset.tab;
+            const tabBtn = document.querySelector(`.tab-btn[data-tab="${targetTab}"]`);
+            if (tabBtn) tabBtn.click();
+
+            stepperBtns.forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+        });
+    });
+
+    const demoBtn = document.getElementById("btn-run-judge-demo");
+    if (demoBtn) {
+        demoBtn.addEventListener("click", runAnalystJudgeDemo);
+    }
+}
+
+function initMapAOIHandoffs() {
+    const searchBtn = document.getElementById("aoi-search-btn");
+    const analyzeBtn = document.getElementById("aoi-analyze-btn");
+    const invBtn = document.getElementById("aoi-investigate-btn");
+
+    if (searchBtn) {
+        searchBtn.addEventListener("click", () => {
+            const semTabBtn = document.querySelector('[data-tab="semantic"]');
+            if (semTabBtn) semTabBtn.click();
+            executeSemanticSearch();
+        });
+    }
+
+    if (analyzeBtn) {
+        analyzeBtn.addEventListener("click", () => {
+            const tempTabBtn = document.querySelector('[data-tab="temporal"]');
+            if (tempTabBtn) tempTabBtn.click();
+            executeTemporalAnalysis();
+        });
+    }
+
+    if (invBtn) {
+        invBtn.addEventListener("click", () => {
+            switchToInvestigationForTile("CASE-2026-001");
+        });
+    }
+}
+
+function switchToInvestigationForTile(tileId) {
+    let targetCaseId = "CASE-2026-001";
+    if (tileId) {
+        if (tileId.includes("e87b4d6c")) targetCaseId = "CASE-2026-e87b4d6c";
+        else if (tileId.includes("siliguri")) targetCaseId = "CASE-2026-002";
+        else if (tileId.includes("haldia")) targetCaseId = "CASE-2026-003";
+        else if (tileId.includes("durgapur")) targetCaseId = "CASE-2026-004";
+        else if (tileId.includes("sundarbans")) targetCaseId = "CASE-2026-005";
+    }
+
+    const invTabBtn = document.querySelector('[data-tab="investigation"]');
+    if (invTabBtn) invTabBtn.click();
+
+    const caseSelect = document.getElementById("case-queue-select");
+    if (caseSelect) {
+        caseSelect.value = targetCaseId;
+    }
+    loadCaseDetails(targetCaseId);
+}
+
+async function runAnalystJudgeDemo() {
+    const demoBtn = document.getElementById("btn-run-judge-demo");
+    if (demoBtn) {
+        demoBtn.disabled = true;
+        demoBtn.innerHTML = `<span>⏳ Running Judge Demo...</span>`;
+    }
+
+    try {
+        // Step 1: Location & Map Selection
+        const mapTabBtn = document.querySelector('[data-tab="map"]');
+        if (mapTabBtn) mapTabBtn.click();
+        
+        const locInput = document.getElementById("map-location-search-input");
+        if (locInput) locInput.value = "Kolkata Urban Core";
+
+        await new Promise(r => setTimeout(r, 800));
+
+        // Step 2: Semantic Search
+        const semTabBtn = document.querySelector('[data-tab="semantic"]');
+        if (semTabBtn) semTabBtn.click();
+
+        const queryInput = document.getElementById("semantic-query-input");
+        if (queryInput) queryInput.value = "urban expansion and construction";
+
+        await executeSemanticSearch();
+        await new Promise(r => setTimeout(r, 1200));
+
+        // Step 3: Preprocessing Lab
+        const prepTabBtn = document.querySelector('[data-tab="preprocessing"]');
+        if (prepTabBtn) prepTabBtn.click();
+        await new Promise(r => setTimeout(r, 1000));
+
+        // Step 4: Evidence & Investigation Workspace
+        switchToInvestigationForTile("T45QXF_20260227");
+
+    } catch (err) {
+        console.error("Judge demo execution error:", err);
+    } finally {
+        if (demoBtn) {
+            demoBtn.disabled = false;
+            demoBtn.innerHTML = `<span>🚀 Launch Analyst Judge Demo</span>`;
+        }
+    }
 }
 
 // =========================================================
@@ -579,15 +697,18 @@ function renderSemanticResults(results) {
                     ${physicsPills}
                     <span class="index-pill">BBox: [${bboxStr}]</span>
                 </div>
-                <div class="tile-card-actions" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-top: 8px;">
-                    <button class="tile-action-btn view-tile-btn" data-id="${item.tile_id}" style="font-size: 0.72rem; padding: 4px 6px;">
+                <div class="tile-card-actions" style="display: grid; grid-template-columns: 1fr 1fr 1fr 1.2fr; gap: 4px; margin-top: 8px;">
+                    <button class="tile-action-btn view-tile-btn" data-id="${item.tile_id}" style="font-size: 0.7rem; padding: 4px 4px;">
                         👁️ View
                     </button>
-                    <button class="tile-action-btn map-tile-btn" data-id="${item.tile_id}" style="font-size: 0.72rem; padding: 4px 6px;">
+                    <button class="tile-action-btn map-tile-btn" data-id="${item.tile_id}" style="font-size: 0.7rem; padding: 4px 4px;">
                         🗺️ Map
                     </button>
-                    <button class="tile-action-btn analyze-tile-btn" data-id="${item.tile_id}" style="font-size: 0.72rem; padding: 4px 6px;">
-                        ⏳ Change ➔
+                    <button class="tile-action-btn analyze-tile-btn" data-id="${item.tile_id}" style="font-size: 0.7rem; padding: 4px 4px;">
+                        ⏳ Change
+                    </button>
+                    <button class="tile-action-btn investigate-tile-btn" data-id="${item.tile_id}" style="font-size: 0.7rem; padding: 4px 4px; background: rgba(0, 242, 254, 0.15); color: #00f2fe; border: 1px solid rgba(0, 242, 254, 0.4); font-weight: 700;">
+                        🛡️ Investigate ➔
                     </button>
                 </div>
             </div>
@@ -597,6 +718,7 @@ function renderSemanticResults(results) {
         const viewBtn = card.querySelector(".view-tile-btn");
         const mapBtn = card.querySelector(".map-tile-btn");
         const analyzeBtn = card.querySelector(".analyze-tile-btn");
+        const investigateBtn = card.querySelector(".investigate-tile-btn");
 
         if (viewBtn) {
             viewBtn.addEventListener("click", () => {
@@ -618,6 +740,12 @@ function renderSemanticResults(results) {
         if (analyzeBtn) {
             analyzeBtn.addEventListener("click", () => {
                 switchToTemporalAnalysis(item.tile_id);
+            });
+        }
+
+        if (investigateBtn) {
+            investigateBtn.addEventListener("click", () => {
+                switchToInvestigationForTile(item.tile_id);
             });
         }
 
