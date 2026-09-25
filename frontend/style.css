@@ -3247,7 +3247,8 @@ body {
     gap: 0.5rem;
 }
 
-.stepper-container {
+.stepper-container,
+.command-stepper {
     max-width: 1600px;
     margin: 0 auto;
     width: 100%;
@@ -3255,7 +3256,9 @@ body {
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
 }
 
 .stepper-title-group {
@@ -3267,6 +3270,7 @@ body {
     letter-spacing: 0.05em;
     color: var(--primary);
     white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .stepper-steps-group {
@@ -3276,6 +3280,7 @@ body {
     flex: 1;
     overflow-x: auto;
     padding-bottom: 2px;
+    flex-shrink: 0;
 }
 
 .stepper-step {
