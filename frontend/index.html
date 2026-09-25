@@ -283,15 +283,27 @@
         <section id="map" class="tab-section">
             <div class="section-hero">
                 <div class="badge-pill">GEOSPATIAL AREA OF INTEREST (AOI) ENGINE</div>
-                <h1 class="hero-headline">Interactive Satellite Analyst Map &amp; AOI System</h1>
+                <h1 class="hero-headline">Interactive Satellite Analyst Map &amp; AOI Workspace</h1>
                 <p class="hero-description">
-                    Navigate real Sentinel-2 Level-2A footprints across the Kolkata / Sundarbans theater. Draw rectangle or polygon AOIs, inspect intersecting catalog tiles, and trigger real multi-temporal change detection directly from geographic boundaries.
+                    Navigate real Sentinel-2 Level-2A optical footprints across the Kolkata / Sundarbans theater. Search locations, draw point, rectangle, or polygon AOIs, calculate real surface area, inspect intersecting catalog scenes, and trigger downstream change analysis.
                 </p>
             </div>
 
             <!-- MAP CONTROL BAR -->
             <div class="glass-card map-control-bar">
-                <div class="map-controls-row">
+                <div class="map-controls-row" style="margin-bottom: 0.75rem;">
+                    <!-- Geographic Location Search -->
+                    <div class="map-control-group flex-1">
+                        <label class="form-label" for="map-location-search-input">
+                            <span>Geographic Location Search:</span>
+                            <span class="label-hint">Offline place catalog or Lat, Lon (e.g. Kolkata, Siliguri, 23.8103, 90.4125)</span>
+                        </label>
+                        <div class="coord-inputs-pair">
+                            <input type="text" id="map-location-search-input" class="glass-input" placeholder="Search place name or coordinates (e.g. Kolkata, Siliguri, 23.8103, 90.4125)...">
+                            <button id="map-location-search-btn" class="glow-button primary-button small-btn">🔍 Search</button>
+                        </div>
+                    </div>
+
                     <!-- Location Preset Quick Jump -->
                     <div class="map-control-group flex-1">
                         <label class="form-label" for="map-preset-select">
@@ -299,17 +311,20 @@
                         </label>
                         <div class="select-wrapper">
                             <select id="map-preset-select" class="glass-select">
-                                <option value="kolkata_core" selected>📍 Kolkata Urban Core &amp; CBD (22.57°N, 88.36°E)</option>
-                                <option value="hooghly_river">🌊 Hooghly River Channel &amp; Howrah Port Corridor</option>
+                                <option value="kolkata_core" selected>📍 Kolkata Urban Core &amp; CBD (22.5726°N, 88.3639°E)</option>
+                                <option value="siliguri">🏔️ Siliguri District (26.7271°N, 88.4315°E)</option>
+                                <option value="hooghly_river">🌊 Hooghly River Channel &amp; Howrah Port</option>
                                 <option value="salt_lake">🏙️ Salt Lake Sector V &amp; New Town Tech Corridor</option>
-                                <option value="wetlands">🌿 East Kolkata Wetlands (Ramsar Biodiversity Zone)</option>
-                                <option value="baruipur">🚜 Baruipur Southern Peri-Urban Expansion Belt</option>
-                                <option value="barrackpore">🏗️ Barrackpore Northern Industrial Corridor</option>
+                                <option value="wetlands">🌿 East Kolkata Wetlands (Ramsar Zone)</option>
+                                <option value="baruipur">🚜 Baruipur Southern Expansion Belt</option>
+                                <option value="barrackpore">🏗️ Barrackpore Industrial Corridor</option>
                             </select>
                             <span class="select-chevron">▼</span>
                         </div>
                     </div>
+                </div>
 
+                <div class="map-controls-row">
                     <!-- Manual Lat/Lon Coordinates Input -->
                     <div class="map-control-group">
                         <label class="form-label" for="coord-lat-input">
@@ -322,17 +337,20 @@
                         </div>
                     </div>
 
-                    <!-- AOI Drawing Action Tools -->
-                    <div class="map-control-group aoi-tools-group">
+                    <!-- AOI Selection Tools -->
+                    <div class="map-control-group aoi-tools-group flex-1">
                         <label class="form-label">
-                            <span>AOI Drawing Tools:</span>
+                            <span>AOI Selection Modes &amp; Layers:</span>
                         </label>
                         <div class="aoi-btn-group">
+                            <button id="draw-point-btn" class="aoi-tool-btn" title="Select Point Location">
+                                <span>📍 Point</span>
+                            </button>
                             <button id="draw-rect-btn" class="aoi-tool-btn" title="Draw Rectangle AOI">
-                                <span>⬚ Draw Rectangle</span>
+                                <span>⬚ Rectangle</span>
                             </button>
                             <button id="draw-poly-btn" class="aoi-tool-btn" title="Draw Polygon AOI">
-                                <span>⬡ Draw Polygon</span>
+                                <span>⬡ Polygon</span>
                             </button>
                             <button id="clear-aoi-btn" class="aoi-tool-btn danger" title="Clear Active AOI">
                                 <span>✕ Clear AOI</span>
@@ -363,8 +381,8 @@
                         <span id="hud-tiles-count" class="hud-val highlight">909 Available</span>
                     </div>
                     <div class="hud-item">
-                        <span class="hud-label">OFFLINE STATUS:</span>
-                        <span class="status-pill verified">LOCAL ASSETS READY</span>
+                        <span class="hud-label">SAR STATUS:</span>
+                        <span class="status-pill partial">SENTINEL-1 SAR — NOT CACHED LOCALLY</span>
                     </div>
                 </div>
             </div>
@@ -375,7 +393,7 @@
                 <div class="glass-card map-viewport-card">
                     <div id="analyst-map" class="analyst-map-viewport"></div>
                     <div class="map-hint-banner">
-                        <span>💡 <strong>Tip:</strong> Click "Draw Rectangle" or "Draw Polygon" to demarcate an AOI on the map, or click any tile boundary to inspect.</span>
+                        <span>💡 <strong>Tip:</strong> Click map to select location point, or choose "Rectangle" / "Polygon" to define boundary. Click any tile footprint to inspect.</span>
                     </div>
                 </div>
 
@@ -384,7 +402,7 @@
                     <div class="card-header-bar">
                         <div class="card-title-group">
                             <span class="card-icon">🎯</span>
-                            <h2 class="card-title">AOI Intelligence</h2>
+                            <h2 class="card-title">SELECTED AOI INFORMATION PANEL</h2>
                         </div>
                         <span id="aoi-matches-badge" class="badge-tag">No AOI Selected</span>
                     </div>
@@ -393,24 +411,24 @@
                     <div class="aoi-summary-box" id="aoi-summary-box">
                         <div class="aoi-summary-empty">
                             <div class="empty-icon small">🗺️</div>
-                            <p>Demarcate an Area of Interest on the map to calculate spatial intersections across the 909 Sentinel-2 tiles.</p>
+                            <p>Demarcate an Area of Interest (Point, Rectangle, Polygon) or search a location to inspect spatial intersections.</p>
                         </div>
                     </div>
 
                     <!-- AOI Execute Analysis Action -->
                     <div class="aoi-action-box" id="aoi-action-box" style="display: none;">
                         <button id="analyze-aoi-btn" class="glow-button primary-button" style="width: 100%;">
-                            <span class="btn-text">⚡ Analyze Selected AOI</span>
+                            <span class="btn-text">⚡ Proceed to AOI Change Analysis</span>
                             <span class="btn-icon">➔</span>
                         </button>
                     </div>
 
                     <!-- Intersecting Tiles List -->
                     <div class="aoi-tiles-header">
-                        <span class="sub-heading">Intersecting Sentinel-2 Tiles:</span>
+                        <span class="sub-heading">Matching Sentinel-2 Scenes / Tiles:</span>
                     </div>
                     <div id="aoi-intersecting-tiles-list" class="aoi-tiles-scroll-list">
-                        <div class="empty-hint">Intersecting tiles will appear here</div>
+                        <div class="empty-hint">Intersecting tile footprints will appear here</div>
                     </div>
                 </div>
             </div>

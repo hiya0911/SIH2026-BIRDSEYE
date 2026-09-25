@@ -20,6 +20,8 @@ class SemanticSearchRequest(BaseModel):
     query: str
     top_k: int = 5
     sensor_filter: Optional[str] = "ALL"
+    aoi_bbox: Optional[list] = None
+    aoi_polygon: Optional[list] = None
 
 class ImageSearchRequest(BaseModel):
     tile_id: str

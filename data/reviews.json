@@ -202,5 +202,55 @@
     "rationale": "Phase 4B verification of analyst review persistence.",
     "analyst_id": "SAR Environment Auditor",
     "timestamp": "2026-09-25T01:01:58.842438+00:00"
+  },
+  {
+    "review_id": "REV-1fa1f102",
+    "case_id": "CASE-2026-e87b4d6c",
+    "tile_id": "e87b4d6c-9cdb-4293-8a8b-7ad7a5af6e43",
+    "change_id": "e87b4d6c-9cdb-4293-8a8b-7ad7a5af6e43",
+    "decision": "CONFIRM",
+    "rationale": "Verified Phase 4C AOI test case",
+    "analyst_id": "analyst_p4c",
+    "timestamp": "2026-09-25T01:09:13.830172+00:00"
+  },
+  {
+    "review_id": "REV-737bf9f6",
+    "case_id": "CASE-2026-e87b4d6c",
+    "tile_id": "e87b4d6c-9cdb-4293-8a8b-7ad7a5af6e43",
+    "change_id": "e87b4d6c-9cdb-4293-8a8b-7ad7a5af6e43",
+    "decision": "CONFIRM",
+    "rationale": "Verified Phase 4C AOI test case",
+    "analyst_id": "analyst_p4c",
+    "timestamp": "2026-09-25T01:09:33.980162+00:00"
+  },
+  {
+    "review_id": "REV-62c90146",
+    "case_id": "CASE-2026-e87b4d6c",
+    "tile_id": "e87b4d6c-9cdb-4293-8a8b-7ad7a5af6e43",
+    "change_id": "e87b4d6c-9cdb-4293-8a8b-7ad7a5af6e43",
+    "decision": "CONFIRM",
+    "rationale": "Verified Phase 4C AOI test case",
+    "analyst_id": "analyst_p4c",
+    "timestamp": "2026-09-25T01:09:57.316761+00:00"
+  },
+  {
+    "review_id": "REV-a0c7ee05",
+    "case_id": "CASE-2026-e87b4d6c",
+    "tile_id": "e87b4d6c-9cdb-4293-8a8b-7ad7a5af6e43",
+    "change_id": "e87b4d6c-9cdb-4293-8a8b-7ad7a5af6e43",
+    "decision": "CONFIRM",
+    "rationale": "Verified Phase 4C AOI test case",
+    "analyst_id": "analyst_p4c",
+    "timestamp": "2026-09-25T01:10:21.463867+00:00"
+  },
+  {
+    "review_id": "REV-a3f760a4",
+    "case_id": "CASE-2026-e87b4d6c",
+    "tile_id": "e87b4d6c-9cdb-4293-8a8b-7ad7a5af6e43",
+    "change_id": "e87b4d6c-9cdb-4293-8a8b-7ad7a5af6e43",
+    "decision": "CONFIRM",
+    "rationale": "Verified Phase 4C AOI test case",
+    "analyst_id": "analyst_p4c",
+    "timestamp": "2026-09-25T01:10:40.710266+00:00"
   }
 ]

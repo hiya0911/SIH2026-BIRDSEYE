@@ -163,7 +163,8 @@ class AdvancedSemanticEngine:
         top_k: int = 12,
         spectral_gate: bool = True,
         force_action_mode: bool = False,
-        target_year: int = None
+        target_year: int = None,
+        allowed_tile_ids: set = None
     ):
         """
         Executes optimized multi-temporal semantic retrieval:
@@ -171,6 +172,7 @@ class AdvancedSemanticEngine:
         2. Classifies query intent.
         3. Fuses multi-spectral physical indicators (NDVI, NDWI, Brightness).
         4. Calibrates raw scores into standardized 0-100% Match Confidence.
+        5. Optionally filters by allowed_tile_ids when AOI spatial restriction is active.
         """
         from services import get_embedder, vector_index
         
@@ -183,10 +185,14 @@ class AdvancedSemanticEngine:
         query_vec = embedder.extract_from_text(query, ensemble=True)
         
         # Retrieve extra candidates from FAISS for physical re-ranking
-        candidates = vector_index.search(query_vec, top_k=min(top_k * 4, 40))
+        search_k = min(top_k * 10 if allowed_tile_ids else top_k * 4, 100)
+        candidates = vector_index.search(query_vec, top_k=search_k)
         
         enriched = []
         for c in candidates:
+            if allowed_tile_ids is not None and c["tile_id"] not in allowed_tile_ids:
+                continue
+
             tile_meta = tiles_collection.find_one({"tile_id": c["tile_id"]}, {"_id": 0})
             if not tile_meta:
                 continue

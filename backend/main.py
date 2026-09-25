@@ -90,6 +90,111 @@ def health():
 
 
 # =========================================================
+# GEOSPATIAL VALIDATION & LOCAL LOCATION CATALOG
+# =========================================================
+
+LOCAL_PLACES_CATALOG = {
+    "kolkata": {"name": "Kolkata Urban Core", "lat": 22.5726, "lon": 88.3639},
+    "siliguri": {"name": "Siliguri District", "lat": 26.7271, "lon": 88.4315},
+    "haldia": {"name": "Haldia Port Complex", "lat": 22.0667, "lon": 88.0667},
+    "durgapur": {"name": "Durgapur Industrial Belt", "lat": 23.5204, "lon": 87.3119},
+    "asansol": {"name": "Asansol Industrial Region", "lat": 23.6889, "lon": 86.9661},
+    "howrah": {"name": "Howrah Urban District", "lat": 22.5958, "lon": 88.2636},
+    "new town": {"name": "New Town / Rajarhat Tech Corridor", "lat": 22.5850, "lon": 88.4600},
+    "rajarhat": {"name": "Rajarhat Tech Corridor", "lat": 22.5850, "lon": 88.4600},
+    "sundarbans": {"name": "Sundarbans Biosphere Reserve", "lat": 21.9497, "lon": 88.9007},
+    "darjeeling": {"name": "Darjeeling District", "lat": 27.0410, "lon": 88.2663},
+    "kharagpur": {"name": "Kharagpur Industrial Complex", "lat": 22.3460, "lon": 87.2320},
+    "dhaka": {"name": "Dhaka Metropolis", "lat": 23.8103, "lon": 90.4125},
+    "barrackpore": {"name": "Barrackpore Industrial Corridor", "lat": 22.7600, "lon": 88.3700},
+    "baruipur": {"name": "Baruipur Peri-Urban Belt", "lat": 22.3600, "lon": 88.4400},
+    "salt lake": {"name": "Salt Lake Sector V", "lat": 22.5800, "lon": 88.4300},
+}
+
+def validate_lat_lon(lat: float, lon: float):
+    if not isinstance(lat, (int, float)) or not isinstance(lon, (int, float)):
+        raise HTTPException(status_code=400, detail="Latitude and Longitude must be valid numbers.")
+    if lat < -90.0 or lat > 90.0:
+        raise HTTPException(status_code=400, detail="Invalid latitude. Must be between -90.0 and 90.0 degrees.")
+    if lon < -180.0 or lon > 180.0:
+        raise HTTPException(status_code=400, detail="Invalid longitude. Must be between -180.0 and 180.0 degrees.")
+
+def validate_bbox(bbox: list):
+    if not isinstance(bbox, (list, tuple)) or len(bbox) != 4:
+        raise HTTPException(status_code=400, detail="Invalid bbox format. Must be [min_lon, min_lat, max_lon, max_lat].")
+    min_lon, min_lat, max_lon, max_lat = bbox
+    validate_lat_lon(min_lat, min_lon)
+    validate_lat_lon(max_lat, max_lon)
+    if min_lon >= max_lon:
+        raise HTTPException(status_code=400, detail="Invalid bbox: min_lon must be strictly less than max_lon.")
+    if min_lat >= max_lat:
+        raise HTTPException(status_code=400, detail="Invalid bbox: min_lat must be strictly less than max_lat.")
+
+def validate_polygon(polygon: list):
+    if not isinstance(polygon, (list, tuple)) or len(polygon) < 3:
+        raise HTTPException(status_code=400, detail="Invalid polygon format. Must be list of at least 3 [lon, lat] coordinate pairs.")
+    for idx, pt in enumerate(polygon):
+        if not isinstance(pt, (list, tuple)) or len(pt) != 2:
+            raise HTTPException(status_code=400, detail=f"Invalid polygon point at index {idx}. Must be [lon, lat].")
+        lon, lat = pt
+        validate_lat_lon(lat, lon)
+
+@app.get("/api/location/search")
+def search_location(q: str = Query(...)):
+    """
+    Offline/local geocoder & coordinate lookup service for analyst map console.
+    Accepts place names (e.g. Kolkata, Siliguri) or lat, lon pairs (e.g. 23.8103, 90.4125).
+    """
+    query_str = q.strip()
+    if not query_str:
+        raise HTTPException(status_code=400, detail="Search query cannot be empty.")
+    
+    # 1. Parse coordinate pair format (e.g. "23.8103, 90.4125")
+    if "," in query_str:
+        parts = [p.strip() for p in query_str.split(",")]
+        if len(parts) == 2:
+            try:
+                lat = float(parts[0])
+                lon = float(parts[1])
+                validate_lat_lon(lat, lon)
+                return {
+                    "status": "success",
+                    "location_type": "coordinates",
+                    "query": query_str,
+                    "name": f"{lat:.4f}° N, {lon:.4f}° E",
+                    "lat": lat,
+                    "lon": lon,
+                    "wgs_bbox": [round(lon - 0.02, 6), round(lat - 0.02, 6), round(lon + 0.02, 6), round(lat + 0.02, 6)]
+                }
+            except ValueError:
+                pass
+            except HTTPException:
+                raise
+    
+    # 2. Match against offline landmark catalog
+    q_lower = query_str.lower()
+    for key, place in LOCAL_PLACES_CATALOG.items():
+        if key in q_lower or q_lower in key:
+            lat, lon = place["lat"], place["lon"]
+            return {
+                "status": "success",
+                "location_type": "landmark",
+                "query": query_str,
+                "name": place["name"],
+                "lat": lat,
+                "lon": lon,
+                "wgs_bbox": [round(lon - 0.025, 6), round(lat - 0.025, 6), round(lon + 0.025, 6), round(lat + 0.025, 6)]
+            }
+            
+    # 3. Not found fallback
+    return {
+        "status": "not_found",
+        "message": "LOCATION NOT FOUND (Use Latitude, Longitude coordinates)",
+        "query": query_str
+    }
+
+
+# =========================================================
 # SEARCH
 # =========================================================
 
@@ -167,13 +272,28 @@ def semantic_search(request: SemanticSearchRequest):
                 "message": "Sentinel-1 SAR C-band data is not currently available in local storage. Pipeline remains ready for future Sentinel-1 GRD ingestion."
             }
 
+        # Check if spatial AOI restriction is requested
+        allowed_tile_ids = None
+        if request.aoi_polygon:
+            validate_polygon(request.aoi_polygon)
+            aoi_eng = get_aoi_engine()
+            matched_tiles = aoi_eng.query_by_polygon(request.aoi_polygon, limit=909)
+            allowed_tile_ids = {t["tile_id"] for t in matched_tiles}
+        elif request.aoi_bbox:
+            validate_bbox(request.aoi_bbox)
+            aoi_eng = get_aoi_engine()
+            min_lon, min_lat, max_lon, max_lat = request.aoi_bbox
+            matched_tiles = aoi_eng.query_by_bbox(min_lon, min_lat, max_lon, max_lat, limit=909)
+            allowed_tile_ids = {t["tile_id"] for t in matched_tiles}
+
         from services import get_advanced_engine
         adv_engine = get_advanced_engine()
         results = adv_engine.search(
             query=request.query,
             top_k=request.top_k,
             spectral_gate=request.spectral_gate,
-            force_action_mode=request.action_mode
+            force_action_mode=request.action_mode,
+            allowed_tile_ids=allowed_tile_ids
         )
         
         # 1. Log provenance
@@ -394,14 +514,17 @@ def query_aoi_tiles(request: AOIQueryRequest):
     """
     Identifies intersecting Sentinel-2 tiles from the 909-tile catalog
     based on a WGS84 bounding box or polygon coordinates.
+    Strictly validates coordinate bounds and polygon structure.
     """
     try:
         aoi_eng = get_aoi_engine()
         
-        if request.polygon and len(request.polygon) >= 3:
+        if request.polygon is not None:
+            validate_polygon(request.polygon)
             matches = aoi_eng.query_by_polygon(request.polygon, limit=request.limit or 30)
             query_type = "polygon"
-        elif request.bbox and len(request.bbox) == 4:
+        elif request.bbox is not None:
+            validate_bbox(request.bbox)
             min_lon, min_lat, max_lon, max_lat = request.bbox
             matches = aoi_eng.query_by_bbox(min_lon, min_lat, max_lon, max_lat, limit=request.limit or 30)
             query_type = "bbox"
@@ -426,6 +549,8 @@ def analyze_selected_aoi(request: AOIAnalyzeRequest):
     Executes tri-epoch multi-temporal change detection over the selected AOI or target tile.
     """
     try:
+        if request.bbox is not None:
+            validate_bbox(request.bbox)
         aoi_eng = get_aoi_engine()
         result = aoi_eng.analyze_aoi(bbox_wgs84=request.bbox, tile_id=request.tile_id)
         
@@ -442,6 +567,8 @@ def analyze_selected_aoi(request: AOIAnalyzeRequest):
             "status": "success",
             "aoi_analysis": result
         }
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

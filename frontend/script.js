@@ -198,17 +198,23 @@ async function executeSemanticSearch() {
 
     const startTime = performance.now();
 
-    try {
+        const bodyPayload = {
+            query: query,
+            top_k: topK,
+            spectral_gate: spectralGate,
+            action_mode: actionMode,
+            sensor_filter: sensorFilter
+        };
+        if (state.activeAOIPolygon) {
+            bodyPayload.aoi_polygon = state.activeAOIPolygon;
+        } else if (state.activeAOIBounds) {
+            bodyPayload.aoi_bbox = state.activeAOIBounds;
+        }
+
         const response = await fetch(`${API_BASE}/search/semantic`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                query: query,
-                top_k: topK,
-                spectral_gate: spectralGate,
-                action_mode: actionMode,
-                sensor_filter: sensorFilter
-            })
+            body: JSON.stringify(bodyPayload)
         });
 
         if (!response.ok) {
@@ -1503,13 +1509,45 @@ function renderImageSearchResults(results, previewImage, filename) {
 // PHASE 1: INTERACTIVE SATELLITE ANALYST MAP & AOI SYSTEM
 // =========================================================
 
+// =========================================================
+// PHASE 4C: INTERACTIVE SATELLITE ANALYST MAP & AOI WORKSPACE
+// =========================================================
+
+function calculateBBoxAreaKm2(minLon, minLat, maxLon, maxLat) {
+    const avgLatRad = ((minLat + maxLat) / 2.0) * (Math.PI / 180.0);
+    const widthKm = Math.abs(maxLon - minLon) * 111.32 * Math.cos(avgLatRad);
+    const heightKm = Math.abs(maxLat - minLat) * 111.32;
+    return widthKm * heightKm;
+}
+
+function calculatePolygonAreaKm2(latLngs) {
+    if (!latLngs || latLngs.length < 3) return 0.0;
+    let sumLat = 0, sumLng = 0;
+    latLngs.forEach(p => { sumLat += p.lat; sumLng += p.lng; });
+    const centerLatRad = (sumLat / latLngs.length) * (Math.PI / 180.0);
+
+    const projected = latLngs.map(p => ({
+        x: p.lng * 111320.0 * Math.cos(centerLatRad),
+        y: p.lat * 110540.0
+    }));
+
+    let areaSqM = 0;
+    const n = projected.length;
+    for (let i = 0; i < n; i++) {
+        const j = (i + 1) % n;
+        areaSqM += projected[i].x * projected[j].y;
+        areaSqM -= projected[j].x * projected[i].y;
+    }
+    areaSqM = Math.abs(areaSqM) / 2.0;
+    return areaSqM / 1000000.0;
+}
+
 function initAnalystMap() {
     state.mapLoaded = true;
 
     const mapElement = document.getElementById("analyst-map");
     if (!mapElement) return;
 
-    // Check if Leaflet library is available
     if (typeof L === "undefined") {
         console.error("Leaflet library not loaded.");
         mapElement.innerHTML = `
@@ -1522,7 +1560,6 @@ function initAnalystMap() {
         return;
     }
 
-    // Default center: Kolkata Urban Core (22.5726° N, 88.3639° E)
     const defaultCenter = [22.5726, 88.3639];
     state.map = L.map("analyst-map", {
         center: defaultCenter,
@@ -1533,7 +1570,6 @@ function initAnalystMap() {
         attributionControl: true
     });
 
-    // Dark Basemap layer (with graceful offline fallback)
     const darkTileLayer = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
         attribution: '&copy; <a href="https://carto.com/">CARTO</a> &bull; Sentinel-2 Copernicus',
         subdomains: "abcd",
@@ -1541,13 +1577,11 @@ function initAnalystMap() {
     });
 
     darkTileLayer.on("tileerror", function() {
-        // If offline and tiles fail, map remains dark space canvas with footprints
         mapElement.style.backgroundColor = "#060913";
     });
 
     darkTileLayer.addTo(state.map);
 
-    // Telemetry HUD updates on mousemove & zoom
     const hudCoords = document.getElementById("hud-coords");
     const hudUtm = document.getElementById("hud-utm");
     const hudZoom = document.getElementById("hud-zoom");
@@ -1557,7 +1591,6 @@ function initAnalystMap() {
         const lon = e.latlng.lng;
         hudCoords.textContent = `${lat.toFixed(4)}° N, ${lon.toFixed(4)}° E`;
         
-        // Approximate UTM 45N conversion for HUD display
         const approxEast = Math.round(639820 + (lon - 88.3639) * 102500);
         const approxNorth = Math.round(2496560 + (lat - 22.5726) * 110500);
         hudUtm.textContent = `${approxEast.toLocaleString()} E, ${approxNorth.toLocaleString()} N`;
@@ -1567,18 +1600,18 @@ function initAnalystMap() {
         hudZoom.textContent = state.map.getZoom().toFixed(1);
     });
 
-    // Load and render catalog tile footprints
     loadTileFootprints();
 
-    // Wire up preset jumps
+    // Preset location jumps
     const presetSelect = document.getElementById("map-preset-select");
     const presets = {
-        kolkata_core: { center: [22.5726, 88.3639], zoom: 13 },
-        hooghly_river: { center: [22.5850, 88.3450], zoom: 13 },
-        salt_lake: { center: [22.5800, 88.4300], zoom: 13 },
-        wetlands: { center: [22.5350, 88.4200], zoom: 12 },
-        baruipur: { center: [22.3600, 88.4400], zoom: 12 },
-        barrackpore: { center: [22.7600, 88.3700], zoom: 12 }
+        kolkata_core: { center: [22.5726, 88.3639], zoom: 13, name: "Kolkata Urban Core" },
+        siliguri: { center: [26.7271, 88.4315], zoom: 12, name: "Siliguri District" },
+        hooghly_river: { center: [22.5850, 88.3450], zoom: 13, name: "Hooghly River Channel" },
+        salt_lake: { center: [22.5800, 88.4300], zoom: 13, name: "Salt Lake Sector V" },
+        wetlands: { center: [22.5350, 88.4200], zoom: 12, name: "East Kolkata Wetlands" },
+        baruipur: { center: [22.3600, 88.4400], zoom: 12, name: "Baruipur Peri-Urban Belt" },
+        barrackpore: { center: [22.7600, 88.3700], zoom: 12, name: "Barrackpore Industrial Corridor" }
     };
 
     presetSelect.addEventListener("change", (e) => {
@@ -1587,8 +1620,57 @@ function initAnalystMap() {
             state.map.flyTo(p.center, p.zoom, { duration: 1.2 });
             document.getElementById("coord-lat-input").value = p.center[0].toFixed(4);
             document.getElementById("coord-lon-input").value = p.center[1].toFixed(4);
+            setPointAOI(p.center[0], p.center[1], p.name);
         }
     });
+
+    // Location Search (Offline Geocoder + Coordinates)
+    const searchInput = document.getElementById("map-location-search-input");
+    const searchBtn = document.getElementById("map-location-search-btn");
+
+    async function performLocationSearch() {
+        const q = searchInput.value.trim();
+        if (!q) return;
+
+        searchBtn.disabled = true;
+        try {
+            const res = await fetch(`${API_BASE}/location/search?q=${encodeURIComponent(q)}`);
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.detail || `HTTP ${res.status}`);
+            }
+            const data = await res.json();
+            if (data.status === "not_found") {
+                alert(`LOCATION NOT FOUND: "${q}".\nPlease enter Latitude, Longitude coordinates (e.g. 23.8103, 90.4125) or a known city.`);
+                return;
+            }
+
+            const lat = data.lat;
+            const lon = data.lon;
+            const name = data.name;
+
+            if (state.map) {
+                state.map.flyTo([lat, lon], 13, { duration: 1.2 });
+            }
+
+            document.getElementById("coord-lat-input").value = lat.toFixed(4);
+            document.getElementById("coord-lon-input").value = lon.toFixed(4);
+
+            setPointAOI(lat, lon, name);
+
+        } catch (err) {
+            alert(`Location search error: ${err.message}`);
+        } finally {
+            searchBtn.disabled = false;
+        }
+    }
+
+    if (searchBtn) searchBtn.addEventListener("click", performLocationSearch);
+    if (searchInput) {
+        searchInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") performLocationSearch();
+        });
+    }
 
     // Manual coordinate jump
     document.getElementById("jump-coord-btn").addEventListener("click", () => {
@@ -1596,6 +1678,7 @@ function initAnalystMap() {
         const lon = parseFloat(document.getElementById("coord-lon-input").value);
         if (!isNaN(lat) && !isNaN(lon) && state.map) {
             state.map.flyTo([lat, lon], 13, { duration: 1.0 });
+            setPointAOI(lat, lon, `Coordinate Target (${lat.toFixed(4)}°N, ${lon.toFixed(4)}°E)`);
         }
     });
 
@@ -1680,12 +1763,12 @@ function showTileMapPopup(props, layer) {
 }
 
 function initAOIDrawingTools() {
+    const drawPointBtn = document.getElementById("draw-point-btn");
     const drawRectBtn = document.getElementById("draw-rect-btn");
     const drawPolyBtn = document.getElementById("draw-poly-btn");
     const clearAoiBtn = document.getElementById("clear-aoi-btn");
     const toggleFootprintsBtn = document.getElementById("toggle-footprints-btn");
 
-    // Toggle Footprints ON/OFF
     toggleFootprintsBtn.addEventListener("click", () => {
         state.footprintsVisible = !state.footprintsVisible;
         if (state.footprintsVisible) {
@@ -1699,10 +1782,21 @@ function initAOIDrawingTools() {
         }
     });
 
-    // Clear active AOI
     clearAoiBtn.addEventListener("click", clearActiveAOI);
 
-    // Rectangle Drawing Mode
+    if (drawPointBtn) {
+        drawPointBtn.addEventListener("click", () => {
+            if (state.drawingMode === "point") {
+                cancelDrawing();
+                return;
+            }
+            cancelDrawing();
+            state.drawingMode = "point";
+            drawPointBtn.classList.add("active");
+            if (state.map) state.map.getContainer().style.cursor = "pointer";
+        });
+    }
+
     drawRectBtn.addEventListener("click", () => {
         if (state.drawingMode === "rect") {
             cancelDrawing();
@@ -1711,10 +1805,9 @@ function initAOIDrawingTools() {
         cancelDrawing();
         state.drawingMode = "rect";
         drawRectBtn.classList.add("active");
-        state.map.getContainer().style.cursor = "crosshair";
+        if (state.map) state.map.getContainer().style.cursor = "crosshair";
     });
 
-    // Polygon Drawing Mode
     drawPolyBtn.addEventListener("click", () => {
         if (state.drawingMode === "poly") {
             cancelDrawing();
@@ -1724,19 +1817,19 @@ function initAOIDrawingTools() {
         state.drawingMode = "poly";
         state.drawPoints = [];
         drawPolyBtn.classList.add("active");
-        state.map.getContainer().style.cursor = "crosshair";
+        if (state.map) state.map.getContainer().style.cursor = "crosshair";
     });
 
-    // Map Click Handler for Drawing
     state.map.on("click", (e) => {
         if (state.drawingMode === "rect") {
             handleRectClick(e);
         } else if (state.drawingMode === "poly") {
             handlePolyClick(e);
+        } else {
+            setPointAOI(e.latlng.lat, e.latlng.lng, `Clicked Map Location`);
         }
     });
 
-    // Map Mousemove for live drawing preview
     state.map.on("mousemove", (e) => {
         if (state.drawingMode === "rect" && state.drawStartLatLng) {
             const bounds = L.latLngBounds(state.drawStartLatLng, e.latlng);
@@ -1765,13 +1858,52 @@ function initAOIDrawingTools() {
         }
     });
 
-    // Double click to finish Polygon drawing
     state.map.on("dblclick", (e) => {
         if (state.drawingMode === "poly" && state.drawPoints.length >= 3) {
             L.DomEvent.stopPropagation(e);
             finalizePolygonAOI();
         }
     });
+}
+
+function setPointAOI(lat, lon, label) {
+    if (state.drawingMode !== "point") {
+        cancelDrawing();
+    }
+
+    if (state.selectedLocationMarker && state.map) {
+        state.map.removeLayer(state.selectedLocationMarker);
+    }
+    if (state.activeAOILayer && state.map) {
+        state.map.removeLayer(state.activeAOILayer);
+    }
+
+    state.selectedLocationMarker = L.circleMarker([lat, lon], {
+        radius: 9,
+        color: "#00f2fe",
+        weight: 3,
+        fillColor: "#00f2fe",
+        fillOpacity: 0.85
+    }).addTo(state.map);
+
+    const bbox = [
+        Math.round((lon - 0.015) * 100000) / 100000,
+        Math.round((lat - 0.015) * 100000) / 100000,
+        Math.round((lon + 0.015) * 100000) / 100000,
+        Math.round((lat + 0.015) * 100000) / 100000
+    ];
+
+    state.activeAOIBounds = bbox;
+    state.activeAOIPolygon = null;
+    state.activeAOIGeometryType = "POINT";
+
+    queryAOITiles(
+        { bbox: bbox },
+        `POINT (${lat.toFixed(4)}°N, ${lon.toFixed(4)}°E) — ${label}`,
+        "POINT",
+        `${lat.toFixed(5)}° N, ${lon.toFixed(5)}° E`,
+        "N/A (Point Location)"
+    );
 }
 
 function handleRectClick(e) {
@@ -1786,11 +1918,10 @@ function handleRectClick(e) {
 function handlePolyClick(e) {
     state.drawPoints.push(e.latlng);
 
-    // If clicked very close to starting point with >= 3 points, complete polygon
     if (state.drawPoints.length >= 3) {
         const dist = state.map.distance(state.drawPoints[0], e.latlng);
         if (dist < 80 && state.drawPoints.length > 3) {
-            state.drawPoints.pop(); // Remove closing click
+            state.drawPoints.pop();
             finalizePolygonAOI();
             return;
         }
@@ -1800,6 +1931,10 @@ function handlePolyClick(e) {
 function finalizeRectangleAOI(bounds) {
     cancelDrawing();
 
+    if (state.selectedLocationMarker && state.map) {
+        state.map.removeLayer(state.selectedLocationMarker);
+        state.selectedLocationMarker = null;
+    }
     if (state.activeAOILayer && state.map) {
         state.map.removeLayer(state.activeAOILayer);
     }
@@ -1813,10 +1948,27 @@ function finalizeRectangleAOI(bounds) {
 
     const sw = bounds.getSouthWest();
     const ne = bounds.getNorthEast();
-    const bboxWgs = [sw.lng, sw.lat, ne.lng, ne.lat];
+    const bboxWgs = [
+        Math.round(sw.lng * 100000) / 100000,
+        Math.round(sw.lat * 100000) / 100000,
+        Math.round(ne.lng * 100000) / 100000,
+        Math.round(ne.lat * 100000) / 100000
+    ];
     state.activeAOIBounds = bboxWgs;
+    state.activeAOIPolygon = null;
+    state.activeAOIGeometryType = "RECTANGLE";
 
-    queryAOITiles({ bbox: bboxWgs }, `Rectangle AOI [${sw.lat.toFixed(3)}°N, ${sw.lng.toFixed(3)}°E to ${ne.lat.toFixed(3)}°N, ${ne.lng.toFixed(3)}°E]`);
+    const areaKm2 = calculateBBoxAreaKm2(sw.lng, sw.lat, ne.lng, ne.lat);
+    const areaStr = `${areaKm2.toFixed(2)} km²`;
+    const coordsStr = `[${sw.lat.toFixed(4)}°N, ${sw.lng.toFixed(4)}°E] to [${ne.lat.toFixed(4)}°N, ${ne.lng.toFixed(4)}°E]`;
+
+    queryAOITiles(
+        { bbox: bboxWgs },
+        `Rectangle Bounding Box`,
+        "RECTANGLE",
+        coordsStr,
+        areaStr
+    );
 }
 
 function finalizePolygonAOI() {
@@ -1825,6 +1977,10 @@ function finalizePolygonAOI() {
 
     if (pts.length < 3) return;
 
+    if (state.selectedLocationMarker && state.map) {
+        state.map.removeLayer(state.selectedLocationMarker);
+        state.selectedLocationMarker = null;
+    }
     if (state.activeAOILayer && state.map) {
         state.map.removeLayer(state.activeAOILayer);
     }
@@ -1836,8 +1992,25 @@ function finalizePolygonAOI() {
         fillOpacity: 0.18
     }).addTo(state.map);
 
-    const coords = pts.map(p => [p.lng, p.lat]);
-    queryAOITiles({ polygon: coords }, `Custom Polygon AOI (${pts.length} Vertices)`);
+    const coords = pts.map(p => [
+        Math.round(p.lng * 100000) / 100000,
+        Math.round(p.lat * 100000) / 100000
+    ]);
+    state.activeAOIPolygon = coords;
+    state.activeAOIBounds = null;
+    state.activeAOIGeometryType = "POLYGON";
+
+    const areaKm2 = calculatePolygonAreaKm2(pts);
+    const areaStr = `${areaKm2.toFixed(2)} km²`;
+    const coordsStr = `${pts.length} Vertices Polygon`;
+
+    queryAOITiles(
+        { polygon: coords },
+        `Custom Polygon Boundary`,
+        "POLYGON",
+        coordsStr,
+        areaStr
+    );
 }
 
 function cancelDrawing() {
@@ -1851,17 +2024,27 @@ function cancelDrawing() {
     if (state.map) {
         state.map.getContainer().style.cursor = "";
     }
-    document.getElementById("draw-rect-btn").classList.remove("active");
-    document.getElementById("draw-poly-btn").classList.remove("active");
+    const drawPointBtn = document.getElementById("draw-point-btn");
+    const drawRectBtn = document.getElementById("draw-rect-btn");
+    const drawPolyBtn = document.getElementById("draw-poly-btn");
+    if (drawPointBtn) drawPointBtn.classList.remove("active");
+    if (drawRectBtn) drawRectBtn.classList.remove("active");
+    if (drawPolyBtn) drawPolyBtn.classList.remove("active");
 }
 
 function clearActiveAOI() {
     cancelDrawing();
+    if (state.selectedLocationMarker && state.map) {
+        state.map.removeLayer(state.selectedLocationMarker);
+        state.selectedLocationMarker = null;
+    }
     if (state.activeAOILayer && state.map) {
         state.map.removeLayer(state.activeAOILayer);
         state.activeAOILayer = null;
     }
     state.activeAOIBounds = null;
+    state.activeAOIPolygon = null;
+    state.activeAOIGeometryType = null;
     state.activeAOITiles = [];
 
     document.getElementById("aoi-matches-badge").textContent = "No AOI Selected";
@@ -1870,15 +2053,15 @@ function clearActiveAOI() {
     document.getElementById("aoi-summary-box").innerHTML = `
         <div class="aoi-summary-empty">
             <div class="empty-icon small">🗺️</div>
-            <p>Demarcate an Area of Interest on the map to calculate spatial intersections across the 909 Sentinel-2 tiles.</p>
+            <p>Demarcate an Area of Interest (Point, Rectangle, Polygon) or search a location to inspect spatial intersections.</p>
         </div>
     `;
     document.getElementById("aoi-intersecting-tiles-list").innerHTML = `
-        <div class="empty-hint">Intersecting tiles will appear here</div>
+        <div class="empty-hint">Intersecting tile footprints will appear here</div>
     `;
 }
 
-async function queryAOITiles(payload, label) {
+async function queryAOITiles(payload, label, geomType = "RECTANGLE", coordsStr = "", areaStr = "") {
     const badge = document.getElementById("aoi-matches-badge");
     const summaryBox = document.getElementById("aoi-summary-box");
     const listContainer = document.getElementById("aoi-intersecting-tiles-list");
@@ -1899,22 +2082,38 @@ async function queryAOITiles(payload, label) {
         const tiles = data.tiles || [];
         state.activeAOITiles = tiles;
 
-        badge.textContent = `${tiles.length} Tiles Intersecting`;
+        badge.textContent = `${tiles.length} Scenes Intersecting`;
         badge.className = "badge-tag" + (tiles.length > 0 ? " green" : "");
 
         summaryBox.innerHTML = `
             <div class="aoi-summary-active">
                 <div class="aoi-summary-row">
-                    <span class="aoi-summary-label">Target AOI:</span>
-                    <span class="aoi-summary-val" style="color: #f59e0b;">${label}</span>
+                    <span class="aoi-summary-label">GEOMETRY TYPE:</span>
+                    <span class="aoi-summary-val" style="color: #f59e0b; font-weight: 700;">${geomType}</span>
                 </div>
                 <div class="aoi-summary-row">
-                    <span class="aoi-summary-label">Intersecting Tiles:</span>
-                    <span class="aoi-summary-val">${tiles.length} Scenes Verified</span>
+                    <span class="aoi-summary-label">COORDINATES:</span>
+                    <span class="aoi-summary-val mono-font" style="font-size: 0.78rem;">${coordsStr || label}</span>
                 </div>
                 <div class="aoi-summary-row">
-                    <span class="aoi-summary-label">Coverage Status:</span>
-                    <span class="aoi-summary-val" style="color: #34d399;">100% On-Premises Sentinel-2</span>
+                    <span class="aoi-summary-label">CALCULATED AREA:</span>
+                    <span class="aoi-summary-val" style="color: #00f2fe; font-weight: 700;">${areaStr || "N/A"}</span>
+                </div>
+                <div class="aoi-summary-row">
+                    <span class="aoi-summary-label">MATCHING IMAGERY:</span>
+                    <span class="aoi-summary-val">${tiles.length} Sentinel-2 Scenes</span>
+                </div>
+                <div class="aoi-summary-row">
+                    <span class="aoi-summary-label">TEMPORAL COVERAGE:</span>
+                    <span class="aoi-summary-val">2024-02-23 to 2026-02-28</span>
+                </div>
+                <div class="aoi-summary-row">
+                    <span class="aoi-summary-label">SENSORS AVAILABLE:</span>
+                    <span class="aoi-summary-val">Sentinel-2 MSI (Optical)</span>
+                </div>
+                <div class="aoi-summary-row">
+                    <span class="aoi-summary-label">SAR STATUS:</span>
+                    <span class="status-pill partial" style="font-size: 0.7rem;">SENTINEL-1 SAR — NOT CACHED LOCALLY</span>
                 </div>
             </div>
         `;
