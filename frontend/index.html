@@ -106,13 +106,16 @@
                         <span class="card-icon">⚡</span>
                         <h2 class="card-title">Retrieval Specification</h2>
                     </div>
-                    <!-- Mode Switcher: Text vs Image-to-Image -->
+                    <!-- Mode Switcher: Text vs Image-to-Image vs Multimodal Fusion -->
                     <div class="retrieval-mode-switcher">
                         <button id="mode-text-btn" class="mode-pill active">
-                            <span>🔤 Natural-Language Prompt</span>
+                            <span>🔤 Natural Language</span>
                         </button>
                         <button id="mode-image-btn" class="mode-pill">
-                            <span>🖼️ Image-to-Image Upload</span>
+                            <span>🖼️ Reference Image</span>
+                        </button>
+                        <button id="mode-multimodal-btn" class="mode-pill">
+                            <span>🔤+🖼️ Multimodal Fusion</span>
                         </button>
                     </div>
                 </div>
@@ -218,6 +221,19 @@
                     </div>
                 </div>
 
+                <!-- DATE RANGE FILTER BAR -->
+                <div class="date-filter-bar" style="display: flex; gap: 15px; align-items: center; margin-top: 12px; padding: 10px 14px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px;">
+                    <span class="chips-label">📅 Temporal Date Filter:</span>
+                    <label for="start-date-input" class="option-label" style="font-size: 0.82rem;">From:</label>
+                    <input type="date" id="start-date-input" class="glass-input small-input" value="2024-01-01" style="width: 140px; padding: 4px 8px; font-size: 0.82rem;">
+                    <label for="end-date-input" class="option-label" style="font-size: 0.82rem;">To:</label>
+                    <input type="date" id="end-date-input" class="glass-input small-input" value="2026-12-31" style="width: 140px; padding: 4px 8px; font-size: 0.82rem;">
+                    <label class="custom-switch-label" style="margin-left: auto; gap: 6px;">
+                        <input type="checkbox" id="diversity-control-check" checked>
+                        <span style="font-size: 0.8rem; color: #a1a1aa;">Spatial Diversity Control</span>
+                    </label>
+                </div>
+
                 <div id="sar-sensor-notice" class="sar-sensor-notice hidden">
                     🛰️ <strong>SENTINEL-1 SAR — NOT CACHED LOCALLY:</strong> Sentinel-1 C-SAR data is not currently available in local storage. Add compatible Sentinel-1 GRD data to enable SAR evidence.
                 </div>
@@ -256,6 +272,58 @@
                         </div>
                     </div>
                 </div> <!-- End #image-search-controls -->
+
+                <!-- SUB-CONTAINER 3: MULTIMODAL FUSION SEARCH -->
+                <div id="multimodal-search-controls" class="search-mode-panel">
+                    <div class="multimodal-panel-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <!-- Left: Text Modality Input -->
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label" for="multimodal-query-input">
+                                <span>Modality 1 — Natural Language Query:</span>
+                                <span class="label-hint">Text semantic description</span>
+                            </label>
+                            <div class="input-wrapper">
+                                <span class="input-icon">🔤</span>
+                                <input type="text" id="multimodal-query-input" class="glass-input" placeholder="e.g. new construction near roads..." value="new construction near roads">
+                            </div>
+                            <div style="margin-top: 10px; display: flex; align-items: center; gap: 10px;">
+                                <label style="font-size: 0.82rem; color: #a1a1aa;">Text Fusion Weight:</label>
+                                <input type="range" id="text-weight-slider" min="0" max="1" step="0.1" value="0.5" style="accent-color: #3b82f6; flex: 1;">
+                                <span id="text-weight-val" style="font-size: 0.82rem; font-weight: 600; color: #60a5fa;">0.50</span>
+                            </div>
+                        </div>
+
+                        <!-- Right: Reference Image Modality Input -->
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label">
+                                <span>Modality 2 — Reference Satellite Image:</span>
+                                <span class="label-hint">Uploaded image patch</span>
+                            </label>
+                            <div id="mm-image-dropzone" class="image-dropzone" style="padding: 16px;">
+                                <input type="file" id="mm-image-file-input" accept=".tif,.tiff,.png,.jpg,.jpeg,.webp" style="display: none;">
+                                <div class="dropzone-content">
+                                    <span class="dropzone-icon" style="font-size: 1.4rem;">🖼️</span>
+                                    <div class="dropzone-title" style="font-size: 0.88rem;">Upload Patch or Drag Image</div>
+                                    <span id="mm-file-name-label" class="badge-tag" style="margin-top: 4px;">No image attached (Optional if text present)</span>
+                                </div>
+                            </div>
+                            <div style="margin-top: 10px; display: flex; align-items: center; gap: 10px;">
+                                <label style="font-size: 0.82rem; color: #a1a1aa;">Image Fusion Weight:</label>
+                                <input type="range" id="image-weight-slider" min="0" max="1" step="0.1" value="0.5" style="accent-color: #10b981; flex: 1;">
+                                <span id="image-weight-val" style="font-size: 0.82rem; font-weight: 600; color: #34d399;">0.50</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Multimodal Action Row -->
+                    <div style="margin-top: 16px; display: flex; justify-content: flex-end; align-items: center; gap: 12px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.08);">
+                        <span style="font-size: 0.82rem; color: #a1a1aa;">Deterministic Retrieval Fusion Formula: <code>wt × S_text + wi × S_image</code></span>
+                        <button id="execute-multimodal-search-btn" class="glow-button primary-button">
+                            <span class="btn-text">Execute Multimodal Retrieval</span>
+                            <span class="btn-icon">⚡</span>
+                        </button>
+                    </div>
+                </div> <!-- End #multimodal-search-controls -->
             </div>
 
             <!-- RESULTS SECTION -->

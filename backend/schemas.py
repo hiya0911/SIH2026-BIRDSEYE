@@ -20,8 +20,25 @@ class SemanticSearchRequest(BaseModel):
     query: str
     top_k: int = 5
     sensor_filter: Optional[str] = "ALL"
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
     aoi_bbox: Optional[list] = None
     aoi_polygon: Optional[list] = None
+    diversity_control: bool = True
+
+class MultimodalSearchRequest(BaseModel):
+    query: Optional[str] = None
+    text_weight: float = 0.5
+    image_weight: float = 0.5
+    top_k: int = 12
+    spectral_gate: bool = True
+    action_mode: bool = False
+    sensor_filter: Optional[str] = "ALL"
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    aoi_bbox: Optional[list] = None
+    aoi_polygon: Optional[list] = None
+    diversity_control: bool = True
 
 class ImageSearchRequest(BaseModel):
     tile_id: str

@@ -144,7 +144,202 @@ function initSemanticSearch() {
         });
     }
 
+    initRetrievalModes();
+    initMultimodalSearch();
     initPreprocessingLabModality();
+}
+
+function initRetrievalModes() {
+    const textBtn = document.getElementById("mode-text-btn");
+    const imageBtn = document.getElementById("mode-image-btn");
+    const mmBtn = document.getElementById("mode-multimodal-btn");
+
+    const textPanel = document.getElementById("text-search-controls");
+    const imagePanel = document.getElementById("image-search-controls");
+    const mmPanel = document.getElementById("multimodal-search-controls");
+
+    if (!textBtn || !imageBtn || !mmBtn) return;
+
+    textBtn.addEventListener("click", () => {
+        textBtn.classList.add("active");
+        imageBtn.classList.remove("active");
+        mmBtn.classList.remove("active");
+
+        if (textPanel) textPanel.classList.add("active");
+        if (imagePanel) imagePanel.classList.remove("active");
+        if (mmPanel) mmPanel.classList.remove("active");
+    });
+
+    imageBtn.addEventListener("click", () => {
+        imageBtn.classList.add("active");
+        textBtn.classList.remove("active");
+        mmBtn.classList.remove("active");
+
+        if (imagePanel) imagePanel.classList.add("active");
+        if (textPanel) textPanel.classList.remove("active");
+        if (mmPanel) mmPanel.classList.remove("active");
+    });
+
+    mmBtn.addEventListener("click", () => {
+        mmBtn.classList.add("active");
+        textBtn.classList.remove("active");
+        imageBtn.classList.remove("active");
+
+        if (mmPanel) mmPanel.classList.add("active");
+        if (textPanel) textPanel.classList.remove("active");
+        if (imagePanel) imagePanel.classList.remove("active");
+    });
+}
+
+function initMultimodalSearch() {
+    const textSlider = document.getElementById("text-weight-slider");
+    const imageSlider = document.getElementById("image-weight-slider");
+    const textVal = document.getElementById("text-weight-val");
+    const imageVal = document.getElementById("image-weight-val");
+
+    if (textSlider && textVal) {
+        textSlider.addEventListener("input", (e) => {
+            const val = parseFloat(e.target.value);
+            textVal.textContent = val.toFixed(2);
+            if (imageSlider && imageVal) {
+                const companionVal = (1.0 - val);
+                imageSlider.value = companionVal;
+                imageVal.textContent = companionVal.toFixed(2);
+            }
+        });
+    }
+
+    if (imageSlider && imageVal) {
+        imageSlider.addEventListener("input", (e) => {
+            const val = parseFloat(e.target.value);
+            imageVal.textContent = val.toFixed(2);
+            if (textSlider && textVal) {
+                const companionVal = (1.0 - val);
+                textSlider.value = companionVal;
+                textVal.textContent = companionVal.toFixed(2);
+            }
+        });
+    }
+
+    // File input handling for multimodal dropzone
+    const mmDropzone = document.getElementById("mm-image-dropzone");
+    const mmFileInput = document.getElementById("mm-image-file-input");
+    const mmFileLabel = document.getElementById("mm-file-name-label");
+
+    if (mmDropzone && mmFileInput) {
+        mmDropzone.addEventListener("click", () => mmFileInput.click());
+        mmFileInput.addEventListener("change", (e) => {
+            if (e.target.files && e.target.files[0]) {
+                state.multimodalFile = e.target.files[0];
+                if (mmFileLabel) {
+                    mmFileLabel.textContent = `Attached: ${state.multimodalFile.name} (${Math.round(state.multimodalFile.size / 1024)} KB)`;
+                    mmFileLabel.style.color = "#34d399";
+                }
+            }
+        });
+    }
+
+    const mmExecuteBtn = document.getElementById("execute-multimodal-search-btn");
+    if (mmExecuteBtn) {
+        mmExecuteBtn.addEventListener("click", executeMultimodalSearch);
+    }
+}
+
+async function executeMultimodalSearch() {
+    const query = document.getElementById("multimodal-query-input") ? document.getElementById("multimodal-query-input").value.trim() : "";
+    const textWeight = parseFloat(document.getElementById("text-weight-slider").value) || 0.5;
+    const imageWeight = parseFloat(document.getElementById("image-weight-slider").value) || 0.5;
+    const topK = parseInt(document.getElementById("top-k-select").value) || 12;
+    const spectralGate = document.getElementById("spectral-gate-check").checked;
+    const sensorFilter = document.getElementById("sensor-filter-select") ? document.getElementById("sensor-filter-select").value : "ALL";
+    const startDate = document.getElementById("start-date-input") ? document.getElementById("start-date-input").value : null;
+    const endDate = document.getElementById("end-date-input") ? document.getElementById("end-date-input").value : null;
+    const diversityControl = document.getElementById("diversity-control-check") ? document.getElementById("diversity-control-check").checked : true;
+
+    const container = document.getElementById("semantic-results-container");
+    const countBadge = document.getElementById("results-count-badge");
+    const metricsBar = document.getElementById("retrieval-metrics-bar");
+
+    if (!query && !state.multimodalFile) {
+        alert("Please provide at least one modality (natural language prompt or reference satellite image).");
+        return;
+    }
+
+    container.innerHTML = `
+        <div class="empty-state-card">
+            <div class="spinner"></div>
+            <div class="empty-title">Processing Multimodal Fusion Retrieval</div>
+            <p class="empty-desc">Extracting CLIP text & visual embeddings, computing weighted vector fusion (Text ${textWeight.toFixed(2)} / Image ${imageWeight.toFixed(2)})...</p>
+        </div>
+    `;
+    countBadge.textContent = "Fusing...";
+    metricsBar.innerHTML = "";
+
+    const startTime = performance.now();
+
+    try {
+        const formData = new FormData();
+        if (query) formData.append("query", query);
+        if (state.multimodalFile) formData.append("file", state.multimodalFile);
+        formData.append("text_weight", textWeight);
+        formData.append("image_weight", imageWeight);
+        formData.append("top_k", topK);
+        formData.append("spectral_gate", spectralGate);
+        formData.append("sensor_filter", sensorFilter);
+        if (startDate) formData.append("start_date", startDate);
+        if (endDate) formData.append("end_date", endDate);
+        formData.append("diversity_control", diversityControl);
+
+        if (state.activeAOIPolygon) {
+            formData.append("aoi_polygon_json", JSON.stringify(state.activeAOIPolygon));
+        } else if (state.activeAOIBounds) {
+            formData.append("aoi_bbox_json", JSON.stringify(state.activeAOIBounds));
+        }
+
+        const response = await fetch(`${API_BASE}/search/multimodal`, {
+            method: "POST",
+            body: formData
+        });
+
+        if (!response.ok) {
+            throw new Error(`Server returned HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        const duration = Math.round(performance.now() - startTime);
+
+        if (data.available === false || sensorFilter === "SAR") {
+            countBadge.textContent = "0 Results (SAR Not Cached)";
+            container.innerHTML = `
+                <div class="empty-state-card" style="border: 1px solid rgba(56, 189, 248, 0.3); background: rgba(15, 23, 42, 0.8);">
+                    <div class="empty-icon">🛰️</div>
+                    <div class="empty-title" style="color: #38bdf8;">SENTINEL-1 SAR — NOT CACHED LOCALLY</div>
+                    <p class="empty-desc" style="color: #cbd5e1;">${data.message || "Sentinel-1 C-SAR data is not currently available in local storage. Add compatible Sentinel-1 GRD data to enable SAR evidence."}</p>
+                </div>
+            `;
+            return;
+        }
+
+        const items = data.results || [];
+        countBadge.textContent = `${items.length} Tiles Found (${duration} ms)`;
+        metricsBar.innerHTML = `
+            <span class="badge-tag green">Multimodal Fusion: Text (${textWeight.toFixed(2)}) + Image (${imageWeight.toFixed(2)})</span>
+            <span class="badge-tag">Deterministic Vector Fusion</span>
+        `;
+
+        renderSemanticResults(items);
+
+    } catch (err) {
+        console.error("Multimodal search error:", err);
+        countBadge.textContent = "Error";
+        container.innerHTML = `
+            <div class="empty-state-card">
+                <div class="empty-icon">❌</div>
+                <div class="empty-title">Multimodal Search Failed</div>
+                <p class="empty-desc" style="color: #f87171;">${err.message}</p>
+            </div>
+        `;
+    }
 }
 
 function initPreprocessingLabModality() {
@@ -176,6 +371,10 @@ async function executeSemanticSearch() {
     const actionMode = document.getElementById("action-mode-check").checked;
     const topK = parseInt(document.getElementById("top-k-select").value) || 12;
     const sensorFilter = document.getElementById("sensor-filter-select") ? document.getElementById("sensor-filter-select").value : "ALL";
+    const startDate = document.getElementById("start-date-input") ? document.getElementById("start-date-input").value : null;
+    const endDate = document.getElementById("end-date-input") ? document.getElementById("end-date-input").value : null;
+    const diversityControl = document.getElementById("diversity-control-check") ? document.getElementById("diversity-control-check").checked : true;
+
     const container = document.getElementById("semantic-results-container");
     const countBadge = document.getElementById("results-count-badge");
     const metricsBar = document.getElementById("retrieval-metrics-bar");
@@ -190,7 +389,7 @@ async function executeSemanticSearch() {
         <div class="empty-state-card">
             <div class="spinner"></div>
             <div class="empty-title">Processing ${sensorFilter} Retrieval</div>
-            <p class="empty-desc">Computing 512-D CLIP text vector, querying index, and evaluating sensor constraints...</p>
+            <p class="empty-desc">Computing 512-D CLIP text vector, querying index, and evaluating temporal & sensor constraints...</p>
         </div>
     `;
     countBadge.textContent = "Querying...";
@@ -198,12 +397,16 @@ async function executeSemanticSearch() {
 
     const startTime = performance.now();
 
+    try {
         const bodyPayload = {
             query: query,
             top_k: topK,
             spectral_gate: spectralGate,
             action_mode: actionMode,
-            sensor_filter: sensorFilter
+            sensor_filter: sensorFilter,
+            start_date: startDate,
+            end_date: endDate,
+            diversity_control: diversityControl
         };
         if (state.activeAOIPolygon) {
             bodyPayload.aoi_polygon = state.activeAOIPolygon;
@@ -297,17 +500,20 @@ function renderSemanticResults(results) {
         const card = document.createElement("div");
         card.className = "tile-card";
 
+        const rankNum = item.rank || (index + 1);
         const scorePercent = item.match_percentage !== undefined 
             ? Number(item.match_percentage).toFixed(1) 
             : (item.score !== undefined ? (item.score * 100).toFixed(1) : "0.0");
 
         const clipScoreStr = item.clip_score !== undefined 
             ? Number(item.clip_score).toFixed(3) 
-            : "N/A";
+            : (item.fused_clip_score !== undefined ? Number(item.fused_clip_score).toFixed(3) : "N/A");
 
-        const bboxStr = item.metadata && item.metadata.bbox 
-            ? item.metadata.bbox.map(n => Math.round(n)).join(", ")
-            : "N/A";
+        const acqDate = item.acquisition_date || (item.metadata ? (item.metadata.acquisition_datetime || "").substring(0, 10) : "2024-02-23");
+        const sensorName = item.sensor || "Sentinel-2 MSI Level-2A";
+
+        const bboxArr = item.wgs_bbox || (item.metadata ? item.metadata.bbox : null);
+        const bboxStr = bboxArr ? bboxArr.map(n => Math.round(n * 100) / 100).join(", ") : "N/A";
 
         // Badges for spectral indices & physics evidence
         let physicsPills = "";
@@ -325,12 +531,27 @@ function renderSemanticResults(results) {
                 item.physics_evidence.forEach(ev => {
                     physicsPills += `<span class="index-pill green">✓ ${ev}</span>`;
                 });
-            } else {
+            } else if (item.physics_evidence !== "Physical Verification Neutral") {
                 physicsPills += `<span class="index-pill green">✓ ${item.physics_evidence}</span>`;
             }
         }
 
         physicsPills += `<span class="index-pill">CLIP Sim: ${clipScoreStr}</span>`;
+
+        // WHY THIS RESULT? Explainability Box
+        let whyHtml = "";
+        if (item.explanation && Array.isArray(item.explanation) && item.explanation.length > 0) {
+            whyHtml = `
+                <div class="why-result-box" style="margin: 8px 0; padding: 8px 10px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 6px;">
+                    <div style="font-size: 0.72rem; font-weight: 700; color: #38bdf8; margin-bottom: 4px; display: flex; align-items: center; gap: 4px;">
+                        <span>💡 WHY THIS RESULT?</span>
+                    </div>
+                    <ul style="margin: 0; padding-left: 14px; font-size: 0.72rem; color: #cbd5e1; line-height: 1.35;">
+                        ${item.explanation.map(exp => `<li>${exp}</li>`).join('')}
+                    </ul>
+                </div>
+            `;
+        }
 
         card.innerHTML = `
             <div class="tile-image-box">
@@ -340,29 +561,64 @@ function renderSemanticResults(results) {
                     alt="Sentinel-2 Tile ${item.tile_id}"
                     onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?w=600&auto=format&fit=crop&q=60';"
                 >
-                <div class="tile-rank-badge">#${index + 1}</div>
+                <div class="tile-rank-badge">#${rankNum}</div>
                 <div class="tile-score-badge" style="background: rgba(16, 185, 129, 0.25); border-color: rgba(16, 185, 129, 0.5);">${scorePercent}% Match</div>
             </div>
             <div class="tile-body">
-                <div class="tile-id-label">Sentinel-2 Tile UUID</div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span class="tile-id-label">Sentinel-2 Tile UUID</span>
+                    <span class="badge-tag" style="font-size: 0.68rem; padding: 1px 6px;">${sensorName}</span>
+                </div>
                 <div class="tile-id-val">${item.tile_id}</div>
+                <div style="font-size: 0.74rem; color: #94a3b8; margin: 2px 0;">Acquisition Date: <strong style="color: #e2e8f0;">${acqDate}</strong></div>
+                
+                ${whyHtml}
+
                 <div class="tile-indices-row">
                     ${physicsPills}
                     <span class="index-pill">BBox: [${bboxStr}]</span>
                 </div>
-                <div class="tile-card-actions">
-                    <button class="tile-action-btn analyze-tile-btn" data-id="${item.tile_id}">
-                        ⏳ Analyze Change ➔
+                <div class="tile-card-actions" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-top: 8px;">
+                    <button class="tile-action-btn view-tile-btn" data-id="${item.tile_id}" style="font-size: 0.72rem; padding: 4px 6px;">
+                        👁️ View
+                    </button>
+                    <button class="tile-action-btn map-tile-btn" data-id="${item.tile_id}" style="font-size: 0.72rem; padding: 4px 6px;">
+                        🗺️ Map
+                    </button>
+                    <button class="tile-action-btn analyze-tile-btn" data-id="${item.tile_id}" style="font-size: 0.72rem; padding: 4px 6px;">
+                        ⏳ Change ➔
                     </button>
                 </div>
             </div>
         `;
 
-        // Wire up quick switch to Temporal Change tab
+        // Wire action buttons
+        const viewBtn = card.querySelector(".view-tile-btn");
+        const mapBtn = card.querySelector(".map-tile-btn");
         const analyzeBtn = card.querySelector(".analyze-tile-btn");
-        analyzeBtn.addEventListener("click", () => {
-            switchToTemporalAnalysis(item.tile_id);
-        });
+
+        if (viewBtn) {
+            viewBtn.addEventListener("click", () => {
+                window.open(`${API_BASE}/image/${item.tile_id}`, '_blank');
+            });
+        }
+
+        if (mapBtn) {
+            mapBtn.addEventListener("click", () => {
+                const mapTabBtn = document.querySelector('[data-tab="map"]');
+                if (mapTabBtn) mapTabBtn.click();
+                if (item.wgs_bbox && state.map) {
+                    const b = item.wgs_bbox;
+                    state.map.fitBounds([[b[1], b[0]], [b[3], b[2]]]);
+                }
+            });
+        }
+
+        if (analyzeBtn) {
+            analyzeBtn.addEventListener("click", () => {
+                switchToTemporalAnalysis(item.tile_id);
+            });
+        }
 
         container.appendChild(card);
     });

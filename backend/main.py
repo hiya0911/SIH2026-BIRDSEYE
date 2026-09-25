@@ -1,8 +1,9 @@
+import json
 from typing import Optional
 from datetime import datetime, timezone
 
 from bson import ObjectId
-from fastapi import FastAPI, HTTPException, Query, BackgroundTasks, UploadFile, File, Form
+from fastapi import FastAPI, HTTPException, Query, BackgroundTasks, UploadFile, File, Form, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from database import searches_collection, tiles_collection, provenance_collection
@@ -10,6 +11,7 @@ from models import create_search_document, create_tile_document, create_provenan
 from schemas import (
     SearchRequest, 
     SemanticSearchRequest, 
+    MultimodalSearchRequest,
     ImageSearchRequest,
     AOIQueryRequest,
     AOIAnalyzeRequest,
@@ -293,7 +295,11 @@ def semantic_search(request: SemanticSearchRequest):
             top_k=request.top_k,
             spectral_gate=request.spectral_gate,
             force_action_mode=request.action_mode,
-            allowed_tile_ids=allowed_tile_ids
+            allowed_tile_ids=allowed_tile_ids,
+            start_date=request.start_date,
+            end_date=request.end_date,
+            sensor_filter=request.sensor_filter,
+            diversity_control=request.diversity_control
         )
         
         # 1. Log provenance
@@ -389,13 +395,31 @@ def image_search(request: ImageSearchRequest):
 @app.post("/api/search/image/upload")
 async def image_search_upload(
     file: UploadFile = File(...),
-    top_k: int = Form(12)
+    top_k: int = Form(12),
+    start_date: Optional[str] = Form(None),
+    end_date: Optional[str] = Form(None),
+    sensor_filter: Optional[str] = Form("ALL"),
+    aoi_bbox_json: Optional[str] = Form(None),
+    aoi_polygon_json: Optional[str] = Form(None),
+    diversity_control: bool = Form(True)
 ):
     """
     True Image-to-Image Search: Accepts an uploaded satellite image,
     extracts 512-D CLIP embedding, queries FAISS index, and returns
     ranked matching tiles with similarity scores and verified metadata.
     """
+    sf = (sensor_filter or "ALL").upper()
+    if sf == "SAR":
+        return {
+            "query": file.filename or "uploaded_image.png",
+            "sensor_filter": "SAR",
+            "available": False,
+            "results": [],
+            "total": 0,
+            "search_id": "sar_not_cached",
+            "message": "Sentinel-1 SAR C-band data is not currently available in local storage. Pipeline remains ready for future Sentinel-1 GRD ingestion."
+        }
+
     # 1. Validate file extension and MIME type
     allowed_exts = {".tif", ".tiff", ".png", ".jpg", ".jpeg", ".webp"}
     filename = file.filename or "uploaded_image.png"
@@ -408,6 +432,22 @@ async def image_search_upload(
         )
 
     try:
+        # Check if spatial AOI restriction is requested
+        allowed_tile_ids = None
+        if aoi_polygon_json:
+            poly = json.loads(aoi_polygon_json)
+            validate_polygon(poly)
+            aoi_eng = get_aoi_engine()
+            matched_tiles = aoi_eng.query_by_polygon(poly, limit=909)
+            allowed_tile_ids = {t["tile_id"] for t in matched_tiles}
+        elif aoi_bbox_json:
+            bbox = json.loads(aoi_bbox_json)
+            validate_bbox(bbox)
+            aoi_eng = get_aoi_engine()
+            min_lon, min_lat, max_lon, max_lat = bbox
+            matched_tiles = aoi_eng.query_by_bbox(min_lon, min_lat, max_lon, max_lat, limit=909)
+            allowed_tile_ids = {t["tile_id"] for t in matched_tiles}
+
         # Read file contents (limit 20MB for security)
         MAX_UPLOAD_SIZE = 20 * 1024 * 1024
         contents = await file.read()
@@ -415,7 +455,6 @@ async def image_search_upload(
             raise HTTPException(status_code=400, detail="File size exceeds maximum permitted limit (20MB).")
         
         # Load into PIL Image
-        # If GeoTIFF, try rasterio first or PIL
         pil_img = None
         if ext in {".tif", ".tiff"}:
             try:
@@ -448,7 +487,14 @@ async def image_search_upload(
         preview_base64 = "data:image/jpeg;base64," + base64.b64encode(preview_buf.getvalue()).decode("utf-8")
 
         # Perform embedding extraction & FAISS search
-        results = perform_image_search_from_pil(pil_img, top_k=top_k)
+        results = perform_image_search_from_pil(
+            pil_image=pil_img, 
+            top_k=top_k,
+            allowed_tile_ids=allowed_tile_ids,
+            start_date=start_date,
+            end_date=end_date,
+            diversity_control=diversity_control
+        )
 
         # Log provenance
         prov_doc = create_provenance_document(
@@ -469,7 +515,7 @@ async def image_search_upload(
             "top_results": [
                 {
                     "tile_id": r["tile_id"],
-                    "similarity": r["similarity_percentage"]
+                    "similarity": r.get("similarity_percentage")
                 }
                 for r in results[:5]
             ],
@@ -480,6 +526,7 @@ async def image_search_upload(
 
         return {
             "status": "success",
+            "mode": "image_only",
             "filename": filename,
             "file_size": len(contents),
             "preview_image": preview_base64,
@@ -491,6 +538,188 @@ async def image_search_upload(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Image-to-Image search failed: {str(e)}")
+
+
+# =========================================================
+# MULTIMODAL SEARCH (TEXT + REFERENCE IMAGE FUSION)
+# =========================================================
+
+@app.post("/api/search/multimodal")
+async def multimodal_search(
+    request: Request,
+    file: Optional[UploadFile] = File(None),
+    query: Optional[str] = Form(None),
+    text_weight: float = Form(0.5),
+    image_weight: float = Form(0.5),
+    top_k: int = Form(12),
+    spectral_gate: bool = Form(True),
+    force_action_mode: bool = Form(False),
+    sensor_filter: Optional[str] = Form("ALL"),
+    start_date: Optional[str] = Form(None),
+    end_date: Optional[str] = Form(None),
+    aoi_bbox_json: Optional[str] = Form(None),
+    aoi_polygon_json: Optional[str] = Form(None),
+    diversity_control: bool = Form(True)
+):
+    """
+    Multimodal Retrieval Intelligence: Fuses natural language text query
+    and uploaded reference satellite image patch using deterministic vector fusion.
+    """
+    try:
+        content_type = request.headers.get("content-type", "")
+        aoi_bbox = None
+        aoi_polygon = None
+
+        if "application/json" in content_type.lower():
+            body = await request.json()
+            query = body.get("query", query)
+            text_weight = float(body.get("text_weight", text_weight))
+            image_weight = float(body.get("image_weight", image_weight))
+            top_k = int(body.get("top_k", top_k))
+            spectral_gate = bool(body.get("spectral_gate", spectral_gate))
+            force_action_mode = bool(body.get("action_mode", force_action_mode))
+            sensor_filter = body.get("sensor_filter", sensor_filter)
+            start_date = body.get("start_date", start_date)
+            end_date = body.get("end_date", end_date)
+            diversity_control = bool(body.get("diversity_control", diversity_control))
+            aoi_bbox = body.get("aoi_bbox")
+            aoi_polygon = body.get("aoi_polygon")
+        else:
+            if aoi_bbox_json:
+                aoi_bbox = json.loads(aoi_bbox_json)
+            if aoi_polygon_json:
+                aoi_polygon = json.loads(aoi_polygon_json)
+
+        sf = (sensor_filter or "ALL").upper()
+        if sf == "SAR":
+            return {
+                "query": query or "Multimodal Search",
+                "mode": "multimodal",
+                "sensor_filter": "SAR",
+                "available": False,
+                "results": [],
+                "total": 0,
+                "search_id": "sar_not_cached",
+                "message": "Sentinel-1 SAR C-band data is not currently available in local storage. Pipeline remains ready for future Sentinel-1 GRD ingestion."
+            }
+
+        allowed_tile_ids = None
+        if aoi_polygon:
+            validate_polygon(aoi_polygon)
+            aoi_eng = get_aoi_engine()
+            matched_tiles = aoi_eng.query_by_polygon(aoi_polygon, limit=909)
+            allowed_tile_ids = {t["tile_id"] for t in matched_tiles}
+        elif aoi_bbox:
+            validate_bbox(aoi_bbox)
+            aoi_eng = get_aoi_engine()
+            min_lon, min_lat, max_lon, max_lat = aoi_bbox
+            matched_tiles = aoi_eng.query_by_bbox(min_lon, min_lat, max_lon, max_lat, limit=909)
+            allowed_tile_ids = {t["tile_id"] for t in matched_tiles}
+
+        pil_img = None
+        preview_base64 = None
+        filename = None
+        if file and file.filename:
+            filename = file.filename
+            contents = await file.read()
+            ext = os.path.splitext(filename)[1].lower()
+            if ext in {".tif", ".tiff"}:
+                try:
+                    import io, rasterio.io
+                    with rasterio.io.MemoryFile(contents) as memfile:
+                        with memfile.open() as src:
+                            cnt = src.count
+                            if cnt >= 3:
+                                r, g, b = src.read(3), src.read(2), src.read(1)
+                            else:
+                                band = src.read(1)
+                                r, g, b = band, band, band
+                            def norm(a):
+                                return np.clip(a.astype(float) / 2500.0 * 255.0, 0, 255).astype(np.uint8)
+                            rgb = np.stack([norm(r), norm(g), norm(b)], axis=-1)
+                            pil_img = Image.fromarray(rgb)
+                except Exception:
+                    import io
+                    pil_img = Image.open(io.BytesIO(contents)).convert("RGB")
+            else:
+                import io
+                pil_img = Image.open(io.BytesIO(contents)).convert("RGB")
+
+            preview_buf = io.BytesIO()
+            thumb = pil_img.copy()
+            thumb.thumbnail((300, 300))
+            thumb.save(preview_buf, format="JPEG", quality=85)
+            preview_base64 = "data:image/jpeg;base64," + base64.b64encode(preview_buf.getvalue()).decode("utf-8")
+
+        clean_query = query.strip() if (query and query.strip()) else None
+
+        if not clean_query and not pil_img:
+            raise HTTPException(
+                status_code=400, 
+                detail="At least one query modality (text prompt or reference image) must be provided."
+            )
+
+        from services import get_advanced_engine
+        adv_engine = get_advanced_engine()
+
+        results = adv_engine.search_multimodal(
+            query=clean_query,
+            pil_image=pil_img,
+            text_weight=text_weight,
+            image_weight=image_weight,
+            top_k=top_k,
+            spectral_gate=spectral_gate,
+            force_action_mode=force_action_mode,
+            allowed_tile_ids=allowed_tile_ids,
+            start_date=start_date,
+            end_date=end_date,
+            sensor_filter=sensor_filter,
+            diversity_control=diversity_control
+        )
+
+        prov_doc = create_provenance_document(
+            action="multimodal_retrieval",
+            source_files=[filename] if filename else [],
+            output_files=[r["tile_id"] for r in results.get("results", [])[:5]],
+            parameters={
+                "query": clean_query,
+                "has_image": pil_img is not None,
+                "text_weight": text_weight,
+                "image_weight": image_weight,
+                "top_k": top_k
+            }
+        )
+        provenance_collection.insert_one(prov_doc)
+
+        items = results.get("results", [])
+        search_record = {
+            "search_type": "multimodal",
+            "query": clean_query or "Reference Image Upload",
+            "has_image": pil_img is not None,
+            "text_weight": text_weight,
+            "image_weight": image_weight,
+            "top_k": top_k,
+            "results_count": len(items),
+            "top_results": [
+                {"tile_id": r["tile_id"], "similarity": r.get("match_percentage")}
+                for r in items[:5]
+            ],
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        res_mongo = searches_collection.insert_one(search_record)
+        search_id = str(getattr(res_mongo, "inserted_id", ""))
+
+        results["search_id"] = search_id
+        results["saved_to_mongodb"] = True
+        if preview_base64:
+            results["preview_image"] = preview_base64
+
+        return results
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # =========================================================
