@@ -965,4 +965,21 @@ def export_case_report(case_id: str):
         raise HTTPException(status_code=500, detail=f"Report export failed: {str(e)}")
 
 
+@app.get("/api/cases/{case_id}/investigation")
+def get_case_investigation(case_id: str):
+    """
+    Unified Evidence & Investigation Workspace endpoint.
+    Aggregates location analysis, before/after imagery, multi-temporal change stats,
+    8-stage preprocessing summary, false-alarm suppression, explainability,
+    and analyst review state for one-screen inspection.
+    """
+    try:
+        data = cases_service.get_case_investigation(case_id)
+        return data
+    except KeyError as ke:
+        raise HTTPException(status_code=404, detail=str(ke).strip("'"))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Investigation workspace retrieval failed: {str(e)}")
+
+
 

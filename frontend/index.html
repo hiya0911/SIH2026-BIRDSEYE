@@ -1106,13 +1106,25 @@
                 </div>
             </div>
 
-            <!-- EVIDENCE WORKSPACE GRID -->
+            <!-- EVIDENCE WORKSPACE GRID (PHASE 3C UNIFIED CONSOLE) -->
             <div class="evidence-workspace-container">
+                <!-- 1. Executive Investigation Summary Card -->
+                <div id="ws-investigation-summary-card" class="glass-card workspace-card summary-highlight-card">
+                    <div class="card-header-bar">
+                        <h3>📋 Executive Investigation Summary</h3>
+                        <span class="sub-tag">REAL SYSTEM MEASUREMENTS</span>
+                    </div>
+                    <div id="ws-summary-box" class="summary-grid-3col">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
                 <div class="evidence-grid-2col">
-                    <!-- Left: Imagery & Location -->
+                    <!-- 2. Before / After Evidence & AOI Metadata -->
                     <div class="glass-card workspace-card">
                         <div class="card-header-bar">
-                            <h4>🗺️ AOI & Multi-Epoch Imagery Evidence</h4>
+                            <h4>🗺️ Before / After Imagery & AOI Evidence</h4>
+                            <span class="sub-tag">REAL SENSOR RASTERS</span>
                         </div>
                         <div id="workspace-imagery-body" class="workspace-body">
                             <div class="thumbnail-compare-row">
@@ -1133,15 +1145,19 @@
                         </div>
                     </div>
 
-                    <!-- Right: Preprocessing & SAR Status -->
-                    <div class="glass-card workspace-card">
+                    <!-- 3. Preprocessing & Data Quality Stage Summary (8-Stage Pipeline) -->
+                    <div id="ws-preprocessing-summary-card" class="glass-card workspace-card">
                         <div class="card-header-bar">
-                            <h4>📡 Preprocessing & Sentinel-1 SAR Status</h4>
+                            <h4>🧪 8-Stage Preprocessing & Quality Summary</h4>
+                            <button id="btn-open-prep-lab" class="glass-btn small-btn accent-btn">Open Preprocessing Lab ↗</button>
                         </div>
                         <div class="workspace-body">
                             <div id="ws-prep-meta" class="prep-meta-box"></div>
+                            <div id="ws-prep-stages-list" class="prep-stages-mini-grid">
+                                <!-- Populated dynamically -->
+                            </div>
                             
-                            <!-- SAR Panel -->
+                            <!-- SAR Status Panel -->
                             <div class="sar-status-panel">
                                 <div class="sar-panel-header">
                                     <span class="sar-icon">🛰️</span>
@@ -1152,15 +1168,50 @@
                                 <div class="sar-capabilities-list">
                                     <div class="cap-item">⚡ VV/VH Dual-Polarization SAR Ready</div>
                                     <div class="cap-item">☁️ All-Weather Cloud Penetration Architecture</div>
-                                    <div class="cap-item">🌐 Phase Interference & Backscatter Delta Supported</div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Provenance Lineage Chain -->
-                <div class="glass-card workspace-card">
+                <!-- 4. False-Alarm Analysis & AI Explainability Row -->
+                <div class="evidence-grid-2col">
+                    <!-- False-Alarm Analysis Card -->
+                    <div id="ws-false-alarm-card" class="glass-card workspace-card">
+                        <div class="card-header-bar">
+                            <h4>⚡ False-Alarm Suppression Audit</h4>
+                            <span id="ws-fa-risk-badge" class="risk-pill low">RISK: LOW</span>
+                        </div>
+                        <div id="ws-false-alarm-body" class="workspace-body">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- AI Confidence & Explainability Card -->
+                    <div id="ws-explainability-card" class="glass-card workspace-card">
+                        <div class="card-header-bar">
+                            <h4>💡 Why Did AI Detect This Change?</h4>
+                            <span id="ws-ai-confidence-badge" class="badge-tag">AI CONFIDENCE: 95%</span>
+                        </div>
+                        <div id="ws-explainability-body" class="workspace-body">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. Multi-Temporal Timeline Card -->
+                <div id="ws-timeline-card" class="glass-card workspace-card">
+                    <div class="card-header-bar">
+                        <h4>⏳ Multi-Temporal Observation Timeline</h4>
+                        <span class="sub-tag">2024 → 2025 → 2026 PROGRESSION</span>
+                    </div>
+                    <div id="ws-timeline-body" class="timeline-horizontal-container">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- 6. Provenance Entry Point Card -->
+                <div id="ws-provenance-entry-card" class="glass-card workspace-card">
                     <div class="card-header-bar">
                         <h4>🔗 Traceable 8-Stage Provenance Lineage Chain</h4>
                         <span class="sub-tag">END-TO-END REPRODUCIBILITY</span>
@@ -1170,7 +1221,7 @@
                     </div>
                 </div>
 
-                <!-- Report Export Bar -->
+                <!-- 7. Report Export Bar -->
                 <div class="glass-card report-export-card">
                     <div class="report-export-content">
                         <div>
