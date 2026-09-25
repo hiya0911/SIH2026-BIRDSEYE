@@ -76,12 +76,20 @@ def home():
 # =========================================================
 
 @app.get("/health")
+@app.get("/api/system/health")
 def health():
     try:
         searches_collection.database.command("ping")
+        tile_cnt = tiles_collection.count_documents({})
+        faiss_cnt = vector_index.index.ntotal if (vector_index and vector_index.index) else 0
         return {
             "status": "healthy",
-            "mongodb": "connected"
+            "mongodb": "connected",
+            "faiss_index_vectors": faiss_cnt,
+            "indexed_tiles_catalog": tile_cnt,
+            "embedding_model": "OpenAI CLIP ViT-B/32 (512D)",
+            "sar_status": "SAR_NOT_CACHED_LOCALLY",
+            "offline_mode": "100% ON-PREMISES LOCAL"
         }
     except Exception as error:
         return {
@@ -1452,6 +1460,100 @@ def get_case_investigation(case_id: str):
         raise HTTPException(status_code=404, detail=str(ke).strip("'"))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Investigation workspace retrieval failed: {str(e)}")
+
+
+# =========================================================
+# PHASE 4G: SECURE OFFLINE INGESTION & OPERATIONAL READINESS
+# =========================================================
+
+@app.get("/api/system/security")
+def get_system_security_status():
+    """
+    Returns security readiness check and secret scan status for the on-premise workspace.
+    """
+    from ingestion_engine import perform_security_scan
+    return perform_security_scan()
+
+
+@app.post("/api/ingest")
+async def ingest_uploaded_tile(
+    file: UploadFile = File(...),
+    source_label: Optional[str] = Form("Analyst Manual Upload")
+):
+    """
+    Secure offline ingestion endpoint: accepts uploaded satellite GeoTIFF/COG raster patch,
+    validates format/CRS/raster integrity, performs duplicate detection, extracts 512-D CLIP embedding,
+    updates FAISS vector index incrementally, updates MongoDB catalog, and logs 15-field provenance.
+    """
+    allowed_exts = {".tif", ".tiff", ".png", ".jpg"}
+    filename = file.filename or "uploaded_tile.tif"
+    ext = os.path.splitext(filename)[1].lower()
+
+    if ext not in allowed_exts:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported file format '{ext}'. Allowed: {', '.join(sorted(allowed_exts))}"
+        )
+
+    scratch_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "scratch")
+    os.makedirs(scratch_dir, exist_ok=True)
+    temp_path = os.path.join(scratch_dir, f"temp_{uuid.uuid4().hex[:8]}_{filename}")
+
+    try:
+        contents = await file.read()
+        if len(contents) > 200 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="File size exceeds maximum permitted limit (200MB).")
+
+        with open(temp_path, "wb") as f:
+            f.write(contents)
+
+        from ingestion_engine import SecureIngestionEngine
+        engine = SecureIngestionEngine()
+        result = engine.ingest_single_geotiff(temp_path, source_label=source_label)
+
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+
+        return result
+    except HTTPException:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+        raise
+    except Exception as e:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+        raise HTTPException(status_code=500, detail=f"Ingestion failed: {str(e)}")
+
+
+@app.post("/api/ingest/file")
+def ingest_local_file_path(filepath: str = Query(...), source_label: str = Query("Analyst Batch Import")):
+    """
+    Ingests a local GeoTIFF tile located inside the workspace data directory.
+    Validates path security to prevent directory traversal.
+    """
+    try:
+        from ingestion_engine import SecureIngestionEngine
+        engine = SecureIngestionEngine()
+        result = engine.ingest_single_geotiff(filepath, source_label=source_label)
+        return result
+    except PermissionError as pe:
+        raise HTTPException(status_code=403, detail=str(pe))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"File ingestion failed: {str(e)}")
+
+
+@app.get("/api/ingest/status/{ingestion_id}")
+def get_ingestion_status_endpoint(ingestion_id: str):
+    """
+    Returns ingestion progress, status, duplicate detection, and provenance.
+    """
+    from ingestion_engine import SecureIngestionEngine
+    engine = SecureIngestionEngine()
+    status = engine.get_ingestion_status(ingestion_id)
+    if status.get("status") == "NOT_FOUND":
+        raise HTTPException(status_code=404, detail=f"Ingestion ID '{ingestion_id}' not found.")
+    return status
+
 
 
 

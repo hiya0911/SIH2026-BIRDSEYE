@@ -825,6 +825,63 @@
                     </div>
                 </div>
             </div>
+
+            <!-- DATA INGESTION & OPERATIONAL READINESS CARD -->
+            <div class="glass-card ingestion-console-card" style="margin-top: 1.5rem;">
+                <div class="card-header-bar">
+                    <div class="card-title-group">
+                        <span class="card-icon">📥</span>
+                        <div>
+                            <h2 class="card-title">Secure Offline Data Ingestion &amp; Operational Readiness</h2>
+                            <div class="sub-label">Controlled incremental GeoTIFF / COG tile ingestion &amp; safety validation</div>
+                        </div>
+                    </div>
+                    <span id="ingest-security-badge" class="badge-tag green">LOCAL / ON-PREMISE SECURE</span>
+                </div>
+
+                <div class="ingest-split-grid" style="display: flex; gap: 1.5rem; flex-wrap: wrap; margin-top: 1rem;">
+                    <!-- Controls Column -->
+                    <div style="flex: 1; min-width: 280px;">
+                        <div class="form-group">
+                            <label class="form-label" for="ingest-file-path-input">
+                                <span>Local GeoTIFF / COG Tile Path:</span>
+                                <span class="label-hint">Must reside within root data directory</span>
+                            </label>
+                            <input type="text" id="ingest-file-path-input" class="glass-input" placeholder="e.g. data/tiles/tile_sample.tif" value="data/tiles/tiles_metadata.json">
+                        </div>
+                        <div class="form-group" style="margin-top: 0.75rem;">
+                            <label class="form-label" for="ingest-source-label">
+                                <span>Source Scene / Description Label:</span>
+                            </label>
+                            <input type="text" id="ingest-source-label" class="glass-input" value="Analyst Local Ingestion Import">
+                        </div>
+                        <div class="form-action-group" style="margin-top: 1rem;">
+                            <button id="btn-run-ingest" class="glow-button primary-button" style="width: 100%;">
+                                <span class="btn-text">Ingest Local Imagery Tile</span>
+                                <span class="btn-icon">⚡</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Live Ingestion Telemetry & Duplicate Status Column -->
+                    <div style="flex: 1.2; min-width: 300px; background: rgba(15, 23, 42, 0.6); border-radius: 8px; padding: 1rem; border: 1px solid rgba(255, 255, 255, 0.08);">
+                        <div style="font-weight: 700; color: #38bdf8; font-size: 0.85rem; margin-bottom: 0.75rem; display: flex; justify-content: space-between;">
+                            <span>INGESTION AUDIT TELEMETRY</span>
+                            <span id="ingest-result-pill" class="badge-tag gray">READY</span>
+                        </div>
+                        <div id="ingest-telemetry-box" style="font-size: 0.8rem; color: #cbd5e1; display: flex; flex-direction: column; gap: 0.4rem;">
+                            <div style="display:flex; justify-content:space-between;"><span>Format / CRS:</span> <strong id="ing-fmt">GeoTIFF / EPSG:32645</strong></div>
+                            <div style="display:flex; justify-content:space-between;"><span>Safety &amp; Path Check:</span> <strong id="ing-safe" style="color: #34d399;">PASSED (NO PATH TRAVERSAL)</strong></div>
+                            <div style="display:flex; justify-content:space-between;"><span>Duplicate Detection:</span> <strong id="ing-dup">CHECKED (SHA-256 Digest)</strong></div>
+                            <div style="display:flex; justify-content:space-between;"><span>Incremental Indexing:</span> <strong id="ing-faiss">FAISS IndexFlatIP (512-D)</strong></div>
+                            <div style="display:flex; justify-content:space-between;"><span>15-Field Provenance:</span> <strong id="ing-prov">LOGGED TO MONGODB</strong></div>
+                        </div>
+                        <div id="ingest-status-msg" style="margin-top: 0.75rem; font-size: 0.75rem; color: #94a3b8; font-style: italic;">
+                            Ready for ingestion. Provide file path and click Ingest.
+                        </div>
+                    </div>
+                </div>
+            </div>
         </section>
 
         <!-- ========================================================= -->

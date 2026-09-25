@@ -47,6 +47,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initPreprocessingLab();
     initLiveBenchmarkEvaluation();
     initInvestigationConsole();
+    initIngestionConsole();
 });
 
 function initTabs() {
@@ -3399,6 +3400,73 @@ async function loadEvaluationMetrics(forceReRun = false) {
         }
     }
 }
+
+// =========================================================
+// PHASE 4G: SECURE DATA INGESTION CONSOLE
+// =========================================================
+
+function initIngestionConsole() {
+    const runBtn = document.getElementById("btn-run-ingest");
+    const inputPath = document.getElementById("ingest-file-path-input");
+    const inputLabel = document.getElementById("ingest-source-label");
+    const resultPill = document.getElementById("ingest-result-pill");
+    const msgBox = document.getElementById("ingest-status-msg");
+
+    if (!runBtn) return;
+
+    runBtn.addEventListener("click", async () => {
+        const fp = inputPath ? inputPath.value.trim() : "";
+        const label = inputLabel ? inputLabel.value.trim() : "Analyst Ingestion Import";
+
+        if (!fp) {
+            if (msgBox) msgBox.innerHTML = `<span style="color:#ef4444;">Please provide a valid local imagery file path.</span>`;
+            return;
+        }
+
+        if (resultPill) {
+            resultPill.textContent = "INGESTING...";
+            resultPill.className = "badge-tag amber";
+        }
+        if (msgBox) msgBox.innerHTML = `<span style="color:#38bdf8;">Validating file safety, CRS, duplicate hash, and CLIP embeddings...</span>`;
+
+        try {
+            const resp = await fetch(`${API_BASE}/ingest/file?filepath=${encodeURIComponent(fp)}&source_label=${encodeURIComponent(label)}`, {
+                method: "POST"
+            });
+            const data = await resp.json();
+
+            if (resp.ok) {
+                const st = data.status || "COMPLETED";
+                if (resultPill) {
+                    resultPill.textContent = st;
+                    resultPill.className = `badge-tag ${st === 'COMPLETED' ? 'green' : st === 'DUPLICATE' ? 'amber' : 'red'}`;
+                }
+                if (msgBox) {
+                    if (st === "COMPLETED") {
+                        msgBox.innerHTML = `<span style="color:#34d399;">✓ Successfully ingested! Tile ID: <strong>${data.tile_id}</strong> (Processing: ${data.processing_time_ms} ms, FAISS Vectors: ${data.total_faiss_vectors})</span>`;
+                    } else if (st === "DUPLICATE") {
+                        msgBox.innerHTML = `<span style="color:#fbbf24;">⚠️ DUPLICATE DETECTED: ${data.message}</span>`;
+                    } else {
+                        msgBox.innerHTML = `<span style="color:#f87171;">❌ Ingestion Rejected: ${data.reason || 'Validation failed'}</span>`;
+                    }
+                }
+            } else {
+                if (resultPill) {
+                    resultPill.textContent = "REJECTED";
+                    resultPill.className = "badge-tag red";
+                }
+                if (msgBox) msgBox.innerHTML = `<span style="color:#f87171;">Error: ${data.detail || 'Ingestion failed'}</span>`;
+            }
+        } catch (err) {
+            if (resultPill) {
+                resultPill.textContent = "ERROR";
+                resultPill.className = "badge-tag red";
+            }
+            if (msgBox) msgBox.innerHTML = `<span style="color:#f87171;">Network/Execution Error: ${err.message}</span>`;
+        }
+    });
+}
+
 
 
 
