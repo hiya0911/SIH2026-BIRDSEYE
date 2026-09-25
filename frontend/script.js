@@ -1949,23 +1949,53 @@ function initAnalystMap() {
     state.map = L.map("analyst-map", {
         center: defaultCenter,
         zoom: 12,
-        minZoom: 9,
-        maxZoom: 17,
+        minZoom: 3,
+        maxZoom: 19,
         zoomControl: true,
         attributionControl: true
     });
 
-    const darkTileLayer = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+    // Basemap 1: OpenStreetMap Standard Vector Basemap (Zero API Key requirement, reliable pan/zoom)
+    const osmLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &bull; Sentinel-2 BIRDSEYΣ3',
+        subdomains: "abc",
+        maxZoom: 19
+    });
+
+    // Basemap 2: Esri World Imagery (Satellite)
+    const esriSatLayer = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+        maxZoom: 18
+    });
+
+    // Basemap 3: CartoDB Dark Matter
+    const cartoDarkLayer = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png", {
         attribution: '&copy; <a href="https://carto.com/">CARTO</a> &bull; Sentinel-2 Copernicus',
         subdomains: "abcd",
         maxZoom: 19
     });
 
-    darkTileLayer.on("tileerror", function() {
+    // Default active basemap
+    osmLayer.addTo(state.map);
+
+    // Layer Switcher Control
+    const baseMaps = {
+        "🗺️ OpenStreetMap": osmLayer,
+        "🛰️ Esri Satellite": esriSatLayer,
+        "🌙 CartoDB Dark": cartoDarkLayer
+    };
+    L.control.layers(baseMaps, null, { position: "topright" }).addTo(state.map);
+
+    // Fallback error handler for map tiles
+    osmLayer.on("tileerror", function() {
         mapElement.style.backgroundColor = "#060913";
     });
-
-    darkTileLayer.addTo(state.map);
+    esriSatLayer.on("tileerror", function() {
+        mapElement.style.backgroundColor = "#060913";
+    });
+    cartoDarkLayer.on("tileerror", function() {
+        mapElement.style.backgroundColor = "#060913";
+    });
 
     const hudCoords = document.getElementById("hud-coords");
     const hudUtm = document.getElementById("hud-utm");
@@ -1987,16 +2017,19 @@ function initAnalystMap() {
 
     loadTileFootprints();
 
-    // Preset location jumps
+    // Preset location jumps (Updated India-wide strategic theater presets)
     const presetSelect = document.getElementById("map-preset-select");
     const presets = {
         kolkata_core: { center: [22.5726, 88.3639], zoom: 13, name: "Kolkata Urban Core" },
-        siliguri: { center: [26.7271, 88.4315], zoom: 12, name: "Siliguri District" },
-        hooghly_river: { center: [22.5850, 88.3450], zoom: 13, name: "Hooghly River Channel" },
+        lake_town: { center: [22.5976, 88.4026], zoom: 14, name: "Lake Town, Kolkata" },
+        siliguri: { center: [26.7271, 88.4315], zoom: 12, name: "Siliguri Region" },
         salt_lake: { center: [22.5800, 88.4300], zoom: 13, name: "Salt Lake Sector V" },
+        delhi: { center: [28.6139, 77.2090], zoom: 11, name: "New Delhi / NCR" },
+        mumbai: { center: [19.0760, 72.8777], zoom: 11, name: "Mumbai Metropolis" },
+        bengaluru: { center: [12.9716, 77.5946], zoom: 11, name: "Bengaluru Tech Hub" },
+        hooghly_river: { center: [22.5850, 88.3450], zoom: 13, name: "Hooghly River Channel" },
         wetlands: { center: [22.5350, 88.4200], zoom: 12, name: "East Kolkata Wetlands" },
-        baruipur: { center: [22.3600, 88.4400], zoom: 12, name: "Baruipur Peri-Urban Belt" },
-        barrackpore: { center: [22.7600, 88.3700], zoom: 12, name: "Barrackpore Industrial Corridor" }
+        darjeeling: { center: [27.0410, 88.2663], zoom: 12, name: "Darjeeling Hill Station" }
     };
 
     presetSelect.addEventListener("change", (e) => {
@@ -2009,15 +2042,20 @@ function initAnalystMap() {
         }
     });
 
-    // Location Search (Offline Geocoder + Coordinates)
+    // Location Search (Fine-grained Geocoder + Search Suggestions Dropdown)
     const searchInput = document.getElementById("map-location-search-input");
     const searchBtn = document.getElementById("map-location-search-btn");
+    const suggestionsBox = document.getElementById("map-search-suggestions");
 
-    async function performLocationSearch() {
-        const q = searchInput.value.trim();
+    let debounceTimer = null;
+
+    async function performLocationSearch(overrideQuery = null) {
+        const q = (overrideQuery || searchInput.value).trim();
         if (!q) return;
 
         searchBtn.disabled = true;
+        if (suggestionsBox) suggestionsBox.classList.add("hidden");
+
         try {
             const res = await fetch(`${API_BASE}/location/search?q=${encodeURIComponent(q)}`);
             if (!res.ok) {
@@ -2026,22 +2064,18 @@ function initAnalystMap() {
             }
             const data = await res.json();
             if (data.status === "not_found") {
-                alert(`LOCATION NOT FOUND: "${q}".\nPlease enter Latitude, Longitude coordinates (e.g. 23.8103, 90.4125) or a known city.`);
+                alert(`LOCATION NOT FOUND: "${q}".\nPlease enter a valid place name or Latitude, Longitude coordinates (e.g. 22.5726, 88.3639).`);
                 return;
             }
 
-            const lat = data.lat;
-            const lon = data.lon;
-            const name = data.name;
-
-            if (state.map) {
-                state.map.flyTo([lat, lon], 13, { duration: 1.2 });
+            const resultsList = data.results || [];
+            if (resultsList.length > 1 && !overrideQuery) {
+                renderSearchSuggestions(resultsList);
+            } else if (resultsList.length > 0) {
+                selectLocationResult(resultsList[0]);
+            } else {
+                selectLocationResult(data);
             }
-
-            document.getElementById("coord-lat-input").value = lat.toFixed(4);
-            document.getElementById("coord-lon-input").value = lon.toFixed(4);
-
-            setPointAOI(lat, lon, name);
 
         } catch (err) {
             alert(`Location search error: ${err.message}`);
@@ -2050,21 +2084,116 @@ function initAnalystMap() {
         }
     }
 
-    if (searchBtn) searchBtn.addEventListener("click", performLocationSearch);
+    function renderSearchSuggestions(results) {
+        if (!suggestionsBox) return;
+        suggestionsBox.innerHTML = "";
+        
+        results.forEach((item) => {
+            const div = document.createElement("div");
+            div.className = "search-suggestion-item";
+            
+            const mainName = item.place_name || item.display_name.split(",")[0];
+            const subtext = item.display_name;
+            const category = (item.type || item.category || "PLACE").toUpperCase();
+            
+            div.innerHTML = `
+                <div>
+                    <div class="suggestion-main-name">📍 ${mainName}</div>
+                    <div class="suggestion-subtext">${subtext}</div>
+                </div>
+                <span class="suggestion-badge">${category}</span>
+            `;
+            
+            div.addEventListener("click", () => {
+                selectLocationResult(item);
+                suggestionsBox.classList.add("hidden");
+            });
+            
+            suggestionsBox.appendChild(div);
+        });
+        
+        suggestionsBox.classList.remove("hidden");
+    }
+
+    // Input debounce for live search suggestions
     if (searchInput) {
+        searchInput.addEventListener("input", () => {
+            const q = searchInput.value.trim();
+            if (debounceTimer) clearTimeout(debounceTimer);
+            if (q.length < 3) {
+                if (suggestionsBox) suggestionsBox.classList.add("hidden");
+                return;
+            }
+            debounceTimer = setTimeout(async () => {
+                try {
+                    const res = await fetch(`${API_BASE}/location/search?q=${encodeURIComponent(q)}`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.results && data.results.length > 0) {
+                            renderSearchSuggestions(data.results);
+                        }
+                    }
+                } catch (e) {
+                    console.debug("Live suggestions search silently failed:", e);
+                }
+            }, 300);
+        });
+
         searchInput.addEventListener("keydown", (e) => {
-            if (e.key === "Enter") performLocationSearch();
+            if (e.key === "Enter") {
+                e.preventDefault();
+                performLocationSearch();
+            } else if (e.key === "Escape") {
+                if (suggestionsBox) suggestionsBox.classList.add("hidden");
+            }
         });
     }
 
-    // Manual coordinate jump
+    // Close suggestions box when clicking outside
+    document.addEventListener("click", (e) => {
+        if (suggestionsBox && !suggestionsBox.contains(e.target) && e.target !== searchInput) {
+            suggestionsBox.classList.add("hidden");
+        }
+    });
+
+    if (searchBtn) searchBtn.addEventListener("click", () => performLocationSearch());
+
+    // Manual coordinate jump & validation
     document.getElementById("jump-coord-btn").addEventListener("click", () => {
         const lat = parseFloat(document.getElementById("coord-lat-input").value);
         const lon = parseFloat(document.getElementById("coord-lon-input").value);
-        if (!isNaN(lat) && !isNaN(lon) && state.map) {
-            state.map.flyTo([lat, lon], 13, { duration: 1.0 });
-            setPointAOI(lat, lon, `Coordinate Target (${lat.toFixed(4)}°N, ${lon.toFixed(4)}°E)`);
+        
+        if (isNaN(lat) || isNaN(lon)) {
+            alert("Invalid coordinate input. Please enter numbers for Latitude and Longitude.");
+            return;
         }
+        if (lat < -90 || lat > 90) {
+            alert("Invalid Latitude: Must be between -90.0° and +90.0°.");
+            return;
+        }
+        if (lon < -180 || lon > 180) {
+            alert("Invalid Longitude: Must be between -180.0° and +180.0°.");
+            return;
+        }
+
+        const coordItem = {
+            display_name: `Coordinates (${lat.toFixed(4)}° N, ${lon.toFixed(4)}° E)`,
+            lat: lat,
+            lon: lon,
+            place_name: `Point Target (${lat.toFixed(4)}°N, ${lon.toFixed(4)}°E)`,
+            locality: "Coordinate Target",
+            city: "",
+            district: "",
+            state: "",
+            country: "",
+            category: "COORDINATE",
+            type: "point",
+            provider: "Coordinate Input",
+            confidence: 1.0,
+            wgs_bbox: [lon - 0.02, lat - 0.02, lon + 0.02, lat + 0.02]
+        };
+
+        selectLocationResult(coordItem);
     });
 
     // Wire up AOI drawing tools
@@ -2074,6 +2203,184 @@ function initAnalystMap() {
     const analyzeAOIBtn = document.getElementById("analyze-aoi-btn");
     analyzeAOIBtn.addEventListener("click", executeAOIAnalysis);
 }
+
+function selectLocationResult(item) {
+    const lat = item.lat;
+    const lon = item.lon;
+    const name = item.display_name || item.place_name || item.name || `${lat.toFixed(4)}° N, ${lon.toFixed(4)}° E`;
+
+    if (state.map) {
+        let targetZoom = 13;
+        const type = (item.type || "").toLowerCase();
+        if (type === "suburb" || type === "neighbourhood" || type === "residential") targetZoom = 14;
+        else if (type === "city" || type === "town") targetZoom = 12;
+        else if (type === "county" || type === "district") targetZoom = 10;
+        else if (type === "state") targetZoom = 8;
+        
+        state.map.flyTo([lat, lon], targetZoom, { duration: 1.2 });
+    }
+
+    const latInput = document.getElementById("coord-lat-input");
+    const lonInput = document.getElementById("coord-lon-input");
+    if (latInput) latInput.value = lat.toFixed(4);
+    if (lonInput) lonInput.value = lon.toFixed(4);
+
+    const searchInput = document.getElementById("map-location-search-input");
+    if (searchInput) searchInput.value = name;
+
+    setPointAOIWithMetadata(item);
+}
+
+function setPointAOIWithMetadata(item) {
+    const lat = item.lat;
+    const lon = item.lon;
+    const name = item.display_name || item.name || `${lat.toFixed(4)}° N, ${lon.toFixed(4)}° E`;
+
+    if (state.drawingMode !== "point") {
+        cancelDrawing();
+    }
+
+    if (state.selectedLocationMarker && state.map) {
+        state.map.removeLayer(state.selectedLocationMarker);
+    }
+    if (state.activeAOILayer && state.map) {
+        state.map.removeLayer(state.activeAOILayer);
+    }
+
+    state.selectedLocationMarker = L.circleMarker([lat, lon], {
+        radius: 9,
+        color: "#00f2fe",
+        weight: 3,
+        fillColor: "#00f2fe",
+        fillOpacity: 0.85
+    }).addTo(state.map);
+
+    state.selectedLocationMarker.bindPopup(`
+        <div style="font-family: 'Inter', sans-serif; font-size: 0.8rem;">
+            <strong style="color: #00f2fe;">📍 ${item.place_name || 'Selected Location'}</strong><br/>
+            <span style="color: #cbd5e1;">${name}</span><br/>
+            <span style="font-family: monospace; color: #38bdf8;">${lat.toFixed(4)}° N, ${lon.toFixed(4)}° E</span>
+        </div>
+    `).openPopup();
+
+    const bbox = item.wgs_bbox || [
+        Math.round((lon - 0.015) * 100000) / 100000,
+        Math.round((lat - 0.015) * 100000) / 100000,
+        Math.round((lon + 0.015) * 100000) / 100000,
+        Math.round((lat + 0.015) * 100000) / 100000
+    ];
+
+    state.activeAOIBounds = bbox;
+    state.activeAOIPolygon = null;
+    state.activeAOIGeometryType = "POINT";
+
+    queryAOITilesWithMetadata(
+        { bbox: bbox },
+        item
+    );
+}
+
+async function queryAOITilesWithMetadata(payload, locationMeta) {
+    const badge = document.getElementById("aoi-matches-badge");
+    const summaryBox = document.getElementById("aoi-summary-box");
+    const listContainer = document.getElementById("aoi-intersecting-tiles-list");
+    const actionBox = document.getElementById("aoi-action-box");
+
+    badge.textContent = "Querying Catalog...";
+    listContainer.innerHTML = `<div class="empty-hint"><span class="spinner-small" style="display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite;margin-right:4px;"></span> Checking local Sentinel-2 spatial catalog...</div>`;
+
+    try {
+        const res = await fetch(`${API_BASE}/aoi/query`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const tiles = data.tiles || [];
+        state.activeAOITiles = tiles;
+
+        const hasLocalImagery = tiles.length > 0;
+        badge.textContent = hasLocalImagery ? `${tiles.length} Scenes Available` : "Location Found • Imagery Unavailable";
+        badge.className = "badge-tag " + (hasLocalImagery ? "green" : "amber");
+
+        const lat = locationMeta.lat;
+        const lon = locationMeta.lon;
+        const provider = locationMeta.provider || "Geocoding Intelligence";
+        const placeName = locationMeta.place_name || locationMeta.locality || "Target Location";
+        const cityStr = locationMeta.city || locationMeta.district || "N/A";
+        const stateStr = locationMeta.state || "India";
+        const countryStr = locationMeta.country || "India";
+        const categoryStr = (locationMeta.type || locationMeta.category || "POINT").toUpperCase();
+        const confidenceStr = locationMeta.confidence ? `${(locationMeta.confidence * 100).toFixed(0)}%` : "100%";
+
+        const imageryPill = hasLocalImagery 
+            ? `<span class="status-pill online" style="font-size: 0.72rem;">✓ LOCAL SENTINEL-2 IMAGERY AVAILABLE (${tiles.length} TILES)</span>`
+            : `<span class="status-pill partial" style="font-size: 0.72rem;">⚠️ NO LOCAL TILES FOR THIS REGION (MAP NAVIGATION ACTIVE)</span>`;
+
+        summaryBox.innerHTML = `
+            <div class="aoi-summary-active">
+                <div class="aoi-summary-row" style="margin-bottom: 6px;">
+                    <span class="aoi-summary-label">LOCATION TARGET:</span>
+                    <span class="aoi-summary-val" style="color: #00f2fe; font-weight: 700; font-size: 0.88rem;">📍 ${placeName}</span>
+                </div>
+                <div style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 8px; line-height: 1.35;">${locationMeta.display_name || locationMeta.name || ''}</div>
+                
+                <div class="location-meta-grid">
+                    <div class="location-meta-item">
+                        <span class="location-meta-label">COORDINATES:</span>
+                        <span class="location-meta-val mono-font">${lat.toFixed(4)}° N, ${lon.toFixed(4)}° E</span>
+                    </div>
+                    <div class="location-meta-item">
+                        <span class="location-meta-label">CATEGORY / TYPE:</span>
+                        <span class="location-meta-val">${categoryStr}</span>
+                    </div>
+                    <div class="location-meta-item">
+                        <span class="location-meta-label">CITY / DISTRICT:</span>
+                        <span class="location-meta-val">${cityStr}</span>
+                    </div>
+                    <div class="location-meta-item">
+                        <span class="location-meta-label">STATE / COUNTRY:</span>
+                        <span class="location-meta-val">${stateStr}, ${countryStr}</span>
+                    </div>
+                    <div class="location-meta-item">
+                        <span class="location-meta-label">PROVIDER SOURCE:</span>
+                        <span class="location-meta-val">${provider}</span>
+                    </div>
+                    <div class="location-meta-item">
+                        <span class="location-meta-label">CONFIDENCE / RELEVANCE:</span>
+                        <span class="location-meta-val" style="color: #34d399;">${confidenceStr}</span>
+                    </div>
+                </div>
+
+                <div class="aoi-summary-row" style="margin-top: 10px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.08);">
+                    <span class="aoi-summary-label">IMAGERY INTELLIGENCE:</span>
+                    <div style="margin-top: 4px;">${imageryPill}</div>
+                </div>
+            </div>
+        `;
+
+        if (hasLocalImagery) {
+            actionBox.style.display = "block";
+            renderAOIIntersectingTiles(tiles);
+        } else {
+            actionBox.style.display = "none";
+            listContainer.innerHTML = `
+                <div class="empty-hint" style="padding: 12px; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 8px;">
+                    <div style="font-weight: 700; color: #fbbf24; margin-bottom: 4px;">📍 Geographic Location Found</div>
+                    <div style="font-size: 0.78rem; color: #cbd5e1;">Map centered on <strong>${placeName}</strong> (${lat.toFixed(4)}°N, ${lon.toFixed(4)}°E). Local Sentinel-2 tile catalog is currently staged for the Kolkata / Sundarbans theater. Full map navigation & location intelligence remain active.</div>
+                </div>
+            `;
+        }
+
+    } catch (e) {
+        console.error("AOI query failed:", e);
+        badge.textContent = "Query Error";
+        listContainer.innerHTML = `<div class="empty-hint" style="color: #f87171;">${e.message}</div>`;
+    }
+}
+
 
 async function loadTileFootprints() {
     try {

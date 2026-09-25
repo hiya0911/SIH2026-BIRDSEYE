@@ -31,6 +31,7 @@ from services import (
     get_embedder,
     vector_index
 )
+from geocoder import geocode_location, ENRICHED_LOCAL_CATALOG
 
 app = FastAPI(
     title="BIRDSΣY3 Backend",
@@ -152,56 +153,19 @@ def validate_polygon(polygon: list):
 @app.get("/api/location/search")
 def search_location(q: str = Query(...)):
     """
-    Offline/local geocoder & coordinate lookup service for analyst map console.
-    Accepts place names (e.g. Kolkata, Siliguri) or lat, lon pairs (e.g. 23.8103, 90.4125).
+    Fine-grained geocoding & coordinate lookup service for analyst map console.
+    Accepts place names (e.g. Lake Town, Kolkata, West Bengal, India; Siliguri; Mumbai; Delhi)
+    or lat, lon coordinate pairs (e.g. 22.5726, 88.3639).
     """
     query_str = q.strip()
     if not query_str:
         raise HTTPException(status_code=400, detail="Search query cannot be empty.")
     
-    # 1. Parse coordinate pair format (e.g. "23.8103, 90.4125")
-    if "," in query_str:
-        parts = [p.strip() for p in query_str.split(",")]
-        if len(parts) == 2:
-            try:
-                lat = float(parts[0])
-                lon = float(parts[1])
-                validate_lat_lon(lat, lon)
-                return {
-                    "status": "success",
-                    "location_type": "coordinates",
-                    "query": query_str,
-                    "name": f"{lat:.4f}° N, {lon:.4f}° E",
-                    "lat": lat,
-                    "lon": lon,
-                    "wgs_bbox": [round(lon - 0.02, 6), round(lat - 0.02, 6), round(lon + 0.02, 6), round(lat + 0.02, 6)]
-                }
-            except ValueError:
-                pass
-            except HTTPException:
-                raise
-    
-    # 2. Match against offline landmark catalog
-    q_lower = query_str.lower()
-    for key, place in LOCAL_PLACES_CATALOG.items():
-        if key in q_lower or q_lower in key:
-            lat, lon = place["lat"], place["lon"]
-            return {
-                "status": "success",
-                "location_type": "landmark",
-                "query": query_str,
-                "name": place["name"],
-                "lat": lat,
-                "lon": lon,
-                "wgs_bbox": [round(lon - 0.025, 6), round(lat - 0.025, 6), round(lon + 0.025, 6), round(lat + 0.025, 6)]
-            }
-            
-    # 3. Not found fallback
-    return {
-        "status": "not_found",
-        "message": "LOCATION NOT FOUND (Use Latitude, Longitude coordinates)",
-        "query": query_str
-    }
+    res = geocode_location(query_str)
+    if res.get("status") == "invalid_coordinates":
+        raise HTTPException(status_code=400, detail=res.get("message", "Invalid coordinates provided."))
+    return res
+
 
 
 # =========================================================

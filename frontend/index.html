@@ -417,13 +417,16 @@
             <div class="glass-card map-control-bar">
                 <div class="map-controls-row" style="margin-bottom: 0.75rem;">
                     <!-- Geographic Location Search -->
-                    <div class="map-control-group flex-1">
+                    <div class="map-control-group flex-1" style="position: relative;">
                         <label class="form-label" for="map-location-search-input">
-                            <span>Geographic Location Search:</span>
-                            <span class="label-hint">Offline place catalog or Lat, Lon (e.g. Kolkata, Siliguri, 23.8103, 90.4125)</span>
+                            <span>Geographic Location Intelligence Search:</span>
+                            <span class="label-hint">Fine-grained India search: localities, towns, cities, districts, states &amp; coordinates</span>
                         </label>
                         <div class="coord-inputs-pair">
-                            <input type="text" id="map-location-search-input" class="glass-input" placeholder="Search place name or coordinates (e.g. Kolkata, Siliguri, 23.8103, 90.4125)...">
+                            <div class="search-input-wrapper" style="position: relative; flex: 1;">
+                                <input type="text" id="map-location-search-input" class="glass-input" placeholder="Search locality, city, district or coords (e.g. Lake Town, Kolkata; Siliguri; Mumbai; 22.5726, 88.3639)..." autocomplete="off">
+                                <div id="map-search-suggestions" class="search-suggestions-dropdown hidden"></div>
+                            </div>
                             <button id="map-location-search-btn" class="glow-button primary-button small-btn">🔍 Search</button>
                         </div>
                     </div>
@@ -431,21 +434,25 @@
                     <!-- Location Preset Quick Jump -->
                     <div class="map-control-group flex-1">
                         <label class="form-label" for="map-preset-select">
-                            <span>Strategic Theater Preset:</span>
+                            <span>Strategic Theater &amp; Metro Presets:</span>
                         </label>
                         <div class="select-wrapper">
                             <select id="map-preset-select" class="glass-select">
-                                <option value="kolkata_core" selected>📍 Kolkata Urban Core &amp; CBD (22.5726°N, 88.3639°E)</option>
-                                <option value="siliguri">🏔️ Siliguri District (26.7271°N, 88.4315°E)</option>
+                                <option value="kolkata_core" selected>📍 Kolkata Urban Core (22.5726°N, 88.3639°E)</option>
+                                <option value="lake_town">🏙️ Lake Town, Kolkata (22.5976°N, 88.4026°E)</option>
+                                <option value="siliguri">🏔️ Siliguri Metropolitan Region (26.7271°N, 88.4315°E)</option>
+                                <option value="salt_lake">🏢 Salt Lake Sector V &amp; New Town Corridor</option>
+                                <option value="delhi">🏛️ New Delhi / NCR Region (28.6139°N, 77.2090°E)</option>
+                                <option value="mumbai">🌉 Mumbai Metropolis (19.0760°N, 72.8777°E)</option>
+                                <option value="bengaluru">💻 Bengaluru Tech Hub (12.9716°N, 77.5946°E)</option>
                                 <option value="hooghly_river">🌊 Hooghly River Channel &amp; Howrah Port</option>
-                                <option value="salt_lake">🏙️ Salt Lake Sector V &amp; New Town Tech Corridor</option>
                                 <option value="wetlands">🌿 East Kolkata Wetlands (Ramsar Zone)</option>
-                                <option value="baruipur">🚜 Baruipur Southern Expansion Belt</option>
-                                <option value="barrackpore">🏗️ Barrackpore Industrial Corridor</option>
+                                <option value="darjeeling">⛰️ Darjeeling Hill Station (27.0410°N, 88.2663°E)</option>
                             </select>
                             <span class="select-chevron">▼</span>
                         </div>
                     </div>
+
                 </div>
 
                 <div class="map-controls-row">
