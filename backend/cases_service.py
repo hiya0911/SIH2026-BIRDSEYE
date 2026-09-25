@@ -235,47 +235,54 @@ def get_case_by_id(case_id: str):
     return None
 
 
-def submit_review(case_id: str = None, decision: str = "CONFIRM", rationale: str = "", analyst_id: str = "Senior Satellite Analyst", tile_id: str = None):
+def submit_review(case_id: str = None, decision: str = "CONFIRM", rationale: str = "", analyst_id: str = "analyst", tile_id: str = None, change_id: str = None):
     """
     Submits an analyst decision (CONFIRM, REJECT, FLAG) with rationale, timestamp,
     and analyst metadata. Updates the Evidence Workspace and reviews collection.
     """
     valid_decisions = {"CONFIRM", "REJECT", "FLAG"}
-    clean_decision = decision.upper().strip()
+    raw_dec = decision.value if hasattr(decision, "value") else str(decision or "")
+    clean_decision = str(raw_dec).upper().strip()
     if clean_decision not in valid_decisions:
         raise ValueError(f"Invalid analyst decision '{decision}'. Must be one of {sorted(valid_decisions)}")
 
-    # Retrieve or create case
+    clean_rationale = str(rationale or "").strip()[:1000]
+    clean_analyst = str(analyst_id or "analyst").strip()[:100]
+
+    # Retrieve or resolve case
     case = None
     if case_id:
         case = get_case_by_id(case_id)
+        if not case:
+            raise KeyError(f"Case ID '{case_id}' not found.")
 
-    if not case and tile_id:
-        # Check if case exists for tile
+    if not case and (tile_id or change_id):
+        target_ref = tile_id or change_id
         all_cases = get_all_cases()
         for c in all_cases:
-            if c.get("tile_id") == tile_id:
+            if c.get("tile_id") == target_ref or c.get("case_id") == target_ref:
                 case = c
                 break
         if not case:
-            case = create_case(tile_id, aoi_name=f"Tile {tile_id[:8]} Review Case")
+            case = create_case(target_ref, aoi_name=f"Tile {target_ref[:8]} Review Case")
 
     if not case:
-        # Create case for default tile if missing
-        target_tid = tile_id or "e87b4d6c-9cdb-4293-8a8b-7ad7a5af6e43"
+        target_tid = "e87b4d6c-9cdb-4293-8a8b-7ad7a5af6e43"
         case = create_case(target_tid, aoi_name="Analyst Direct Review Case")
 
     target_case_id = case["case_id"]
     target_tile_id = case["tile_id"]
+    target_change_id = change_id or target_tile_id
     timestamp = datetime.now(timezone.utc).isoformat()
 
     review_entry = {
         "review_id": f"REV-{str(uuid.uuid4())[:8]}",
         "case_id": target_case_id,
         "tile_id": target_tile_id,
+        "change_id": target_change_id,
         "decision": clean_decision,
-        "rationale": rationale or f"Analyst mark: {clean_decision}",
-        "analyst_id": analyst_id or "Senior Satellite Analyst",
+        "rationale": clean_rationale,
+        "analyst_id": clean_analyst,
         "timestamp": timestamp
     }
 
@@ -301,9 +308,9 @@ def submit_review(case_id: str = None, decision: str = "CONFIRM", rationale: str
 
     case["current_status"] = new_status
     case["analyst_decision"] = clean_decision
-    case["analyst_rationale"] = rationale
+    case["analyst_rationale"] = clean_rationale
     case["latest_review_at"] = timestamp
-    case["analyst_id"] = analyst_id
+    case["analyst_id"] = clean_analyst
     case["updated_at"] = timestamp
     if "reviews_history" not in case or not isinstance(case["reviews_history"], list):
         case["reviews_history"] = []
@@ -336,9 +343,10 @@ def submit_review(case_id: str = None, decision: str = "CONFIRM", rationale: str
             parameters={
                 "case_id": target_case_id,
                 "tile_id": target_tile_id,
+                "change_id": target_change_id,
                 "decision": clean_decision,
-                "rationale": rationale,
-                "analyst_id": analyst_id
+                "rationale": clean_rationale,
+                "analyst_id": clean_analyst
             }
         )
         if provenance_collection is not None:
@@ -351,8 +359,53 @@ def submit_review(case_id: str = None, decision: str = "CONFIRM", rationale: str
         "message": f"Analyst review '{clean_decision}' successfully recorded.",
         "case_id": target_case_id,
         "tile_id": target_tile_id,
+        "change_id": target_change_id,
         "review": review_clean,
         "updated_case": case
+    }
+
+
+def get_current_review(case_id: str):
+    """
+    Returns latest recorded review for a case ID.
+    Raises KeyError if case_id does not exist.
+    """
+    case = get_case_by_id(case_id)
+    if not case:
+        raise KeyError(f"Case ID '{case_id}' not found.")
+
+    history = case.get("reviews_history", [])
+    latest = history[-1] if history else None
+
+    return {
+        "status": "success",
+        "case_id": case["case_id"],
+        "tile_id": case.get("tile_id"),
+        "current_status": case.get("current_status", "OPEN"),
+        "analyst_decision": case.get("analyst_decision", "PENDING"),
+        "analyst_rationale": case.get("analyst_rationale"),
+        "latest_review_at": case.get("latest_review_at"),
+        "current_review": latest
+    }
+
+
+def get_review_history(case_id: str):
+    """
+    Returns full review history timeline for a case ID.
+    Raises KeyError if case_id does not exist.
+    """
+    case = get_case_by_id(case_id)
+    if not case:
+        raise KeyError(f"Case ID '{case_id}' not found.")
+
+    history = case.get("reviews_history", [])
+    return {
+        "status": "success",
+        "case_id": case["case_id"],
+        "tile_id": case.get("tile_id"),
+        "current_status": case.get("current_status", "OPEN"),
+        "total_reviews": len(history),
+        "history": history
     }
 
 

@@ -2971,6 +2971,101 @@ body {
     word-break: break-word;
 }
 
+/* Phase 3B Review Meta & History Styles */
+.review-meta-bar {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    background: rgba(3, 7, 18, 0.5);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    padding: 0.75rem 1.1rem;
+    font-size: 0.85rem;
+    color: #cbd5e1;
+}
+
+.review-meta-bar .meta-item strong {
+    color: #94a3b8;
+    margin-right: 0.35rem;
+}
+
+.review-history-section {
+    margin-top: 1.5rem;
+    border-top: 1px solid var(--border-subtle);
+    padding-top: 1.25rem;
+}
+
+.history-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #f8fafc;
+    margin-bottom: 0.85rem;
+}
+
+.review-history-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    max-height: 250px;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+}
+
+.review-history-card {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-size: 0.78rem;
+}
+
+.review-history-card.decision-confirm {
+    border-left: 3px solid #10b981;
+}
+
+.review-history-card.decision-reject {
+    border-left: 3px solid #ef4444;
+}
+
+.review-history-card.decision-flag {
+    border-left: 3px solid #f59e0b;
+}
+
+.rh-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.rh-decision {
+    font-weight: 800;
+    font-size: 0.8rem;
+    letter-spacing: 0.4px;
+}
+
+.rh-time {
+    color: #64748b;
+    font-size: 0.72rem;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.rh-rationale {
+    color: #cbd5e1;
+    line-height: 1.4;
+    background: rgba(3, 7, 18, 0.3);
+    padding: 0.4rem 0.6rem;
+    border-radius: 5px;
+}
+
+.rh-analyst {
+    color: #94a3b8;
+    font-size: 0.7rem;
+}
+
 
 
 

@@ -1056,6 +1056,12 @@
                     <span class="sub-tag">HUMAN-IN-THE-LOOP VERIFICATION</span>
                 </div>
                 <div class="review-controls-body">
+                    <div class="review-meta-bar">
+                        <div class="meta-item"><strong>Case ID:</strong> <code id="review-display-case-id">CASE-2026-e87b4d6c</code></div>
+                        <div class="meta-item"><strong>Change / Result ID:</strong> <code id="review-display-change-id">e87b4d6c-9cdb-4293-8a8b-7ad7a5af6e43</code></div>
+                        <div class="meta-item"><strong>Review Status:</strong> <span id="review-display-status" class="status-pill not-implemented">NO REVIEW YET</span></div>
+                    </div>
+                    
                     <p class="section-subtext">Select an analyst decision, provide your rationale/evidence observation, and record the review:</p>
                     
                     <div class="decision-buttons-grid">
@@ -1083,12 +1089,20 @@
 
                     <div class="analyst-submit-bar">
                         <div class="analyst-meta-field">
-                            <span class="field-label">Analyst ID / Role:</span>
-                            <input type="text" id="analyst-id-input" class="glass-input" value="Senior Satellite Analyst">
+                            <span class="field-label">Analyst ID:</span>
+                            <input type="text" id="analyst-id-input" class="glass-input" value="analyst">
                         </div>
                         <button id="btn-submit-review" class="glass-btn primary-btn glow">💾 Record Analyst Review</button>
                     </div>
                     <div id="review-submission-status" class="status-msg"></div>
+
+                    <!-- Review History Timeline -->
+                    <div class="review-history-section">
+                        <h4 class="history-title">📜 Audit Log & Review History Timeline</h4>
+                        <div id="review-history-list" class="review-history-timeline">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
                 </div>
             </div>
 

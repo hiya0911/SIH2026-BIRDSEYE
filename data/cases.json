@@ -1,9 +1,9 @@
 [
   {
     "case_id": "CASE-2026-e87b4d6c",
-    "analyst_decision": "FLAG",
-    "analyst_id": "Junior Remote Sensing Analyst",
-    "analyst_rationale": "Ambiguous seasonal phenological drift. Escalating to domain specialist.",
+    "analyst_decision": "REJECT",
+    "analyst_id": "analyst_3",
+    "analyst_rationale": "Transient cloud shadow artifact suppressed by SCL mask.",
     "aoi_name": "Kolkata Industrial Corridor (Primary Tile)",
     "change_mask_stats": {
       "total_pixels": 65536,
@@ -104,7 +104,7 @@
       }
     },
     "created_at": "2026-09-24T13:35:27.744251+00:00",
-    "current_status": "FLAGGED",
+    "current_status": "REJECTED",
     "false_alarm_analysis": {
       "cloud_shadow_masked_pixels": 1404,
       "cloud_shadow_masked_pct": 2.14,
@@ -114,7 +114,7 @@
       "false_alarm_risk_score": "LOW",
       "false_alarm_verdict": "Zero cloud contamination on target, sub-pixel registration verified, phenological baseline subtracted"
     },
-    "latest_review_at": "2026-09-25T00:24:36.831048+00:00",
+    "latest_review_at": "2026-09-25T00:37:59.403570+00:00",
     "location": {
       "center_lat": 23.495,
       "center_lon": 87.995,
@@ -223,6 +223,36 @@
         "rationale": "Ambiguous seasonal phenological drift. Escalating to domain specialist.",
         "analyst_id": "Junior Remote Sensing Analyst",
         "timestamp": "2026-09-25T00:24:36.831048+00:00"
+      },
+      {
+        "review_id": "REV-db090021",
+        "case_id": "CASE-2026-e87b4d6c",
+        "tile_id": "e87b4d6c-9cdb-4293-8a8b-7ad7a5af6e43",
+        "change_id": "e87b4d6c-9cdb-4293-8a8b-7ad7a5af6e43",
+        "decision": "CONFIRM",
+        "rationale": "Verified real spectral canopy loss and surface expansion.",
+        "analyst_id": "analyst_1",
+        "timestamp": "2026-09-25T00:37:59.386986+00:00"
+      },
+      {
+        "review_id": "REV-3b76293e",
+        "case_id": "CASE-2026-e87b4d6c",
+        "tile_id": "e87b4d6c-9cdb-4293-8a8b-7ad7a5af6e43",
+        "change_id": "e87b4d6c-9cdb-4293-8a8b-7ad7a5af6e43",
+        "decision": "FLAG",
+        "rationale": "Ambiguous seasonal phenology drift requiring secondary inspection.",
+        "analyst_id": "analyst_2",
+        "timestamp": "2026-09-25T00:37:59.396889+00:00"
+      },
+      {
+        "review_id": "REV-3f9e3832",
+        "case_id": "CASE-2026-e87b4d6c",
+        "tile_id": "e87b4d6c-9cdb-4293-8a8b-7ad7a5af6e43",
+        "change_id": "e87b4d6c-9cdb-4293-8a8b-7ad7a5af6e43",
+        "decision": "REJECT",
+        "rationale": "Transient cloud shadow artifact suppressed by SCL mask.",
+        "analyst_id": "analyst_3",
+        "timestamp": "2026-09-25T00:37:59.403570+00:00"
       }
     ],
     "sar_evidence": {
@@ -266,6 +296,6 @@
       "change_heatmap": null
     },
     "tile_id": "e87b4d6c-9cdb-4293-8a8b-7ad7a5af6e43",
-    "updated_at": "2026-09-25T00:24:36.831048+00:00"
+    "updated_at": "2026-09-25T00:37:59.403570+00:00"
   }
 ]

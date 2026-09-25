@@ -2372,6 +2372,31 @@ async function loadCaseDetails(caseId) {
         const c = data.case;
         activeCaseData = c;
 
+        // Display IDs
+        const caseIdEl = document.getElementById("review-display-case-id");
+        const changeIdEl = document.getElementById("review-display-change-id");
+        const reviewStatusEl = document.getElementById("review-display-status");
+
+        if (caseIdEl) caseIdEl.textContent = c.case_id;
+        if (changeIdEl) changeIdEl.textContent = c.tile_id || c.change_id || "N/A";
+
+        if (reviewStatusEl) {
+            const st = c.current_status || "OPEN";
+            if (st === "CONFIRMED") {
+                reviewStatusEl.textContent = "CONFIRMED";
+                reviewStatusEl.className = "status-pill implemented";
+            } else if (st === "REJECTED") {
+                reviewStatusEl.textContent = "REJECTED";
+                reviewStatusEl.className = "status-pill not-implemented";
+            } else if (st === "FLAGGED") {
+                reviewStatusEl.textContent = "FLAGGED";
+                reviewStatusEl.className = "status-pill partial";
+            } else {
+                reviewStatusEl.textContent = "NO REVIEW YET";
+                reviewStatusEl.className = "status-pill not-implemented";
+            }
+        }
+
         // Status Badge
         const statusBadge = document.getElementById("case-status-badge");
         if (statusBadge) {
@@ -2422,6 +2447,31 @@ async function loadCaseDetails(caseId) {
         if (sarBadge) {
             sarBadge.textContent = sar.available ? "AVAILABLE" : "NOT CACHED LOCALLY";
             sarBadge.className = `risk-pill ${sar.available ? 'low' : 'moderate'}`;
+        }
+
+        // Review History Timeline
+        const historyContainer = document.getElementById("review-history-list");
+        if (historyContainer) {
+            const history = c.reviews_history || [];
+            historyContainer.innerHTML = "";
+            if (history.length === 0) {
+                historyContainer.innerHTML = `<div class="section-subtext">No historical review entries recorded for this case yet.</div>`;
+            } else {
+                history.slice().reverse().forEach(rh => {
+                    const card = document.createElement("div");
+                    const dec = (rh.decision || "CONFIRM").toLowerCase();
+                    card.className = `review-history-card decision-${dec}`;
+                    card.innerHTML = `
+                        <div class="rh-header">
+                            <span class="rh-decision">${rh.decision || 'REVIEW'}</span>
+                            <span class="rh-time">${rh.timestamp ? rh.timestamp.substring(0, 19).replace('T', ' ') : 'N/A'}</span>
+                        </div>
+                        <div class="rh-rationale">${rh.rationale || 'No rationale provided'}</div>
+                        <div class="rh-analyst">Assigned Analyst: <strong>${rh.analyst_id || 'analyst'}</strong></div>
+                    `;
+                    historyContainer.appendChild(card);
+                });
+            }
         }
 
         // Provenance Lineage Chain

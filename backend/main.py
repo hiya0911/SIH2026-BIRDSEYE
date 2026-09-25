@@ -878,9 +878,12 @@ def submit_case_review(case_id: str, request: AnalystReviewRequest):
             decision=request.decision,
             rationale=request.rationale,
             analyst_id=request.analyst_id,
-            tile_id=request.tile_id
+            tile_id=request.tile_id,
+            change_id=request.change_id
         )
         return result
+    except KeyError as ke:
+        raise HTTPException(status_code=404, detail=str(ke).strip("'"))
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))
     except Exception as e:
@@ -898,13 +901,44 @@ def submit_direct_review(request: AnalystReviewRequest):
             decision=request.decision,
             rationale=request.rationale,
             analyst_id=request.analyst_id,
-            tile_id=request.tile_id
+            tile_id=request.tile_id,
+            change_id=request.change_id
         )
         return result
+    except KeyError as ke:
+        raise HTTPException(status_code=404, detail=str(ke).strip("'"))
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Review submission failed: {str(e)}")
+
+
+@app.get("/api/cases/{case_id}/review")
+def get_current_case_review(case_id: str):
+    """
+    Retrieves the current active review for a case or candidate change.
+    """
+    try:
+        review_data = cases_service.get_current_review(case_id)
+        return review_data
+    except KeyError as ke:
+        raise HTTPException(status_code=404, detail=str(ke).strip("'"))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Retrieving current review failed: {str(e)}")
+
+
+@app.get("/api/cases/{case_id}/reviews")
+def get_case_review_history(case_id: str):
+    """
+    Retrieves the complete audit history timeline of all review decisions for a case.
+    """
+    try:
+        history_data = cases_service.get_review_history(case_id)
+        return history_data
+    except KeyError as ke:
+        raise HTTPException(status_code=404, detail=str(ke).strip("'"))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Retrieving review history failed: {str(e)}")
 
 
 @app.get("/api/cases/{case_id}/provenance")

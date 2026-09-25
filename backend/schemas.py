@@ -39,15 +39,24 @@ class PreprocessingPipelineRequest(BaseModel):
     bbox: Optional[list] = None
     baseline_year: int = 2024
 
+from enum import Enum
+
+class AnalystDecisionEnum(str, Enum):
+    CONFIRM = "CONFIRM"
+    REJECT = "REJECT"
+    FLAG = "FLAG"
+
 class CaseCreateRequest(BaseModel):
     tile_id: str
     aoi_name: Optional[str] = None
     notes: Optional[str] = None
 
 class AnalystReviewRequest(BaseModel):
-    decision: str  # CONFIRM, REJECT, FLAG
+    decision: AnalystDecisionEnum
     rationale: str
-    analyst_id: Optional[str] = "Senior Satellite Analyst"
+    analyst_id: Optional[str] = "analyst"
     case_id: Optional[str] = None
     tile_id: Optional[str] = None
+    change_id: Optional[str] = None
+
 

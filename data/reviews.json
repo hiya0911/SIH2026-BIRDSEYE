@@ -52,5 +52,35 @@
     "rationale": "Ambiguous seasonal phenological drift. Escalating to domain specialist.",
     "analyst_id": "Junior Remote Sensing Analyst",
     "timestamp": "2026-09-25T00:24:36.831048+00:00"
+  },
+  {
+    "review_id": "REV-db090021",
+    "case_id": "CASE-2026-e87b4d6c",
+    "tile_id": "e87b4d6c-9cdb-4293-8a8b-7ad7a5af6e43",
+    "change_id": "e87b4d6c-9cdb-4293-8a8b-7ad7a5af6e43",
+    "decision": "CONFIRM",
+    "rationale": "Verified real spectral canopy loss and surface expansion.",
+    "analyst_id": "analyst_1",
+    "timestamp": "2026-09-25T00:37:59.386986+00:00"
+  },
+  {
+    "review_id": "REV-3b76293e",
+    "case_id": "CASE-2026-e87b4d6c",
+    "tile_id": "e87b4d6c-9cdb-4293-8a8b-7ad7a5af6e43",
+    "change_id": "e87b4d6c-9cdb-4293-8a8b-7ad7a5af6e43",
+    "decision": "FLAG",
+    "rationale": "Ambiguous seasonal phenology drift requiring secondary inspection.",
+    "analyst_id": "analyst_2",
+    "timestamp": "2026-09-25T00:37:59.396889+00:00"
+  },
+  {
+    "review_id": "REV-3f9e3832",
+    "case_id": "CASE-2026-e87b4d6c",
+    "tile_id": "e87b4d6c-9cdb-4293-8a8b-7ad7a5af6e43",
+    "change_id": "e87b4d6c-9cdb-4293-8a8b-7ad7a5af6e43",
+    "decision": "REJECT",
+    "rationale": "Transient cloud shadow artifact suppressed by SCL mask.",
+    "analyst_id": "analyst_3",
+    "timestamp": "2026-09-25T00:37:59.403570+00:00"
   }
 ]
