@@ -4436,12 +4436,18 @@ function renderCopernicusDiscoveredScenes(scenes, metaData) {
                         <span class="copernicus-meta-val">${item.processing_level || 'L2A'} / ${polStr}</span>
                     </div>
                 </div>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; padding-top: 4px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.06);">
                     <span class="status-pill partial" style="font-size: 0.68rem;">
                         ${isSarScene ? 'SENTINEL-1 SAR — NOT CACHED LOCALLY' : 'REMOTE STAC — NOT DOWNLOADED'}
                     </span>
-                    ${item.source_url ? `<a href="${item.source_url}" target="_blank" rel="noopener" style="font-size: 0.7rem; color: #38bdf8; text-decoration: underline;" onclick="event.stopPropagation();">STAC Link ↗</a>` : ''}
+                    <div style="display: flex; gap: 6px; align-items: center;">
+                        ${item.source_url ? `<a href="${item.source_url}" target="_blank" rel="noopener" style="font-size: 0.7rem; color: #38bdf8; text-decoration: underline;" onclick="event.stopPropagation();">STAC Link ↗</a>` : ''}
+                        <button class="glow-button primary-button small-btn" style="padding: 3px 8px; font-size: 0.7rem;" onclick="event.stopPropagation(); initiateSceneAcquisition('${item.product_id}', '${item.collection}', '${item.satellite_platform || 'SENTINEL-2'}', '${item.acquisition_time}', '${item.source_url || ''}')">
+                            📥 ACQUIRE LOCALLY
+                        </button>
+                    </div>
                 </div>
+                <div id="acq-status-${item.product_id}" style="margin-top: 6px; font-size: 0.72rem;"></div>
             </div>
         `;
     });
@@ -4507,6 +4513,150 @@ function highlightDiscoveredScene(productId) {
         state.map.flyToBounds(bounds, { padding: [20, 20], duration: 1.0 });
     }
 }
+
+// =========================================================
+// PHASE 5C: LIVE IMAGERY ACQUISITION & LOCAL CACHE HANDLERS
+// =========================================================
+
+async function initiateSceneAcquisition(sceneId, collection, sensor, acqTime, assetUrl, assetKey) {
+    const statusDiv = document.getElementById(`acq-status-${sceneId}`);
+    if (statusDiv) {
+        statusDiv.innerHTML = `<span style="color: #38bdf8;">⏳ Requesting acquisition for ${sceneId}...</span>`;
+    }
+
+    try {
+        const payload = {
+            scene_id: sceneId,
+            collection: collection,
+            sensor: sensor,
+            acquisition_time: acqTime,
+            asset_key: assetKey || "thumbnail",
+            asset_url: assetUrl || null
+        };
+
+        const res = await fetch(`${API_BASE}/copernicus/acquire`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+            throw new Error(data.detail || data.reason || `HTTP ${res.status}`);
+        }
+
+        if (statusDiv) {
+            if (data.status === "REQUIRES_AUTHENTICATION") {
+                statusDiv.innerHTML = `
+                    <div style="background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.35); border-radius: 6px; padding: 6px 8px; margin-top: 4px;">
+                        <div style="color: #fbbf24; font-weight: 600;">🔒 COPERNICUS AUTH REQUIRED</div>
+                        <div style="font-size: 0.68rem; color: #cbd5e1; margin-top: 2px;">${data.reason || 'Raw product node requires OIDC login.'}</div>
+                        <div style="font-size: 0.65rem; color: #94a3b8; margin-top: 2px;">REMOTE STAC DISCOVERED &bull; DOWNLOAD RESTRICTED TO LOGGED-IN USERS</div>
+                    </div>
+                `;
+            } else {
+                const isDup = data.is_duplicate;
+                statusDiv.innerHTML = `
+                    <div style="background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); border-radius: 6px; padding: 6px; margin-top: 4px;">
+                        <div style="color: #10b981; font-weight: 600;">✓ ${isDup ? 'CACHED' : 'ACQUIRED'}: ${data.file_size_mb || 0} MB (${data.asset_key || 'asset'})</div>
+                        <div style="font-size: 0.65rem; color: #94a3b8;" class="mono-font">SHA-256: ${(data.sha256 || '').substring(0, 16)}...</div>
+                        <div style="display: flex; gap: 4px; margin-top: 4px;">
+                            <span class="badge-tag green" style="font-size: 0.62rem;">${data.validation_status}</span>
+                            ${data.ingestion_status === 'READY_FOR_INGESTION' ? `
+                                <button class="glow-button primary-button small-btn" style="padding: 2px 6px; font-size: 0.65rem;" onclick="ingestAcquiredScene('${data.acquisition_id}')">
+                                    ⚡ Ingest to FAISS
+                                </button>
+                            ` : `<span class="badge-tag gray" style="font-size: 0.62rem;">${data.ingestion_status}</span>`}
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        loadLocalAcquisitions();
+
+    } catch (err) {
+        if (statusDiv) {
+            statusDiv.innerHTML = `
+                <div style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 6px; padding: 6px; margin-top: 4px; color: #f87171;">
+                    ❌ Acquisition Failed: ${err.message}
+                </div>
+            `;
+        }
+    }
+}
+
+
+async function loadLocalAcquisitions() {
+    const container = document.getElementById("copernicus-acquisitions-container");
+    const countEl = document.getElementById("local-acq-count");
+    if (!container) return;
+
+    try {
+        const res = await fetch(`${API_BASE}/copernicus/acquisitions`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const list = data.acquisitions || [];
+
+        if (countEl) countEl.innerText = list.length;
+
+        if (list.length === 0) {
+            container.innerHTML = `<div class="empty-hint" style="padding: 10px; font-size: 0.78rem;">No scenes acquired locally yet. Discover a scene above and click "ACQUIRE LOCALLY".</div>`;
+            return;
+        }
+
+        let html = `<div style="display: flex; flex-direction: column; gap: 8px;">`;
+        list.forEach(acq => {
+            const sizeMb = (acq.file_size_bytes / (1024*1024)).toFixed(2);
+            html += `
+                <div style="background: rgba(15,23,42,0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-weight: 600; color: #e2e8f0; font-size: 0.8rem;">📦 ${acq.scene_id} (${acq.sensor})</div>
+                        <div style="font-size: 0.7rem; color: #94a3b8;" class="mono-font">Asset: ${acq.asset_key} &bull; ${sizeMb} MB &bull; SHA-256: ${(acq.sha256 || '').substring(0, 12)}...</div>
+                    </div>
+                    <div style="display: flex; gap: 6px; align-items: center;">
+                        <span class="badge-tag green" style="font-size: 0.65rem;">${acq.validation_status}</span>
+                        ${acq.ingestion_status === 'READY_FOR_INGESTION' ? `
+                            <button class="glow-button primary-button small-btn" style="padding: 3px 8px; font-size: 0.68rem;" onclick="ingestAcquiredScene('${acq.acquisition_id}')">
+                                ⚡ Ingest to FAISS
+                            </button>
+                        ` : `<span class="badge-tag ${acq.ingestion_status === 'INGESTED' ? 'cyan' : 'gray'}" style="font-size: 0.65rem;">${acq.ingestion_status}</span>`}
+                    </div>
+                </div>
+            `;
+        });
+        html += `</div>`;
+        container.innerHTML = html;
+
+    } catch (err) {
+        console.error("Failed to load local acquisitions:", err);
+    }
+}
+
+async function ingestAcquiredScene(acqId) {
+    try {
+        const res = await fetch(`${API_BASE}/copernicus/acquisitions/${acqId}/ingest`, {
+            method: "POST"
+        });
+        const data = await res.json();
+        if (!res.ok) {
+            throw new Error(data.detail || data.reason || `HTTP ${res.status}`);
+        }
+        alert(`✓ Acquisition ${acqId} successfully ingested into FAISS vector index!`);
+        loadLocalAcquisitions();
+    } catch (err) {
+        alert(`❌ Ingestion handoff failed: ${err.message}`);
+    }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    const btnRefresh = document.getElementById("btn-refresh-acquisitions");
+    if (btnRefresh) {
+        btnRefresh.addEventListener("click", loadLocalAcquisitions);
+    }
+    loadLocalAcquisitions();
+});
+
 
 
 

@@ -19,6 +19,7 @@ from schemas import (
     CaseCreateRequest,
     AnalystReviewRequest,
     CopernicusSearchRequest,
+    CopernicusAcquireRequest,
     MultiTemporalChangeRequest,
     RasterIngestRequest
 )
@@ -35,9 +36,11 @@ from services import (
     vector_index
 )
 from geocoder import geocode_location, ENRICHED_LOCAL_CATALOG
-from copernicus_engine import CopernicusDiscoveryEngine
+from copernicus_engine import CopernicusDiscoveryEngine, CopernicusAcquisitionEngine
 
 copernicus_engine = CopernicusDiscoveryEngine()
+copernicus_acq_engine = CopernicusAcquisitionEngine()
+
 
 
 app = FastAPI(
@@ -884,6 +887,96 @@ def search_copernicus_stac_get(
         limit=limit
     )
     return search_copernicus_stac(req)
+
+
+# =========================================================
+# PHASE 5C: LIVE IMAGERY ACQUISITION & LOCAL CACHE ENDPOINTS
+# =========================================================
+
+@app.post("/api/copernicus/acquire")
+def acquire_copernicus_scene_endpoint(request: CopernicusAcquireRequest):
+    """
+    Phase 5C: Initiates secure live imagery acquisition for a discovered Copernicus scene asset.
+    Validates HTTPS URL security, allowlists Copernicus domains, checks 200MB size limit,
+    streams chunked download to temporary .part file, calculates SHA-256 digest,
+    atomically replaces final target, inspects GeoTIFF metadata, and writes local manifest.
+    """
+    res = copernicus_acq_engine.acquire_scene_asset(
+        scene_id=request.scene_id,
+        collection=request.collection or "sentinel-2-l2a",
+        sensor=request.sensor or "SENTINEL-2",
+        acquisition_time=request.acquisition_time,
+        asset_key=request.asset_key or "visual",
+        asset_url=request.asset_url,
+        bbox=request.bbox,
+        geometry=request.geometry
+    )
+
+    if res.get("download_status") == "NOT_FOUND":
+        raise HTTPException(status_code=404, detail=res.get("reason", "STAC Item ID or asset not found on Copernicus server."))
+    elif res.get("status") == "REJECTED":
+        raise HTTPException(status_code=400, detail=res.get("reason", "Security or validation rejection."))
+    elif res.get("status") == "FAILED":
+        raise HTTPException(status_code=500, detail=res.get("reason", "Acquisition process failed."))
+
+
+    # Log acquisition provenance
+    try:
+        prov_doc = create_provenance_document(
+            action="copernicus_live_acquisition",
+            source_files=[request.asset_url] if request.asset_url else [],
+            output_files=[res.get("local_filepath", "")],
+            parameters={
+                "scene_id": request.scene_id,
+                "asset_key": request.asset_key,
+                "sha256": res.get("sha256"),
+                "file_size_mb": res.get("file_size_mb"),
+                "status": res.get("status")
+            }
+        )
+        provenance_collection.insert_one(prov_doc)
+    except Exception:
+        pass
+
+    return res
+
+
+@app.get("/api/copernicus/acquisitions")
+def list_copernicus_acquisitions():
+    """
+    Phase 5C: Returns list of all locally acquired and cached Copernicus scene assets.
+    """
+    return {
+        "status": "success",
+        "total_acquisitions": len(copernicus_acq_engine.list_acquisitions()),
+        "acquisitions": copernicus_acq_engine.list_acquisitions()
+    }
+
+
+@app.get("/api/copernicus/acquisitions/{acquisition_id}")
+@app.get("/api/copernicus/acquisition/{acquisition_id}")
+def get_copernicus_acquisition_details(acquisition_id: str):
+    """
+    Phase 5C: Retrieves manifest details for a specific local Copernicus acquisition.
+    """
+    acq = copernicus_acq_engine.get_acquisition(acquisition_id)
+    if not acq:
+        raise HTTPException(status_code=404, detail=f"Acquisition or scene ID '{acquisition_id}' not found in local cache.")
+    return acq
+
+
+@app.post("/api/copernicus/acquisitions/{acquisition_id}/ingest")
+@app.post("/api/copernicus/acquisition/{acquisition_id}/ingest")
+def ingest_copernicus_acquisition(acquisition_id: str):
+    """
+    Phase 5C: Ingestion handoff pipeline for an acquired GeoTIFF asset into FAISS vector index.
+    """
+    res = copernicus_acq_engine.ingest_acquired_asset(acquisition_id)
+    if res.get("status") == "FAILED":
+        raise HTTPException(status_code=400, detail=res.get("reason", "Ingestion handoff failed."))
+    return res
+
+
 
 
 

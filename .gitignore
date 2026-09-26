@@ -26,6 +26,8 @@ data/**/*.SAFE/
 *.tiff
 *.jp2
 data/tiles/
+data/acquisitions/
+*.part
 *.tar.gz
 *.zip
 *.7z

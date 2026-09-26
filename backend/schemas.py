@@ -105,4 +105,16 @@ class RasterIngestRequest(BaseModel):
     source_label: Optional[str] = "Analyst Manual Import"
 
 
+class CopernicusAcquireRequest(BaseModel):
+    scene_id: str
+    collection: Optional[str] = "sentinel-2-l2a"
+    sensor: Optional[str] = "SENTINEL-2"
+    acquisition_time: Optional[str] = None
+    asset_key: Optional[str] = "visual"
+    asset_url: Optional[str] = None
+    bbox: Optional[list] = None
+    geometry: Optional[dict] = None
+
+
+
 
