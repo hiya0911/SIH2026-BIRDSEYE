@@ -572,7 +572,94 @@
                     </div>
                 </div>
             </div>
+
+            <!-- COPERNICUS DATA SPACE STAC LIVE DISCOVERY CONSOLE -->
+            <div class="glass-card copernicus-discovery-card" style="margin-top: 1.25rem;">
+                <div class="card-header-bar">
+                    <div class="card-title-group">
+                        <span class="card-icon">🛰️</span>
+                        <div>
+                            <h2 class="card-title">COPERNICUS DATA SPACE LIVE DISCOVERY (STAC v1)</h2>
+                            <div class="sub-label">Real-time remote catalog discovery for Sentinel-2 (Optical) and Sentinel-1 (C-SAR). Remote discovery only — imagery files are not downloaded.</div>
+                        </div>
+                    </div>
+                    <div class="copernicus-status-badge">
+                        <span id="copernicus-status-dot" class="status-dot online"></span>
+                        <span id="copernicus-status-label" class="status-label">STAC API: ONLINE &bull; 0 CACHED</span>
+                    </div>
+                </div>
+
+                <div class="copernicus-controls-grid" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-top: 10px;">
+                    <!-- Sensor Selector -->
+                    <div class="form-group" style="flex: 1; min-width: 200px; margin-bottom: 0;">
+                        <label class="form-label" for="copernicus-sensor-select">
+                            <span>Satellite Sensor Constellation:</span>
+                        </label>
+                        <div class="select-wrapper">
+                            <select id="copernicus-sensor-select" class="glass-select">
+                                <option value="SENTINEL-2" selected>🛰️ Sentinel-2 Optical (L2A BOA Reflectance)</option>
+                                <option value="SENTINEL-1">📡 Sentinel-1 C-SAR (GRD Radar)</option>
+                                <option value="SENTINEL-2-L1C">🛰️ Sentinel-2 Optical (L1C TOA Reflectance)</option>
+                            </select>
+                            <span class="select-chevron">▼</span>
+                        </div>
+                    </div>
+
+                    <!-- Start Date -->
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label class="form-label" for="copernicus-start-date">
+                            <span>From Date:</span>
+                        </label>
+                        <input type="date" id="copernicus-start-date" class="glass-input small-input" value="2024-01-01" style="padding: 4px 8px;">
+                    </div>
+
+                    <!-- End Date -->
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label class="form-label" for="copernicus-end-date">
+                            <span>To Date:</span>
+                        </label>
+                        <input type="date" id="copernicus-end-date" class="glass-input small-input" value="2026-12-31" style="padding: 4px 8px;">
+                    </div>
+
+                    <!-- Cloud Limit (Sentinel-2) -->
+                    <div class="form-group" id="copernicus-cloud-group" style="margin-bottom: 0;">
+                        <label class="form-label" for="copernicus-cloud-limit">
+                            <span>Max Cloud %:</span>
+                        </label>
+                        <input type="number" id="copernicus-cloud-limit" class="glass-input small-input mono-font" value="30" min="0" max="100" style="width: 80px; padding: 4px 8px;">
+                    </div>
+
+                    <!-- Result Limit -->
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label class="form-label" for="copernicus-result-limit">
+                            <span>Limit:</span>
+                        </label>
+                        <select id="copernicus-result-limit" class="glass-select small-select">
+                            <option value="5">5 Scenes</option>
+                            <option value="10" selected>10 Scenes</option>
+                            <option value="20">20 Scenes</option>
+                            <option value="50">50 Scenes</option>
+                        </select>
+                    </div>
+
+                    <!-- Execute Discovery Button -->
+                    <div class="form-action-group" style="margin-bottom: 0;">
+                        <button id="btn-run-copernicus-discovery" class="glow-button primary-button">
+                            <span class="btn-text">⚡ Run Live Copernicus Discovery</span>
+                            <span class="btn-icon">➔</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Discovered Results Panel -->
+                <div id="copernicus-results-container" class="copernicus-results-container" style="margin-top: 1rem;">
+                    <div class="empty-hint" style="padding: 16px; text-align: center;">
+                        <span>Demarcate an AOI on the map above and click "Run Live Copernicus Discovery" to search remote STAC catalog metadata.</span>
+                    </div>
+                </div>
+            </div>
         </section>
+
 
         <!-- ========================================================= -->
         <!-- TAB 2: TEMPORAL CHANGE ANALYSIS -->
@@ -639,8 +726,62 @@
                 </div>
             </div>
 
+            <!-- SIH MULTI-TEMPORAL AOI CHANGE ANALYSIS CARD -->
+            <div class="glass-card control-card" style="margin-top: 1.25rem;">
+                <div class="card-header-bar">
+                    <div class="card-title-group">
+                        <span class="card-icon">⏳</span>
+                        <div>
+                            <h2 class="card-title">SIH MULTI-TEMPORAL AOI CHANGE ANALYSIS</h2>
+                            <div class="sub-label">Dynamic AOI &amp; time-window observation pipeline, 4 core behaviors (Appearance, Disappearance, Expansion, Contraction), earliest supported observation &amp; persistence audit.</div>
+                        </div>
+                    </div>
+                    <span id="multitemporal-aoi-badge" class="badge-tag cyan">Active AOI: Map Workspace Default</span>
+                </div>
+
+                <div class="multitemporal-controls-grid" style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; margin-top: 12px;">
+                    <!-- Start Date -->
+                    <div class="form-group" style="flex: 1; min-width: 180px; margin-bottom: 0;">
+                        <label class="form-label" for="multitemporal-start-date">
+                            <span>Start Date:</span>
+                        </label>
+                        <input type="date" id="multitemporal-start-date" class="glass-input" value="2024-01-01">
+                    </div>
+
+                    <!-- End Date -->
+                    <div class="form-group" style="flex: 1; min-width: 180px; margin-bottom: 0;">
+                        <label class="form-label" for="multitemporal-end-date">
+                            <span>End Date:</span>
+                        </label>
+                        <input type="date" id="multitemporal-end-date" class="glass-input" value="2026-12-31">
+                    </div>
+
+                    <!-- Sensor Dropdown -->
+                    <div class="form-group" style="flex: 1; min-width: 220px; margin-bottom: 0;">
+                        <label class="form-label" for="multitemporal-sensor-select">
+                            <span>Satellite Sensor Constellation:</span>
+                        </label>
+                        <div class="select-wrapper">
+                            <select id="multitemporal-sensor-select" class="glass-select">
+                                <option value="SENTINEL-2" selected>🛰️ Sentinel-2 Optical (L2A BOA Reflectance)</option>
+                                <option value="SENTINEL-1">📡 Sentinel-1 C-SAR (Synthetic Aperture Radar)</option>
+                            </select>
+                            <span class="select-chevron">▼</span>
+                        </div>
+                    </div>
+
+                    <!-- Run Button -->
+                    <div class="form-action-group" style="margin-bottom: 0;">
+                        <button id="run-multitemporal-aoi-btn" class="glow-button primary-button">
+                            <span class="btn-text">Run Multi-Temporal Analysis</span>
+                            <span class="btn-icon">⚡</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <!-- TEMPORAL ANALYSIS RESULTS CONTAINER -->
-            <div id="temporal-results-container" class="temporal-results-wrapper">
+            <div id="temporal-results-container" class="temporal-results-wrapper" style="margin-top: 1.25rem;">
                 <div class="empty-state-card">
                     <div class="empty-icon">⏳</div>
                     <div class="empty-title">Select a Tile and Run Analysis</div>

@@ -59,6 +59,17 @@ class PreprocessingPipelineRequest(BaseModel):
     bbox: Optional[list] = None
     baseline_year: int = 2024
 
+class CopernicusSearchRequest(BaseModel):
+    sensor: Optional[str] = "SENTINEL-2"
+    collection: Optional[str] = None
+    bbox: Optional[list] = None
+    polygon: Optional[list] = None
+    start_date: Optional[str] = "2024-01-01"
+    end_date: Optional[str] = "2026-12-31"
+    max_cloud_cover: Optional[float] = 100.0
+    limit: Optional[int] = 10
+
+
 from enum import Enum
 
 class AnalystDecisionEnum(str, Enum):
@@ -78,5 +89,20 @@ class AnalystReviewRequest(BaseModel):
     case_id: Optional[str] = None
     tile_id: Optional[str] = None
     change_id: Optional[str] = None
+
+
+class MultiTemporalChangeRequest(BaseModel):
+    bbox: Optional[list] = None
+    polygon: Optional[list] = None
+    point: Optional[list] = None
+    start_date: Optional[str] = "2024-01-01"
+    end_date: Optional[str] = "2026-12-31"
+    sensor: Optional[str] = "SENTINEL-2"
+
+
+class RasterIngestRequest(BaseModel):
+    filepath: str
+    source_label: Optional[str] = "Analyst Manual Import"
+
 
 

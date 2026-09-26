@@ -31,9 +31,10 @@ def create_tile_document(
     valid_ratio,
     resolution,
     acquisition_datetime,
-    source_scene
+    source_scene,
+    **kwargs
 ):
-    return {
+    doc = {
         "tile_id": tile_id,
         "filename": filename,
         "filepath": filepath,
@@ -45,6 +46,8 @@ def create_tile_document(
         "source_scene": source_scene,
         "created_at": datetime.utcnow()
     }
+    doc.update(kwargs)
+    return doc
 
 def create_provenance_document(
     action,

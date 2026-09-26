@@ -110,8 +110,12 @@ class SecureIngestionEngine:
                 height = src.height
                 count = src.count
                 crs_str = src.crs.to_string() if src.crs else "UNSPECIFIED"
+                epsg_code = src.crs.to_epsg() if src.crs else None
                 bounds = list(src.bounds)
                 dtype_str = str(src.dtypes[0])
+                transform_tuple = list(src.transform)
+                res_tuple = list(src.res) if hasattr(src, "res") else [10.0, 10.0]
+                nodata_val = src.nodata
 
                 if width <= 0 or height <= 0:
                     return {"valid": False, "reason": f"Invalid raster dimensions ({width}x{height})."}
@@ -125,11 +129,21 @@ class SecureIngestionEngine:
                     return {"valid": False, "reason": "Raster array contains non-finite or corrupted data values."}
 
                 is_cog = False
+                overviews_count = 0
+                block_shapes = None
                 try:
-                    if src.is_tiled and len(src.overviews(1)) > 0:
+                    block_shapes = list(src.block_shapes)
+                    overviews = src.overviews(1)
+                    overviews_count = len(overviews) if overviews else 0
+                    if src.is_tiled and overviews_count > 0:
                         is_cog = True
                 except Exception:
                     pass
+
+                # Extract GeoTIFF acquisition metadata if tags exist
+                tags = src.tags()
+                acq_date = tags.get("ACQUISITION_DATETIME", tags.get("DATETIME", tags.get("TIFFTAG_DATETIME", "N/A / NOT PROVIDED")))
+                sensor_info = tags.get("SENSOR", tags.get("SATELLITE", tags.get("PLATFORM", "N/A / NOT PROVIDED")))
 
                 return {
                     "valid": True,
@@ -138,10 +152,18 @@ class SecureIngestionEngine:
                     "height": height,
                     "bands": count,
                     "crs": crs_str,
+                    "epsg": epsg_code,
+                    "affine_transform": transform_tuple,
                     "bounds": bounds,
+                    "resolution": res_tuple,
+                    "nodata": nodata_val,
                     "dtype": dtype_str,
                     "file_size": file_size,
-                    "is_cog": is_cog
+                    "is_cog": is_cog,
+                    "overviews_count": overviews_count,
+                    "block_shapes": block_shapes,
+                    "acquisition_datetime": acq_date,
+                    "sensor": sensor_info
                 }
         except Exception as ex:
             return {"valid": False, "reason": f"Raster decoding failure: {str(ex)}"}
@@ -186,7 +208,7 @@ class SecureIngestionEngine:
     def ingest_single_geotiff(self, filepath: str, source_label: str = "Analyst Manual Import") -> dict:
         """
         Controlled incremental ingestion pipeline for a single GeoTIFF / COG tile patch:
-        Validation -> Duplicate Detection -> Embedding Extraction -> Incremental FAISS Update -> MongoDB Catalog -> Provenance.
+        Validation -> Duplicate Detection -> Embedding Extraction -> Incremental FAISS Update -> Metadata Catalog -> Provenance.
         """
         ingest_id = f"ingest_{uuid.uuid4().hex[:12]}"
         t_start = time.perf_counter()
@@ -213,6 +235,7 @@ class SecureIngestionEngine:
 
         dup_res = self.check_duplicate(file_hash=file_hash, bbox=bbox, filename=filename)
         if dup_res.get("is_duplicate"):
+            vector_cnt = self.vector_index.index.ntotal if (self.vector_index and self.vector_index.index) else 0
             result = {
                 "status": "DUPLICATE",
                 "ingestion_id": ingest_id,
@@ -222,6 +245,9 @@ class SecureIngestionEngine:
                 "tiles_created": 0,
                 "tiles_skipped": 1,
                 "duplicates_detected": 1,
+                "vector_count_before": vector_cnt,
+                "vector_count_after": vector_cnt,
+                "added_vectors": 0,
                 "message": f"Imagery already indexed under Tile ID '{dup_res.get('existing_tile_id')}'. FAISS re-indexing skipped."
             }
             INGESTION_STATUS_CACHE[ingest_id] = result
@@ -254,21 +280,27 @@ class SecureIngestionEngine:
             "bbox": bbox,
             "wgs_bbox": wgs_bbox,
             "crs": val_res.get("crs", "EPSG:32645"),
+            "epsg": val_res.get("epsg"),
+            "affine_transform": val_res.get("affine_transform"),
+            "resolution": val_res.get("resolution", [10.0, 10.0])[0] if isinstance(val_res.get("resolution"), list) else 10.0,
             "valid_ratio": 1.0,
-            "resolution": 10.0,
-            "acquisition_datetime": datetime.now(timezone.utc).isoformat(),
+            "acquisition_datetime": val_res.get("acquisition_datetime") if val_res.get("acquisition_datetime") != "N/A / NOT PROVIDED" else datetime.now(timezone.utc).isoformat(),
+            "sensor": val_res.get("sensor", "Sentinel-2 MSI Level-2A"),
             "source_scene": source_label,
-            "format": val_res.get("format", "GeoTIFF")
+            "format": val_res.get("format", "GeoTIFF"),
+            "sha256": file_hash
         }
 
         # Step 5: Extract Embedding & Incremental FAISS Update
+        cnt_before = self.vector_index.index.ntotal
         try:
             embedder = self._get_embedder()
             vec = embedder.extract_from_tile(dest_filepath)
 
-            # Atomic FAISS index update
+            # Atomic incremental FAISS index update
             self.vector_index.add_embedding(tile_id, vec)
             self.vector_index.save()
+            cnt_after = self.vector_index.index.ntotal
         except Exception as ex:
             result = {
                 "status": "FAILED",
@@ -281,9 +313,25 @@ class SecureIngestionEngine:
             INGESTION_STATUS_CACHE[ingest_id] = result
             return result
 
-        # Step 6: Metadata Catalog Update in MongoDB
+        # Step 6: Metadata Catalog Update in MongoDB & JSON file catalog
         doc_mongo = create_tile_document(**tile_doc)
+        if hasattr(doc_mongo.get("created_at"), "isoformat"):
+            doc_mongo["created_at"] = doc_mongo["created_at"].isoformat()
+
         tiles_collection.update_one({"tile_id": tile_id}, {"$set": doc_mongo}, upsert=True)
+
+        catalog_path = os.path.join(self.data_dir, "tiles_catalog.json")
+        if os.path.exists(catalog_path):
+            try:
+                with open(catalog_path, "r", encoding="utf-8") as f:
+                    tiles_cat = json.load(f)
+                if isinstance(tiles_cat, list):
+                    clean_doc = json.loads(json.dumps(doc_mongo, default=str))
+                    tiles_cat.append(clean_doc)
+                    with open(catalog_path, "w", encoding="utf-8") as f:
+                        json.dump(tiles_cat, f, indent=2)
+            except Exception as e:
+                print(f"Warning: Could not update tiles_catalog.json: {e}")
 
         # Step 7: Record Provenance
         elapsed_ms = round((time.perf_counter() - t_start) * 1000.0, 2)
@@ -297,10 +345,14 @@ class SecureIngestionEngine:
                 "content_hash": file_hash,
                 "format": val_res.get("format"),
                 "crs": val_res.get("crs"),
+                "epsg": val_res.get("epsg"),
                 "bbox": bbox,
                 "embedding_model": "OpenAI CLIP ViT-B/32",
                 "embedding_dimension": 512,
                 "vector_index_type": "FAISS IndexFlatIP",
+                "vector_count_before": cnt_before,
+                "vector_count_after": cnt_after,
+                "added_vectors": 1,
                 "processing_time_ms": elapsed_ms,
                 "offline_status": "100% ON-PREMISES VERIFIED"
             }
@@ -319,8 +371,11 @@ class SecureIngestionEngine:
             "duplicates_detected": 0,
             "provenance_id": prov_id,
             "content_hash": file_hash,
+            "vector_count_before": cnt_before,
+            "vector_count_after": cnt_after,
+            "added_vectors": 1,
             "processing_time_ms": elapsed_ms,
-            "total_faiss_vectors": self.vector_index.index.ntotal
+            "total_faiss_vectors": cnt_after
         }
         INGESTION_STATUS_CACHE[ingest_id] = result
         return result

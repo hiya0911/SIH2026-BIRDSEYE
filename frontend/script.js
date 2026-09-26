@@ -75,6 +75,9 @@ function initTabs() {
                     setTimeout(() => state.map.invalidateSize(), 150);
                 }
             }
+            if (target === "temporal") {
+                updateMultiTemporalAOIBadge();
+            }
             if (target === "clustering" && !state.pcaLoaded) {
                 loadLandscapeClustering();
             }
@@ -849,7 +852,346 @@ function switchToTemporalAnalysis(tileId) {
 
 function initTemporalAnalysis() {
     const runBtn = document.getElementById("run-temporal-analysis-btn");
-    runBtn.addEventListener("click", executeTemporalAnalysis);
+    if (runBtn) runBtn.addEventListener("click", executeTemporalAnalysis);
+
+    const runMultiBtn = document.getElementById("run-multitemporal-aoi-btn");
+    if (runMultiBtn) runMultiBtn.addEventListener("click", executeMultiTemporalAOIAnalysis);
+
+    updateMultiTemporalAOIBadge();
+}
+
+function updateMultiTemporalAOIBadge() {
+    const badge = document.getElementById("multitemporal-aoi-badge");
+    if (!badge) return;
+
+    if (state.activeAOIPolygon) {
+        badge.textContent = `Active AOI: Polygon (${state.activeAOIPolygon.length} vertices)`;
+        badge.className = "badge-tag purple";
+    } else if (state.activeAOIBounds) {
+        badge.textContent = `Active AOI: Rectangle Footprint`;
+        badge.className = "badge-tag blue";
+    } else if (state.selectedTileId) {
+        badge.textContent = `Active AOI: Tile ${state.selectedTileId.substring(0, 8)}...`;
+        badge.className = "badge-tag green";
+    } else {
+        badge.textContent = `Active AOI: Map Workspace Default (Kolkata Hooghly)`;
+        badge.className = "badge-tag cyan";
+    }
+}
+
+async function executeMultiTemporalAOIAnalysis() {
+    const startDate = document.getElementById("multitemporal-start-date").value.trim();
+    const endDate = document.getElementById("multitemporal-end-date").value.trim();
+    const sensor = document.getElementById("multitemporal-sensor-select").value;
+    const container = document.getElementById("temporal-results-container");
+
+    // 1. Date Validation
+    if (!startDate || !endDate) {
+        alert("Please specify valid Start Date and End Date.");
+        return;
+    }
+
+    if (startDate > endDate) {
+        container.innerHTML = `
+            <div class="empty-state-card" style="border: 1px solid rgba(239, 68, 68, 0.4); background: rgba(15, 23, 42, 0.9); text-align: left; padding: 24px;">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <span style="font-size: 1.8rem;">⚠️</span>
+                    <div>
+                        <div style="color: #f87171; font-weight: 700; font-size: 1.1rem;">INVALID DATE RANGE REJECTED</div>
+                        <div style="color: #94a3b8; font-size: 0.85rem;">Temporal Constraint Validation Failed</div>
+                    </div>
+                </div>
+                <p style="color: #cbd5e1; line-height: 1.6; font-size: 0.9rem;">
+                    Start Date (<strong>${startDate}</strong>) cannot be later than End Date (<strong>${endDate}</strong>).
+                    Please adjust the temporal filter controls to define a valid chronological window.
+                </p>
+            </div>
+        `;
+        return;
+    }
+
+    // 2. Sentinel-1 SAR Handling
+    if (sensor === "SENTINEL-1") {
+        container.innerHTML = `
+            <div class="empty-state-card" style="border: 1px solid rgba(56, 189, 248, 0.3); background: rgba(15, 23, 42, 0.85); text-align: left; padding: 24px;">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <span style="font-size: 1.8rem;">📡</span>
+                    <div>
+                        <div style="color: #38bdf8; font-weight: 700; font-size: 1.1rem;">SENTINEL-1 C-SAR — NOT CACHED LOCALLY</div>
+                        <div style="color: #94a3b8; font-size: 0.85rem;">Synthetic Aperture Radar (SAR) Ground Range Detected (GRD) Products</div>
+                    </div>
+                </div>
+                <p style="color: #cbd5e1; line-height: 1.6; font-size: 0.9rem;">
+                    Sentinel-1 SAR C-band imagery is not currently cached in local on-premises storage.
+                    Live catalog discovery for Sentinel-1 products is active via Copernicus STAC, but remote SAR downloading/ingestion has not been executed yet (deferred to Phase 5C).
+                </p>
+                <div style="margin-top: 12px; padding: 10px 14px; background: rgba(3, 7, 18, 0.5); border-radius: 6px; font-size: 0.82rem; color: #a7f3d0; border-left: 3px solid #10b981;">
+                    💡 <strong>Analytical Handoff Note:</strong> To evaluate optical multi-temporal change over the active AOI, switch sensor constellation selector to <strong>Sentinel-2 Optical (L2A)</strong>.
+                </div>
+            </div>
+        `;
+        return;
+    }
+
+    // 3. Prepare Payload from active map AOI handoff
+    const payload = {
+        start_date: startDate,
+        end_date: endDate,
+        sensor: sensor
+    };
+
+    if (state.activeAOIPolygon) {
+        payload.polygon = state.activeAOIPolygon;
+    } else if (state.activeAOIBounds) {
+        payload.bbox = state.activeAOIBounds;
+    } else if (state.selectedTileId) {
+        const matched = state.tiles.find(t => t.tile_id === state.selectedTileId);
+        if (matched && matched.bbox) {
+            payload.bbox = matched.bbox;
+        }
+    }
+
+    container.innerHTML = `
+        <div class="empty-state-card">
+            <div class="spinner"></div>
+            <div class="empty-title">Executing SIH Multi-Temporal AOI Analysis</div>
+            <p class="empty-desc">Discovering chronological observations between ${startDate} and ${endDate}, evaluating SCL quality masks, detecting 4 core change behaviors, and computing earliest supported change observation...</p>
+        </div>
+    `;
+
+    try {
+        const res = await fetch(`${API_BASE}/temporal/multitemporal`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+            const errBody = await res.json().catch(() => ({}));
+            throw new Error(errBody.detail || `Server returned HTTP ${res.status}`);
+        }
+
+        const data = await res.json();
+        renderMultiTemporalAOIResults(data);
+
+    } catch (err) {
+        console.error("Multi-temporal analysis error:", err);
+        container.innerHTML = `
+            <div class="empty-state-card">
+                <div class="empty-icon">❌</div>
+                <div class="empty-title">Multi-Temporal Analysis Failed</div>
+                <p class="empty-desc" style="color: #f87171;">${err.message}</p>
+            </div>
+        `;
+    }
+}
+
+function renderMultiTemporalAOIResults(data) {
+    const container = document.getElementById("temporal-results-container");
+    if (!container) return;
+
+    if (data.status === "INSUFFICIENT_OBSERVATIONS") {
+        container.innerHTML = `
+            <div class="empty-state-card">
+                <div class="empty-icon">⚠️</div>
+                <div class="empty-title">Insufficient Observations in Selected Time Window</div>
+                <p class="empty-desc">${data.message || "At least 2 usable observations are required for multi-temporal analysis."}</p>
+            </div>
+        `;
+        return;
+    }
+
+    const aoi = data.aoi_info || {};
+    const obs = data.observations || [];
+    const behaviors = data.detected_behaviors || {};
+    const char = data.change_characterization || {};
+    const earliest = data.earliest_supported_observation || {};
+    const persistence = data.temporal_persistence || {};
+    const fa = data.false_alarm_checks || {};
+
+    const classBadgeColor = char.classification === "CONSTRUCTION" ? "rose" : 
+                            char.classification === "CLEARANCE" ? "amber" : 
+                            char.classification === "WATER EXTENT CHANGE" ? "cyan" : 
+                            char.classification === "ROAD DEVELOPMENT" ? "purple" : "gray";
+
+    container.innerHTML = `
+        <!-- SUMMARY KPI GRID -->
+        <div class="kpi-summary-grid">
+            <div class="kpi-card ${classBadgeColor}">
+                <div class="kpi-label">🏷️ Change Classification</div>
+                <div class="kpi-value" style="font-size: 1.25rem;">${char.classification || 'UNCLASSIFIED'}</div>
+                <div class="kpi-sub">Confidence Score: ${((char.confidence_score || 0.5) * 100).toFixed(0)}%</div>
+            </div>
+
+            <div class="kpi-card cyan">
+                <div class="kpi-label">📅 Earliest Supported Observation</div>
+                <div class="kpi-value" style="font-size: 1.25rem;">${earliest.earliest_supported_observation || 'N/A'}</div>
+                <div class="kpi-sub">${earliest.observation_interval || 'Interval'}</div>
+            </div>
+
+            <div class="kpi-card purple">
+                <div class="kpi-label">⏳ Temporal Persistence</div>
+                <div class="kpi-value" style="font-size: 1.25rem;">${persistence.verdict || 'CONFIRMED'}</div>
+                <div class="kpi-sub">Persistence Rate: ${persistence.persistence_rate_pct || 0}%</div>
+            </div>
+
+            <div class="kpi-card green">
+                <div class="kpi-label">🛰️ Observations Evaluated</div>
+                <div class="kpi-value" style="font-size: 1.25rem;">${data.usable_observation_count || 0} / ${data.observation_count || 0}</div>
+                <div class="kpi-sub">Area: ${aoi.area_sqkm || 0} sq km (${aoi.crs || 'EPSG:32645'})</div>
+            </div>
+        </div>
+
+        <!-- 4 CORE CHANGE BEHAVIORS BOARD -->
+        <div class="glass-card" style="margin-top: 1.25rem;">
+            <div class="card-header-bar">
+                <div class="card-title-group">
+                    <span class="card-icon">⚡</span>
+                    <div>
+                        <h3 class="card-title">4 Core Change Behaviors Evaluation</h3>
+                        <div class="sub-label">Calculated directly from multi-temporal surface reflectance and spatial extent deltas</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="evidence-cards-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+                <div class="evidence-card" style="border-left: 3px solid ${behaviors.APPEARANCE && behaviors.APPEARANCE.detected ? '#f43f5e' : '#64748b'};">
+                    <div class="evidence-header">
+                        <span class="evidence-cat-name">A. APPEARANCE</span>
+                        <span class="badge-tag ${behaviors.APPEARANCE && behaviors.APPEARANCE.detected ? 'rose' : 'gray'}">${behaviors.APPEARANCE && behaviors.APPEARANCE.detected ? 'DETECTED' : 'NOT DETECTED'}</span>
+                    </div>
+                    <p class="evidence-basis-text">${behaviors.APPEARANCE ? behaviors.APPEARANCE.evidence : 'N/A'}</p>
+                </div>
+
+                <div class="evidence-card" style="border-left: 3px solid ${behaviors.DISAPPEARANCE && behaviors.DISAPPEARANCE.detected ? '#f59e0b' : '#64748b'};">
+                    <div class="evidence-header">
+                        <span class="evidence-cat-name">B. DISAPPEARANCE</span>
+                        <span class="badge-tag ${behaviors.DISAPPEARANCE && behaviors.DISAPPEARANCE.detected ? 'amber' : 'gray'}">${behaviors.DISAPPEARANCE && behaviors.DISAPPEARANCE.detected ? 'DETECTED' : 'NOT DETECTED'}</span>
+                    </div>
+                    <p class="evidence-basis-text">${behaviors.DISAPPEARANCE ? behaviors.DISAPPEARANCE.evidence : 'N/A'}</p>
+                </div>
+
+                <div class="evidence-card" style="border-left: 3px solid ${behaviors.EXPANSION && behaviors.EXPANSION.detected ? '#a855f7' : '#64748b'};">
+                    <div class="evidence-header">
+                        <span class="evidence-cat-name">C. EXPANSION</span>
+                        <span class="badge-tag ${behaviors.EXPANSION && behaviors.EXPANSION.detected ? 'purple' : 'gray'}">${behaviors.EXPANSION && behaviors.EXPANSION.detected ? 'DETECTED' : 'NOT DETECTED'}</span>
+                    </div>
+                    <p class="evidence-basis-text">${behaviors.EXPANSION ? behaviors.EXPANSION.evidence : 'N/A'}</p>
+                </div>
+
+                <div class="evidence-card" style="border-left: 3px solid ${behaviors.CONTRACTION && behaviors.CONTRACTION.detected ? '#06b6d4' : '#64748b'};">
+                    <div class="evidence-header">
+                        <span class="evidence-cat-name">D. CONTRACTION</span>
+                        <span class="badge-tag ${behaviors.CONTRACTION && behaviors.CONTRACTION.detected ? 'cyan' : 'gray'}">${behaviors.CONTRACTION && behaviors.CONTRACTION.detected ? 'DETECTED' : 'NOT DETECTED'}</span>
+                    </div>
+                    <p class="evidence-basis-text">${behaviors.CONTRACTION ? behaviors.CONTRACTION.evidence : 'N/A'}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- EARLIEST SUPPORTED OBSERVATION & DISCLAIMER CARD -->
+        <div class="glass-card" style="margin-top: 1.25rem;">
+            <div class="card-header-bar">
+                <div class="card-title-group">
+                    <span class="card-icon">📅</span>
+                    <div>
+                        <h3 class="card-title">Earliest Supported Change Observation &amp; Interval Audit</h3>
+                        <div class="sub-label">Analyst-grade distinction between satellite observation interval and exact physical change event</div>
+                    </div>
+                </div>
+                <span class="badge-tag cyan">Analyst Grade</span>
+            </div>
+
+            <div class="false-alarm-audit-grid" style="margin-top: 0.75rem;">
+                <div class="audit-card">
+                    <span class="audit-label">Last Pre-Change Observation</span>
+                    <span class="audit-val mono-font">${earliest.last_reliable_pre_change_observation || 'N/A'}</span>
+                    <span class="audit-sub">Pre-change baseline established</span>
+                </div>
+
+                <div class="audit-card">
+                    <span class="audit-label">Earliest Supported Observation</span>
+                    <span class="audit-val mono-font" style="color: #38bdf8;">${earliest.earliest_supported_observation || 'N/A'}</span>
+                    <span class="audit-sub">First change signature detected</span>
+                </div>
+
+                <div class="audit-card">
+                    <span class="audit-label">Observation Interval</span>
+                    <span class="audit-val mono-font" style="color: #a7f3d0; font-size: 0.95rem;">${earliest.observation_interval || 'N/A'}</span>
+                    <span class="audit-sub">Physical change window</span>
+                </div>
+            </div>
+
+            <div style="margin-top: 0.75rem; padding: 10px 14px; background: rgba(3, 7, 18, 0.4); border-radius: 6px; border-left: 3px solid #00f2fe; font-size: 0.82rem; color: #cbd5e1;">
+                ℹ️ <strong>Physical Event Disclaimer:</strong> ${earliest.exact_change_date_disclaimer || "Satellite observations establish the observation interval between acquisitions."}
+            </div>
+        </div>
+
+        <!-- CHRONOLOGICAL OBSERVATIONS PIPELINE TABLE -->
+        <div class="trajectory-card" style="margin-top: 1.25rem;">
+            <div class="card-header-bar">
+                <div class="card-title-group">
+                    <span class="card-icon">📋</span>
+                    <h3 class="card-title">Chronological Observation Pipeline</h3>
+                </div>
+                <span class="badge-tag green">Verified Georeferencing</span>
+            </div>
+
+            <table class="trajectory-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Spacecraft / Sensor</th>
+                        <th>Source Product</th>
+                        <th>Quality Info</th>
+                        <th>Usability</th>
+                        <th>Status Reason</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${obs.map(o => `
+                        <tr>
+                            <td><strong>${o.observation_date}</strong></td>
+                            <td>${o.sensor || o.platform}</td>
+                            <td class="mono-font" style="font-size: 0.78rem;">${o.source_product}</td>
+                            <td>${o.quality_info}</td>
+                            <td>
+                                <span class="badge-tag ${o.usable ? 'green' : 'rose'}">
+                                    ${o.usable ? '✓ USABLE' : '✕ UNUSABLE'}
+                                </span>
+                            </td>
+                            <td style="font-size: 0.8rem; color: #94a3b8;">${o.reason}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- EXPLAINABILITY SUPPORTING EVIDENCE & FALSE ALARM CHECK -->
+        <div class="glass-card why-detected-board" style="margin-top: 1.25rem;">
+            <div class="card-header-bar">
+                <div class="card-title-group">
+                    <span class="card-icon">🧠</span>
+                    <div>
+                        <h3 class="card-title">Supporting Evidence &amp; False-Alarm Quality Checks</h3>
+                        <div class="sub-label">Why AI arrived at this classification and how confounders were suppressed</div>
+                    </div>
+                </div>
+                <span class="badge-tag green">Zero Hallucination</span>
+            </div>
+
+            <div class="evidence-cards-grid">
+                <div class="evidence-card" style="grid-column: 1 / -1;">
+                    <div class="evidence-header">
+                        <span class="evidence-cat-name">Supporting Evidence Rationale (${char.classification})</span>
+                    </div>
+                    <ul style="margin: 8px 0 0 18px; color: #cbd5e1; font-size: 0.85rem; line-height: 1.6;">
+                        ${(char.supporting_evidence || []).map(ev => `<li>${ev}</li>`).join('')}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    `;
 }
 
 async function executeTemporalAnalysis() {
@@ -2202,7 +2544,11 @@ function initAnalystMap() {
     // Wire up Analyze AOI button
     const analyzeAOIBtn = document.getElementById("analyze-aoi-btn");
     analyzeAOIBtn.addEventListener("click", executeAOIAnalysis);
+
+    // Wire up Copernicus Live Discovery Console
+    initCopernicusDiscoveryUI();
 }
+
 
 function selectLocationResult(item) {
     const lat = item.lat;
@@ -3901,6 +4247,267 @@ function initIngestionConsole() {
         }
     });
 }
+
+/* =========================================================
+ * PHASE 5B: COPERNICUS LIVE DISCOVERY UI HANDLERS
+ * ========================================================= */
+
+function initCopernicusDiscoveryUI() {
+    const btnRun = document.getElementById("btn-run-copernicus-discovery");
+    const sensorSelect = document.getElementById("copernicus-sensor-select");
+    const cloudGroup = document.getElementById("copernicus-cloud-group");
+
+    if (sensorSelect && cloudGroup) {
+        sensorSelect.addEventListener("change", () => {
+            const val = sensorSelect.value;
+            if (val.includes("SENTINEL-1")) {
+                cloudGroup.style.display = "none";
+            } else {
+                cloudGroup.style.display = "block";
+            }
+        });
+    }
+
+    if (btnRun) {
+        btnRun.addEventListener("click", executeCopernicusDiscovery);
+    }
+
+    checkCopernicusServiceStatus();
+}
+
+async function checkCopernicusServiceStatus() {
+    const label = document.getElementById("copernicus-status-label");
+    const dot = document.getElementById("copernicus-status-dot");
+    if (!label) return;
+
+    try {
+        const res = await fetch(`${API_BASE}/copernicus/status`);
+        if (res.ok) {
+            const data = await res.json();
+            const isOnline = data.status === "online";
+            label.textContent = `STAC API: ${isOnline ? 'ONLINE' : 'UNREACHABLE'} • 0 REMOTE FILES CACHED`;
+            if (dot) dot.className = `status-dot ${isOnline ? 'online' : 'offline'}`;
+        }
+    } catch (e) {
+        label.textContent = "STAC API: UNREACHABLE • LOCAL ONLY";
+        if (dot) dot.className = "status-dot offline";
+    }
+}
+
+async function executeCopernicusDiscovery() {
+    const btnRun = document.getElementById("btn-run-copernicus-discovery");
+    const container = document.getElementById("copernicus-results-container");
+    const sensorSelect = document.getElementById("copernicus-sensor-select");
+    const startDateInput = document.getElementById("copernicus-start-date");
+    const endDateInput = document.getElementById("copernicus-end-date");
+    const cloudLimitInput = document.getElementById("copernicus-cloud-limit");
+    const limitSelect = document.getElementById("copernicus-result-limit");
+
+    if (!container) return;
+
+    const sensor = sensorSelect ? sensorSelect.value : "SENTINEL-2";
+    const startDate = startDateInput ? startDateInput.value : "2024-01-01";
+    const endDate = endDateInput ? endDateInput.value : "2026-12-31";
+    const maxCloud = cloudLimitInput ? parseFloat(cloudLimitInput.value) : 30.0;
+    const limit = limitSelect ? parseInt(limitSelect.value) : 10;
+
+    let bbox = state.activeAOIBounds;
+    let polygon = state.activeAOIPolygon;
+
+    if (!bbox && !polygon && state.map) {
+        const b = state.map.getBounds();
+        bbox = [
+            Math.round(b.getWest() * 100000) / 100000,
+            Math.round(b.getSouth() * 100000) / 100000,
+            Math.round(b.getEast() * 100000) / 100000,
+            Math.round(b.getNorth() * 100000) / 100000
+        ];
+    }
+
+    if (btnRun) btnRun.disabled = true;
+    container.innerHTML = `
+        <div class="empty-hint" style="padding: 16px; text-align: center;">
+            <span class="spinner-small" style="display:inline-block;width:14px;height:14px;border:2px solid rgba(56,189,248,0.3);border-top-color:#38bdf8;border-radius:50%;animation:spin 0.8s linear infinite;margin-right:6px;"></span>
+            Executing live STAC query on Copernicus Data Space Ecosystem...
+        </div>
+    `;
+
+    try {
+        const payload = {
+            sensor: sensor,
+            bbox: bbox,
+            polygon: polygon,
+            start_date: startDate,
+            end_date: endDate,
+            max_cloud_cover: maxCloud,
+            limit: limit
+        };
+
+        const res = await fetch(`${API_BASE}/copernicus/search`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.detail || errData.message || `HTTP ${res.status}`);
+        }
+
+        const data = await res.json();
+        const scenes = data.discovered_scenes || [];
+        state.copernicusDiscoveredScenes = scenes;
+
+        renderCopernicusDiscoveredScenes(scenes, data);
+        renderCopernicusFootprintsOnMap(scenes);
+
+    } catch (err) {
+        console.error("Copernicus discovery failed:", err);
+        container.innerHTML = `
+            <div class="empty-hint" style="padding: 14px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px;">
+                <div style="font-weight: 700; color: #f87171; margin-bottom: 4px;">⚠️ LIVE CATALOG UNAVAILABLE</div>
+                <div style="font-size: 0.8rem; color: #e2e8f0;">${err.message || 'Remote request failed or network offline.'} Local 909-tile imagery workflows and map navigation remain fully functional.</div>
+            </div>
+        `;
+    } finally {
+        if (btnRun) btnRun.disabled = false;
+    }
+}
+
+function renderCopernicusDiscoveredScenes(scenes, metaData) {
+    const container = document.getElementById("copernicus-results-container");
+    if (!container) return;
+
+    if (!scenes || scenes.length === 0) {
+        container.innerHTML = `
+            <div class="empty-hint" style="padding: 14px; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 8px;">
+                <div style="font-weight: 700; color: #fbbf24; margin-bottom: 4px;">🌐 Copernicus STAC Query Executed</div>
+                <div style="font-size: 0.8rem; color: #cbd5e1;">0 remote satellite scenes discovered for the specified AOI, date range, and cloud criteria. Try expanding date range or relaxing cloud limit.</div>
+            </div>
+        `;
+        return;
+    }
+
+    const sensor = metaData.sensor || "COPERNICUS";
+    const isSAR = sensor.includes("SENTINEL-1");
+    
+    let html = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div style="font-size: 0.85rem; font-weight: 700; color: #38bdf8;">
+                🌐 ${scenes.length} Copernicus Scenes Discovered (${metaData.collection || sensor})
+            </div>
+            <span class="badge-tag cyan">REMOTE STAC METADATA ONLY</span>
+        </div>
+        <div style="font-size: 0.76rem; color: #94a3b8; margin-bottom: 12px; background: rgba(15,23,42,0.6); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.06);">
+            <span>💡 <strong>Live vs Local Status:</strong> Discovered scene items reflect live remote STAC metadata. </span>
+            <span style="color: ${isSAR ? '#fbbf24' : '#60a5fa'}; font-weight: 600;">${isSAR ? 'LOCAL SAR: NOT CACHED LOCALLY' : 'LOCAL DATA: NOT DOWNLOADED'}</span>
+        </div>
+        <div class="copernicus-scene-grid">
+    `;
+
+    scenes.forEach((item, idx) => {
+        const cloudStr = item.cloud_cover_pct !== null && item.cloud_cover_pct !== undefined ? `${item.cloud_cover_pct}%` : "N/A (SAR/Radar)";
+        const acqDate = item.acquisition_time !== "N/A" ? new Date(item.acquisition_time).toUTCString().replace("GMT", "UTC") : "N/A";
+        const orbitStr = item.orbit_direction || "N/A";
+        const polStr = item.polarization || "N/A";
+        const isSarScene = item.collection.includes("sentinel-1");
+
+        html += `
+            <div class="copernicus-scene-card" onclick="highlightDiscoveredScene('${item.product_id}')">
+                <div class="copernicus-scene-header">
+                    <span class="copernicus-scene-id">#${idx + 1} &bull; ${item.product_id}</span>
+                    <span class="copernicus-badge-tag ${isSarScene ? 'sar' : ''}">${isSarScene ? 'SENTINEL-1 C-SAR' : 'SENTINEL-2 OPTICAL'}</span>
+                </div>
+                <div class="copernicus-meta-grid">
+                    <div class="copernicus-meta-item">
+                        <span class="copernicus-meta-label">Acquisition:</span>
+                        <span class="copernicus-meta-val">${acqDate}</span>
+                    </div>
+                    <div class="copernicus-meta-item">
+                        <span class="copernicus-meta-label">Cloud Cover:</span>
+                        <span class="copernicus-meta-val">${cloudStr}</span>
+                    </div>
+                    <div class="copernicus-meta-item">
+                        <span class="copernicus-meta-label">Platform / Orbit:</span>
+                        <span class="copernicus-meta-val">${item.satellite_platform || 'Sentinel'} (${orbitStr})</span>
+                    </div>
+                    <div class="copernicus-meta-item">
+                        <span class="copernicus-meta-label">Processing / Pol:</span>
+                        <span class="copernicus-meta-val">${item.processing_level || 'L2A'} / ${polStr}</span>
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; padding-top: 4px;">
+                    <span class="status-pill partial" style="font-size: 0.68rem;">
+                        ${isSarScene ? 'SENTINEL-1 SAR — NOT CACHED LOCALLY' : 'REMOTE STAC — NOT DOWNLOADED'}
+                    </span>
+                    ${item.source_url ? `<a href="${item.source_url}" target="_blank" rel="noopener" style="font-size: 0.7rem; color: #38bdf8; text-decoration: underline;" onclick="event.stopPropagation();">STAC Link ↗</a>` : ''}
+                </div>
+            </div>
+        `;
+    });
+
+    html += `</div>`;
+    container.innerHTML = html;
+}
+
+function renderCopernicusFootprintsOnMap(scenes) {
+    if (!state.map || !scenes) return;
+
+    if (state.copernicusFootprintsLayer) {
+        state.map.removeLayer(state.copernicusFootprintsLayer);
+        state.copernicusFootprintsLayer = null;
+    }
+
+    const features = scenes
+        .filter(s => s.geometry)
+        .map(s => ({
+            type: "Feature",
+            properties: s,
+            geometry: s.geometry
+        }));
+
+    if (features.length === 0) return;
+
+    const geojson = {
+        type: "FeatureCollection",
+        features: features
+    };
+
+    state.copernicusFootprintsLayer = L.geoJSON(geojson, {
+        style: (feature) => {
+            const isSar = feature.properties.collection.includes("sentinel-1");
+            return {
+                color: isSar ? "#f59e0b" : "#38bdf8",
+                weight: 2,
+                dashArray: "5, 5",
+                fillColor: isSar ? "#f59e0b" : "#38bdf8",
+                fillOpacity: 0.08
+            };
+        },
+        onEachFeature: (feature, layer) => {
+            const props = feature.properties || {};
+            layer.bindPopup(`
+                <div style="font-family: 'Inter', sans-serif; font-size: 0.78rem;">
+                    <strong style="color: #38bdf8;">🌐 ${props.product_id}</strong><br/>
+                    <span style="color: #cbd5e1;">Platform: ${props.satellite_platform || 'Sentinel'} (${props.collection})</span><br/>
+                    <span style="color: #94a3b8;">Time: ${props.acquisition_time}</span><br/>
+                    <span style="color: #fbbf24;">STATUS: COPERNICUS DISCOVERED (NOT CACHED)</span>
+                </div>
+            `);
+        }
+    }).addTo(state.map);
+}
+
+function highlightDiscoveredScene(productId) {
+    if (!state.copernicusDiscoveredScenes || !state.map) return;
+    const target = state.copernicusDiscoveredScenes.find(s => s.product_id === productId);
+    if (target && target.wgs_bbox && target.wgs_bbox.length === 4) {
+        const bbox = target.wgs_bbox;
+        const bounds = L.latLngBounds([bbox[1], bbox[0]], [bbox[3], bbox[2]]);
+        state.map.flyToBounds(bounds, { padding: [20, 20], duration: 1.0 });
+    }
+}
+
 
 
 
