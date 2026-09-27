@@ -4694,19 +4694,25 @@ async function loadLocalAcquisitions() {
         list.forEach(acq => {
             const sizeMb = (acq.file_size_bytes / (1024*1024)).toFixed(2);
             html += `
-                <div style="background: rgba(15,23,42,0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <div style="font-weight: 600; color: #e2e8f0; font-size: 0.8rem;">📦 ${acq.scene_id} (${acq.sensor})</div>
-                        <div style="font-size: 0.7rem; color: #94a3b8;" class="mono-font">Asset: ${acq.asset_key} &bull; ${sizeMb} MB &bull; SHA-256: ${(acq.sha256 || '').substring(0, 12)}...</div>
-                    </div>
-                    <div style="display: flex; gap: 6px; align-items: center;">
-                        <span class="badge-tag green" style="font-size: 0.65rem;">${acq.validation_status}</span>
-                        ${acq.ingestion_status === 'READY_FOR_INGESTION' ? `
-                            <button class="glow-button primary-button small-btn" style="padding: 3px 8px; font-size: 0.68rem;" onclick="ingestAcquiredScene('${acq.acquisition_id}')">
-                                ⚡ Ingest to FAISS
+                <div class="acq-card" style="background: rgba(15,23,42,0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 10px 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; flex-wrap: wrap;">
+                        <div>
+                            <div style="font-weight: 600; color: #e2e8f0; font-size: 0.82rem;">📦 ${acq.scene_id} (${acq.sensor})</div>
+                            <div style="font-size: 0.7rem; color: #94a3b8;" class="mono-font">Asset: ${acq.asset_key} &bull; ${sizeMb} MB &bull; SHA-256: ${(acq.sha256 || '').substring(0, 12)}...</div>
+                        </div>
+                        <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                            <span class="badge-tag green" style="font-size: 0.65rem;">${acq.validation_status}</span>
+                            ${acq.ingestion_status === 'READY_FOR_INGESTION' ? `
+                                <button class="glow-button primary-button small-btn" style="padding: 3px 8px; font-size: 0.68rem;" onclick="ingestAcquiredScene('${acq.acquisition_id}')">
+                                    ⚡ Ingest to FAISS
+                                </button>
+                            ` : `<span class="badge-tag ${acq.ingestion_status === 'INGESTED' ? 'cyan' : 'gray'}" style="font-size: 0.65rem;">${acq.ingestion_status}</span>`}
+                            <button id="btn-change-${acq.acquisition_id}" class="glow-button small-btn" style="padding: 3px 8px; font-size: 0.68rem; background: rgba(16, 185, 129, 0.15); border-color: #10b981; color: #10b981;" onclick="runAcquisitionChangeDetection('${acq.acquisition_id}', '${acq.scene_id}')">
+                                ⚡ RUN CHANGE DETECTION
                             </button>
-                        ` : `<span class="badge-tag ${acq.ingestion_status === 'INGESTED' ? 'cyan' : 'gray'}" style="font-size: 0.65rem;">${acq.ingestion_status}</span>`}
+                        </div>
                     </div>
+                    <div id="acq-change-status-${acq.acquisition_id}" style="margin-top: 8px; font-size: 0.74rem; display: none;"></div>
                 </div>
             `;
         });
@@ -4716,6 +4722,253 @@ async function loadLocalAcquisitions() {
     } catch (err) {
         console.error("Failed to load local acquisitions:", err);
     }
+}
+
+async function runAcquisitionChangeDetection(acqId, sceneId) {
+    const statusEl = document.getElementById(`acq-change-status-${acqId}`);
+    const btn = document.getElementById(`btn-change-${acqId}`);
+    if (statusEl) {
+        statusEl.style.display = "block";
+        statusEl.innerHTML = `
+            <div style="background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 6px; padding: 8px 10px; color: #38bdf8;">
+                ⏳ Inspecting raster metadata &amp; aligning against historical baseline epochs...
+            </div>
+        `;
+    }
+    if (btn) btn.disabled = true;
+
+    try {
+        const res = await fetch(`${API_BASE}/copernicus/acquisitions/${acqId}/analyze_change`, {
+            method: "POST"
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+            const errReason = data.detail || data.reason || `HTTP ${res.status}`;
+            let badge = `<span class="badge-tag red">❌ FAILED VALIDATION</span>`;
+            if (res.status === 404) {
+                badge = `<span class="badge-tag red">NOT FOUND</span>`;
+            } else if (errReason.includes("missing") || errReason.includes("not found on disk")) {
+                badge = `<span class="badge-tag yellow">⚠️ INSUFFICIENT DATA</span>`;
+            }
+            if (statusEl) {
+                statusEl.innerHTML = `
+                    <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 6px; padding: 8px 10px;">
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            ${badge}
+                            <span style="font-weight: 600; color: #fca5a5;">${errReason}</span>
+                        </div>
+                    </div>
+                `;
+            }
+            return;
+        }
+
+        const isSpatiallyCompat = data.spatial_compatible;
+        const bandCompat = data.band_compatibility || "UNKNOWN";
+        const dataQuality = data.data_quality_state || "";
+        const charact = data.change_characterization || {};
+        const pers = data.temporal_persistence || {};
+        const obsCount = data.observation_count || (data.chronological_observations ? data.chronological_observations.length : 0);
+
+        if (!isSpatiallyCompat) {
+            if (statusEl) {
+                statusEl.innerHTML = `
+                    <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 6px; padding: 8px 10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 6px;">
+                            <span class="badge-tag yellow">🚫 INCOMPATIBLE SPATIAL REFERENCE</span>
+                            <span class="mono-font" style="font-size: 0.68rem; color: #94a3b8;">${obsCount} Chronological Observations Listed</span>
+                        </div>
+                        <div style="color: #cbd5e1; font-size: 0.72rem; line-height: 1.4;">
+                            ${data.message || data.reason || 'Acquisition spatial footprint does not overlap historical baseline region (Kolkata). Co-located imagery is strictly required for pixel-to-pixel change detection.'}
+                        </div>
+                        <div style="margin-top: 6px; font-size: 0.68rem; color: #94a3b8;">
+                            Band Capability: <strong>${bandCompat}</strong> &bull; Provenance: <span class="mono-font">${data.provenance_id || 'LOGGED'}</span>
+                        </div>
+                    </div>
+                `;
+            }
+            return;
+        }
+
+        let qualityBadge = "";
+        const isRgbOnly = dataQuality.includes("INSUFFICIENT SPECTRAL BANDS") || dataQuality.includes("RGB VISIBLE PREVIEW") || (bandCompat === "RGB_VISIBLE_ONLY");
+        if (isRgbOnly) {
+            qualityBadge = `<span class="badge-tag yellow">⚠️ RGB VISIBLE ONLY &bull; LIMITED SPECTRAL EVIDENCE &bull; NDVI UNAVAILABLE</span>`;
+        } else {
+            qualityBadge = `<span class="badge-tag green">✓ READY FOR ANALYSIS (Full Multi-Spectral)</span>`;
+        }
+
+        window._lastAcquisitionAnalysis = data;
+
+        if (statusEl) {
+            statusEl.innerHTML = `
+                <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 6px; padding: 8px 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 6px;">
+                        <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                            <span class="badge-tag green">⚡ CHANGE DETECTION COMPLETED</span>
+                            ${qualityBadge}
+                        </div>
+                        <span class="mono-font" style="font-size: 0.68rem; color: #94a3b8;">Obs: ${data.observation_date} &bull; ${obsCount} Epochs</span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 6px; font-size: 0.72rem; margin-bottom: 8px;">
+                        <div style="background: rgba(0,0,0,0.25); padding: 4px 6px; border-radius: 4px;">
+                            <span style="color: #64748b; font-size: 0.65rem; display: block;">CLASSIFICATION</span>
+                            <span style="color: #38bdf8; font-weight: 600;">${charact.classification || 'UNCLASSIFIED'}</span>
+                        </div>
+                        <div style="background: rgba(0,0,0,0.25); padding: 4px 6px; border-radius: 4px;">
+                            <span style="color: #64748b; font-size: 0.65rem; display: block;">CONFIDENCE</span>
+                            <span style="color: #10b981; font-weight: 600;">${charact.confidence_score ? (charact.confidence_score * 100).toFixed(0) + '%' : 'N/A'}</span>
+                        </div>
+                        <div style="background: rgba(0,0,0,0.25); padding: 4px 6px; border-radius: 4px;">
+                            <span style="color: #64748b; font-size: 0.65rem; display: block;">PERSISTENCE</span>
+                            <span style="color: #c084fc; font-weight: 600;">${pers.verdict || 'EVALUATED'}</span>
+                        </div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+                        <div style="font-size: 0.68rem; color: #94a3b8;">
+                            Provenance: <span class="mono-font">${data.provenance_id || 'RECORDED'}</span>
+                        </div>
+                        <button class="glow-button primary-button small-btn" style="padding: 4px 10px; font-size: 0.72rem;" onclick="openTemporalInvestigationForAcquisition('${acqId}', '${sceneId}')">
+                            📊 OPEN TEMPORAL INVESTIGATION
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+    } catch (err) {
+        if (statusEl) {
+            statusEl.innerHTML = `
+                <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 6px; padding: 8px 10px; color: #fca5a5;">
+                    ❌ Error calling change detection: ${err.message}
+                </div>
+            `;
+        }
+    } finally {
+        if (btn) btn.disabled = false;
+    }
+}
+
+function openTemporalInvestigationForAcquisition(acqId, sceneId) {
+    const data = window._lastAcquisitionAnalysis;
+    const temporalTab = document.querySelector('.tab-btn[data-tab="temporal"]');
+    if (temporalTab) temporalTab.click();
+
+    const container = document.getElementById("temporal-results-container");
+    if (!container) return;
+
+    if (data) {
+        renderAcquisitionTemporalInvestigation(data, container);
+    }
+}
+
+function renderAcquisitionTemporalInvestigation(data, container) {
+    const observations = data.chronological_observations || data.observations || [];
+    const charact = data.change_characterization || {};
+    const behaviors = data.detected_behaviors || {};
+    const stats = charact.spectral_statistics || {};
+    const fa = data.false_alarm_checks || {};
+    const pers = data.temporal_persistence || {};
+
+    let html = `
+        <div class="glass-card" style="border: 1px solid rgba(56, 189, 248, 0.4); padding: 18px; margin-bottom: 1.5rem; background: rgba(15, 23, 42, 0.85);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
+                <div>
+                    <span class="badge-tag cyan" style="font-size: 0.75rem;">COPERNICUS ACQUIRED SCENE TEMPORAL ANALYSIS</span>
+                    <h3 style="color: #f8fafc; font-size: 1.15rem; margin-top: 4px;">
+                        Observation: ${data.copernicus_product_id || data.acquisition_id}
+                    </h3>
+                    <div style="font-size: 0.76rem; color: #94a3b8;">
+                        Acquisition ID: <span class="mono-font">${data.acquisition_id}</span> &bull; Sensor: <strong>${data.sensor}</strong> &bull; Date: <strong>${data.observation_date}</strong>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                    <span class="status-pill local">${data.band_compatibility}</span>
+                    ${(data.data_quality_state?.includes('RGB') || data.data_quality_state?.includes('INSUFFICIENT') || data.band_compatibility === 'RGB_VISIBLE_ONLY') ?
+                        `<span class="badge-tag yellow">⚠️ RGB VISIBLE ONLY &bull; LIMITED SPECTRAL EVIDENCE &bull; NDVI UNAVAILABLE</span>` :
+                        `<span class="badge-tag green">FULL MULTISPECTRAL</span>`
+                    }
+                    <span class="badge-tag green">PROVENANCE VERIFIED</span>
+                </div>
+            </div>
+
+            <!-- Observations Timeline Breakdown -->
+            <div style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 12px; margin-bottom: 14px;">
+                <div style="font-size: 0.8rem; font-weight: 700; color: #cbd5e1; margin-bottom: 8px;">
+                    📅 Chronological Observation Pipeline (${observations.length} Observations Evaluated)
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                    ${observations.map(obs => `
+                        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.74rem; padding: 4px 8px; background: rgba(255,255,255,0.03); border-radius: 4px;">
+                            <div>
+                                <span style="font-weight: 600; color: #f1f5f9;">${obs.observation_date}</span>
+                                <span style="color: #94a3b8; margin-left: 8px;">${obs.sensor || obs.platform}</span>
+                                <span class="mono-font" style="font-size: 0.68rem; color: #64748b; margin-left: 6px;">${(obs.source_product || '').substring(0, 24)}...</span>
+                            </div>
+                            <div>
+                                <span class="badge-tag ${obs.usable ? 'green' : 'yellow'}" style="font-size: 0.65rem;">
+                                    ${obs.usable ? 'USABLE' : 'UNUSABLE'}
+                                </span>
+                                <span style="font-size: 0.68rem; color: #94a3b8; margin-left: 6px;">${obs.reason || ''}</span>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+
+            <!-- Characterization & Behaviors -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-bottom: 14px;">
+                <div style="background: rgba(30, 41, 59, 0.6); padding: 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.06);">
+                    <div style="font-size: 0.7rem; color: #94a3b8;">CLASSIFICATION</div>
+                    <div style="font-size: 1.1rem; font-weight: 700; color: #38bdf8;">${charact.classification || 'UNCLASSIFIED'}</div>
+                    <div style="font-size: 0.72rem; color: #10b981; margin-top: 2px;">
+                        Confidence Score: <strong>${charact.confidence_score ? (charact.confidence_score * 100).toFixed(0) + '%' : 'N/A'}</strong>
+                        ${charact.confidence_rationale ? `<div style="font-size: 0.65rem; color: #94a3b8; margin-top: 2px;">${charact.confidence_rationale}</div>` : ''}
+                    </div>
+                </div>
+
+                <div style="background: rgba(30, 41, 59, 0.6); padding: 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.06);">
+                    <div style="font-size: 0.7rem; color: #94a3b8;">TEMPORAL PERSISTENCE</div>
+                    <div style="font-size: 1.1rem; font-weight: 700; color: #c084fc;">${pers.verdict || 'EVALUATED'}</div>
+                    <div style="font-size: 0.72rem; color: #cbd5e1; margin-top: 2px;">
+                        ${pers.evidence_note || pers.persistence_rate_pct ? `Persistence Rate: ${pers.persistence_rate_pct}%` : ''}
+                    </div>
+                </div>
+
+                <div style="background: rgba(30, 41, 59, 0.6); padding: 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.06);">
+                    <div style="font-size: 0.7rem; color: #94a3b8;">CORE BEHAVIORS</div>
+                    <div style="font-size: 0.74rem; color: #e2e8f0; margin-top: 4px; display: flex; flex-direction: column; gap: 2px;">
+                        <div>Appearance: <strong>${behaviors.APPEARANCE?.detected ? 'YES' : 'NO'}</strong></div>
+                        <div>Disappearance: <strong>${behaviors.DISAPPEARANCE?.detected ? 'YES' : 'NO'}</strong></div>
+                        <div>Expansion: <strong>${behaviors.EXPANSION?.detected ? 'YES' : 'NO'}</strong></div>
+                        <div>Contraction: <strong>${behaviors.CONTRACTION?.detected ? 'YES' : 'NO'}</strong></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Supporting Evidence & False Alarm Mitigation -->
+            <div style="background: rgba(0,0,0,0.25); border-radius: 6px; padding: 10px; margin-bottom: 14px;">
+                <div style="font-size: 0.78rem; font-weight: 700; color: #f1f5f9; margin-bottom: 6px;">
+                    🛡️ Evidence &amp; False-Alarm Suppression:
+                </div>
+                <ul style="font-size: 0.72rem; color: #cbd5e1; padding-left: 18px; margin: 0; line-height: 1.5;">
+                    ${(charact.supporting_evidence || []).map(e => `<li>${e}</li>`).join('')}
+                    ${fa.false_alarm_suppression ? `<li>False-alarm risk rating: <strong>${fa.false_alarm_suppression.false_alarm_risk_score}</strong> (${fa.false_alarm_suppression.false_alarm_verdict})</li>` : ''}
+                </ul>
+            </div>
+
+            <!-- Case Investigation Handoff Action -->
+            <div style="display: flex; justify-content: flex-end; gap: 8px;">
+                <button class="glow-button primary-button" style="padding: 6px 14px; font-size: 0.78rem;" onclick="document.querySelector('.tab-btn[data-tab=\\'investigation\\']').click()">
+                    🛡️ Hand Off to Evidence &amp; Investigation Console
+                </button>
+            </div>
+        </div>
+    `;
+
+    container.innerHTML = html;
+    container.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 async function ingestAcquiredScene(acqId) {

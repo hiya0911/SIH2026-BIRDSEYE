@@ -53,6 +53,57 @@ class SimilarSiteEngine:
             self._cluster_engine = LandscapeClusterEngine()
         return self._cluster_engine
 
+    def resolve_copernicus_to_local_tile(self, product_or_acq_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Phase 5E: Reusable mapping layer resolving:
+        Copernicus Product ID -> Acquisition ID -> Local Tile ID -> FAISS Vector.
+        Allows an acquired and ingested Copernicus scene to directly leverage the
+        local 512-D visual similarity index instead of falling back to remote spatial matching.
+        """
+        if not product_or_acq_id:
+            return None
+        clean_id = product_or_acq_id.strip()
+        from copernicus_engine import CopernicusAcquisitionEngine
+        from services import vector_index
+        from database import tiles_collection
+
+        acq_eng = CopernicusAcquisitionEngine()
+        acq = acq_eng.get_acquisition(clean_id)
+        if not acq:
+            return None
+
+        tile_id = acq.get("tile_id")
+        local_filepath = acq.get("local_filepath")
+        has_vector = False
+        vector_idx = -1
+
+        if vector_index and vector_index.tile_ids and tile_id:
+            if tile_id in vector_index.tile_ids:
+                has_vector = True
+                vector_idx = vector_index.tile_ids.index(tile_id)
+
+        # If tile_id wasn't recorded in manifest, check tiles database by filepath
+        if not tile_id and local_filepath:
+            t_doc = tiles_collection.find_one({"filepath": local_filepath})
+            if t_doc:
+                tile_id = t_doc.get("tile_id")
+                if vector_index and vector_index.tile_ids and tile_id in vector_index.tile_ids:
+                    has_vector = True
+                    vector_idx = vector_index.tile_ids.index(tile_id)
+
+        return {
+            "product_id": acq.get("scene_id"),
+            "acquisition_id": acq.get("acquisition_id"),
+            "tile_id": tile_id,
+            "local_filepath": local_filepath,
+            "has_vector": has_vector,
+            "vector_idx": vector_idx,
+            "wgs_bbox": acq.get("wgs_bbox"),
+            "sensor": acq.get("sensor"),
+            "acquisition_time": acq.get("acquisition_time"),
+            "ingestion_status": acq.get("ingestion_status", "ACQUIRED")
+        }
+
     def search_similar_sites(
         self,
         tile_id: Optional[str] = None,
@@ -121,6 +172,18 @@ class SimilarSiteEngine:
         # Case 1: Specific Local Tile ID or Discovered Scene Reference
         if tile_id and tile_id.strip():
             clean_tid = tile_id.strip()
+
+            # Phase 5E: Check if clean_tid maps from Copernicus Product ID -> Ingested Local Tile ID
+            cop_mapping = self.resolve_copernicus_to_local_tile(clean_tid)
+            if cop_mapping and cop_mapping.get("tile_id"):
+                clean_tid = cop_mapping["tile_id"]
+                ref_tile_id = clean_tid
+                ref_type = f"INGESTED_COPERNICUS_SCENE ({cop_mapping.get('product_id', '')[:20]}...)"
+                if cop_mapping.get("wgs_bbox") and (not bbox or len(bbox) != 4):
+                    bbox = cop_mapping["wgs_bbox"]
+                if cop_mapping.get("acquisition_time"):
+                    ref_acq_date = str(cop_mapping["acquisition_time"])[:10]
+
             # Fetch metadata from DB or AOI catalog
             t_meta = tiles_collection.find_one({"tile_id": clean_tid}, {"_id": 0})
             if not t_meta and clean_tid in aoi_eng.tiles_by_id:

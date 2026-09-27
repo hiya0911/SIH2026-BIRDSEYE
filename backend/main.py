@@ -1,4 +1,5 @@
 import json
+import uuid
 from typing import Optional
 from datetime import datetime, timezone
 
@@ -1004,6 +1005,73 @@ def ingest_copernicus_acquisition(acquisition_id: str):
     if res.get("status") == "FAILED":
         raise HTTPException(status_code=400, detail=res.get("reason", "Ingestion handoff failed."))
     return res
+
+
+# =========================================================
+# PHASE 5E: ACQUISITION MULTI-TEMPORAL CHANGE ANALYSIS
+# =========================================================
+
+@app.post("/api/copernicus/acquisitions/{acquisition_id}/analyze_change")
+@app.post("/api/copernicus/acquisition/{acquisition_id}/analyze_change")
+@app.get("/api/copernicus/acquisitions/{acquisition_id}/analyze_change")
+@app.get("/api/copernicus/acquisition/{acquisition_id}/analyze_change")
+def analyze_copernicus_acquisition_change(acquisition_id: str, aoi_bbox: Optional[str] = None):
+    """
+    Phase 5E: Bridges an acquired Copernicus scene into the multi-temporal change engine.
+    Validates acquisition existence, local file, integrity, raster metadata, and spatial compatibility.
+    Runs change detection or returns honest data-quality / spatial rejection.
+    Logs full provenance chain: STAC Discovery -> Acquisition -> Integrity -> Ingestion -> Temporal Analysis.
+    """
+    from services import get_change_engine
+    change_eng = get_change_engine()
+
+    bbox_list = None
+    if aoi_bbox:
+        try:
+            bbox_list = [float(x.strip()) for x in aoi_bbox.split(",")]
+        except Exception:
+            bbox_list = None
+
+    result = change_eng.analyze_acquisition_multitemporal(acquisition_id, aoi_bbox=bbox_list)
+
+    if result.get("status") == "NOT_FOUND":
+        raise HTTPException(status_code=404, detail=result.get("reason", f"Acquisition ID '{acquisition_id}' not found."))
+    elif result.get("status") in ("MISSING_FILE", "FAILED_VALIDATION", "CORRUPT_RASTER"):
+        raise HTTPException(status_code=400, detail=result.get("reason", "Acquisition raster verification failed."))
+
+    # Log provenance record
+    try:
+        acq = copernicus_acq_engine.get_acquisition(acquisition_id) or {}
+        prov_doc = create_provenance_document(
+            action="copernicus_acquisition_temporal_change",
+            source_files=[acq.get("local_filepath", "")] if acq.get("local_filepath") else [],
+            output_files=[],
+            parameters={
+                "acquisition_id": acquisition_id,
+                "copernicus_product_id": acq.get("scene_id"),
+                "observation_date": result.get("observation_date"),
+                "sha256": acq.get("sha256"),
+                "validation_status": acq.get("validation_status"),
+                "ingestion_status": acq.get("ingestion_status"),
+                "tile_id": acq.get("tile_id"),
+                "spatial_compatible": result.get("spatial_compatible", False),
+                "spatial_compatibility_status": result.get("spatial_compatibility_status"),
+                "band_compatibility": result.get("band_compatibility"),
+                "data_quality_state": result.get("data_quality_state"),
+                "status": result.get("status"),
+                "change_classification": result.get("change_characterization", {}).get("classification") if result.get("spatial_compatible") else "SKIPPED_INCOMPATIBLE_SPATIAL_REFERENCE",
+                "confidence_score": result.get("change_characterization", {}).get("confidence_score", 0.0),
+                "persistence_verdict": result.get("temporal_persistence", {}).get("verdict", "N/A"),
+                "historical_epochs_count": result.get("observation_count", len(result.get("chronological_observations", [])))
+            }
+        )
+        insert_res = provenance_collection.insert_one(prov_doc)
+        prov_id = str(getattr(insert_res, "inserted_id", f"prov_{uuid.uuid4().hex[:8]}"))
+        result["provenance_id"] = prov_id
+    except Exception as ex:
+        result["provenance_id"] = f"prov_unlogged_{uuid.uuid4().hex[:6]}"
+
+    return result
 
 
 # =========================================================
