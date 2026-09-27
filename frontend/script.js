@@ -50,6 +50,8 @@ document.addEventListener("DOMContentLoaded", () => {
     initLiveBenchmarkEvaluation();
     initInvestigationConsole();
     initIngestionConsole();
+    initCopernicusDiscoveryUI();
+    initSimilarSiteUI();
 });
 
 function initTabs() {
@@ -2547,6 +2549,9 @@ function initAnalystMap() {
 
     // Wire up Copernicus Live Discovery Console
     initCopernicusDiscoveryUI();
+
+    // Wire up Phase 5D Similar-Site Intelligence Console
+    initSimilarSiteUI();
 }
 
 
@@ -4253,7 +4258,12 @@ function initIngestionConsole() {
  * ========================================================= */
 
 function initCopernicusDiscoveryUI() {
+    if (window.__copernicusDiscoveryUIInitialized) return;
+    window.__copernicusDiscoveryUIInitialized = true;
+
     const btnRun = document.getElementById("btn-run-copernicus-discovery");
+    const btnLocate = document.getElementById("btn-copernicus-locate");
+    const locInput = document.getElementById("copernicus-location-input");
     const sensorSelect = document.getElementById("copernicus-sensor-select");
     const cloudGroup = document.getElementById("copernicus-cloud-group");
 
@@ -4272,8 +4282,28 @@ function initCopernicusDiscoveryUI() {
         btnRun.addEventListener("click", executeCopernicusDiscovery);
     }
 
+    if (btnLocate) {
+        btnLocate.addEventListener("click", executeCopernicusDiscovery);
+    }
+
+    if (locInput) {
+        locInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                executeCopernicusDiscovery();
+            }
+        });
+    }
+
     checkCopernicusServiceStatus();
 }
+
+window.quickSelectCopernicusLocation = function(locName) {
+    const locInput = document.getElementById("copernicus-location-input");
+    if (locInput) {
+        locInput.value = locName;
+    }
+    executeCopernicusDiscovery();
+};
 
 async function checkCopernicusServiceStatus() {
     const label = document.getElementById("copernicus-status-label");
@@ -4298,6 +4328,7 @@ async function executeCopernicusDiscovery() {
     const btnRun = document.getElementById("btn-run-copernicus-discovery");
     const container = document.getElementById("copernicus-results-container");
     const sensorSelect = document.getElementById("copernicus-sensor-select");
+    const locInput = document.getElementById("copernicus-location-input");
     const startDateInput = document.getElementById("copernicus-start-date");
     const endDateInput = document.getElementById("copernicus-end-date");
     const cloudLimitInput = document.getElementById("copernicus-cloud-limit");
@@ -4306,6 +4337,7 @@ async function executeCopernicusDiscovery() {
     if (!container) return;
 
     const sensor = sensorSelect ? sensorSelect.value : "SENTINEL-2";
+    const locName = locInput ? locInput.value.trim() : "";
     const startDate = startDateInput ? startDateInput.value : "2024-01-01";
     const endDate = endDateInput ? endDateInput.value : "2026-12-31";
     const maxCloud = cloudLimitInput ? parseFloat(cloudLimitInput.value) : 30.0;
@@ -4314,7 +4346,7 @@ async function executeCopernicusDiscovery() {
     let bbox = state.activeAOIBounds;
     let polygon = state.activeAOIPolygon;
 
-    if (!bbox && !polygon && state.map) {
+    if (!bbox && !polygon && !locName && state.map) {
         const b = state.map.getBounds();
         bbox = [
             Math.round(b.getWest() * 100000) / 100000,
@@ -4335,8 +4367,9 @@ async function executeCopernicusDiscovery() {
     try {
         const payload = {
             sensor: sensor,
-            bbox: bbox,
-            polygon: polygon,
+            location_name: locName || undefined,
+            bbox: (!locName ? bbox : undefined),
+            polygon: (!locName ? polygon : undefined),
             start_date: startDate,
             end_date: endDate,
             max_cloud_cover: maxCloud,
@@ -4357,6 +4390,13 @@ async function executeCopernicusDiscovery() {
         const data = await res.json();
         const scenes = data.discovered_scenes || [];
         state.copernicusDiscoveredScenes = scenes;
+
+        if (data.resolved_location && state.map) {
+            const rLoc = data.resolved_location;
+            if (rLoc.lat && rLoc.lon) {
+                state.map.setView([rLoc.lat, rLoc.lon], 11);
+            }
+        }
 
         renderCopernicusDiscoveredScenes(scenes, data);
         renderCopernicusFootprintsOnMap(scenes);
@@ -4382,7 +4422,7 @@ function renderCopernicusDiscoveredScenes(scenes, metaData) {
         container.innerHTML = `
             <div class="empty-hint" style="padding: 14px; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 8px;">
                 <div style="font-weight: 700; color: #fbbf24; margin-bottom: 4px;">🌐 Copernicus STAC Query Executed</div>
-                <div style="font-size: 0.8rem; color: #cbd5e1;">0 remote satellite scenes discovered for the specified AOI, date range, and cloud criteria. Try expanding date range or relaxing cloud limit.</div>
+                <div style="font-size: 0.8rem; color: #cbd5e1;">0 remote satellite scenes discovered for the specified AOI/location, date range, and cloud criteria. Try expanding date range or relaxing cloud limit.</div>
             </div>
         `;
         return;
@@ -4390,11 +4430,12 @@ function renderCopernicusDiscoveredScenes(scenes, metaData) {
 
     const sensor = metaData.sensor || "COPERNICUS";
     const isSAR = sensor.includes("SENTINEL-1");
+    const locInfo = metaData.resolved_location ? ` &bull; Region: <span style="color:#f1f5f9;">${metaData.resolved_location.name || 'Custom'}</span>` : '';
     
     let html = `
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
             <div style="font-size: 0.85rem; font-weight: 700; color: #38bdf8;">
-                🌐 ${scenes.length} Copernicus Scenes Discovered (${metaData.collection || sensor})
+                🌐 ${scenes.length} Copernicus Scenes Discovered (${metaData.collection || sensor})${locInfo}
             </div>
             <span class="badge-tag cyan">REMOTE STAC METADATA ONLY</span>
         </div>
@@ -4412,10 +4453,28 @@ function renderCopernicusDiscoveredScenes(scenes, metaData) {
         const polStr = item.polarization || "N/A";
         const isSarScene = item.collection.includes("sentinel-1");
 
+        let statusBadgeHtml = '';
+        if (item.data_status === 'ACQUIRED LOCALLY') {
+            statusBadgeHtml = `<span class="status-pill acquired" style="font-size: 0.68rem;">💾 ACQUIRED LOCALLY</span>`;
+        } else if (item.data_status === 'LOCAL DATA') {
+            statusBadgeHtml = `<span class="status-pill local" style="font-size: 0.68rem;">✓ LOCAL DATA</span>`;
+        } else if (isSarScene) {
+            statusBadgeHtml = `<span class="status-pill partial" style="font-size: 0.68rem;">SENTINEL-1 SAR — NOT CACHED LOCALLY</span>`;
+        } else {
+            statusBadgeHtml = `<span class="status-pill remote" style="font-size: 0.68rem;">REMOTE STAC — NOT DOWNLOADED</span>`;
+        }
+
+        const bboxArr = (item.wgs_bbox && Array.isArray(item.wgs_bbox) && item.wgs_bbox.length === 4)
+            ? item.wgs_bbox
+            : ((item.bbox && Array.isArray(item.bbox) && item.bbox.length === 4) ? item.bbox : []);
+        const bboxJson = JSON.stringify(bboxArr).replace(/"/g, '&quot;');
+
+        const fullProductId = item.product_id || item.id || item.scene_id || "";
+
         html += `
-            <div class="copernicus-scene-card" onclick="highlightDiscoveredScene('${item.product_id}')">
+            <div class="copernicus-scene-card" onclick="highlightDiscoveredScene('${fullProductId}')">
                 <div class="copernicus-scene-header">
-                    <span class="copernicus-scene-id">#${idx + 1} &bull; ${item.product_id}</span>
+                    <span class="copernicus-scene-id">#${idx + 1} &bull; ${fullProductId}</span>
                     <span class="copernicus-badge-tag ${isSarScene ? 'sar' : ''}">${isSarScene ? 'SENTINEL-1 C-SAR' : 'SENTINEL-2 OPTICAL'}</span>
                 </div>
                 <div class="copernicus-meta-grid">
@@ -4436,24 +4495,50 @@ function renderCopernicusDiscoveredScenes(scenes, metaData) {
                         <span class="copernicus-meta-val">${item.processing_level || 'L2A'} / ${polStr}</span>
                     </div>
                 </div>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.06);">
-                    <span class="status-pill partial" style="font-size: 0.68rem;">
-                        ${isSarScene ? 'SENTINEL-1 SAR — NOT CACHED LOCALLY' : 'REMOTE STAC — NOT DOWNLOADED'}
-                    </span>
-                    <div style="display: flex; gap: 6px; align-items: center;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.06); flex-wrap: wrap; gap: 6px;">
+                    ${statusBadgeHtml}
+                    <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                        <button class="glow-button small-btn btn-find-similar-copernicus" data-idx="${idx}" data-product-id="${fullProductId}" data-bbox='${JSON.stringify(bboxArr)}' style="padding: 3px 8px; font-size: 0.7rem; background: rgba(168, 85, 247, 0.2); border: 1px solid #a855f7; color: #d8b4fe;" onclick="event.stopPropagation(); window.setReferenceFromCopernicusScene ? window.setReferenceFromCopernicusScene('${fullProductId}', ${JSON.stringify(bboxArr)}) : (window.setReferenceFromCopernicusSceneByIndex ? window.setReferenceFromCopernicusSceneByIndex(${idx}) : null)">
+                            🔍 Find Similar Sites
+                        </button>
                         ${item.source_url ? `<a href="${item.source_url}" target="_blank" rel="noopener" style="font-size: 0.7rem; color: #38bdf8; text-decoration: underline;" onclick="event.stopPropagation();">STAC Link ↗</a>` : ''}
-                        <button class="glow-button primary-button small-btn" style="padding: 3px 8px; font-size: 0.7rem;" onclick="event.stopPropagation(); initiateSceneAcquisition('${item.product_id}', '${item.collection}', '${item.satellite_platform || 'SENTINEL-2'}', '${item.acquisition_time}', '${item.source_url || ''}')">
+                        <button class="glow-button primary-button small-btn" style="padding: 3px 8px; font-size: 0.7rem;" onclick="event.stopPropagation(); initiateSceneAcquisition('${fullProductId}', '${item.collection}', '${item.satellite_platform || 'SENTINEL-2'}', '${item.acquisition_time}', '${item.source_url || ''}')">
                             📥 ACQUIRE LOCALLY
                         </button>
                     </div>
                 </div>
-                <div id="acq-status-${item.product_id}" style="margin-top: 6px; font-size: 0.72rem;"></div>
+                <div id="acq-status-${fullProductId}" style="margin-top: 6px; font-size: 0.72rem;"></div>
             </div>
         `;
     });
 
     html += `</div>`;
     container.innerHTML = html;
+
+    // Attach direct click listeners to ensure robust handoff across all browsers
+    container.querySelectorAll('.btn-find-similar-copernicus').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const idx = parseInt(btn.dataset.idx, 10);
+            let bBox = null;
+            try {
+                if (btn.dataset.bbox) {
+                    bBox = JSON.parse(btn.dataset.bbox);
+                }
+            } catch(err) {}
+
+            if (!isNaN(idx) && scenes && scenes[idx]) {
+                const sc = scenes[idx];
+                const scId = sc.product_id || sc.id || sc.scene_id;
+                const scBbox = (sc.wgs_bbox && Array.isArray(sc.wgs_bbox) && sc.wgs_bbox.length === 4)
+                    ? sc.wgs_bbox
+                    : ((sc.bbox && Array.isArray(sc.bbox) && sc.bbox.length === 4) ? sc.bbox : bBox);
+                window.setReferenceFromCopernicusScene(scId, scBbox);
+            } else if (btn.dataset.productId) {
+                window.setReferenceFromCopernicusScene(btn.dataset.productId, bBox);
+            }
+        });
+    });
 }
 
 function renderCopernicusFootprintsOnMap(scenes) {
@@ -4656,6 +4741,719 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     loadLocalAcquisitions();
 });
+
+
+/* =========================================================
+ * PHASE 5D: SIMILAR-SITE INTELLIGENCE CLIENT HANDLERS
+ * ========================================================= */
+
+function setReferenceFromCopernicusScene(productId, wgsBbox) {
+    if (!productId && typeof productId !== "string") return;
+    productId = String(productId).trim();
+
+    // If truncated to "S2" or short platform prefix, recover full product ID from state.copernicusDiscoveredScenes
+    if (productId.length <= 4 && state.copernicusDiscoveredScenes && state.copernicusDiscoveredScenes.length > 0) {
+        const matched = state.copernicusDiscoveredScenes.find(s => {
+            const pid = s.product_id || s.id || s.scene_id || "";
+            return pid.startsWith(productId) || (s.satellite_platform && s.satellite_platform.toLowerCase().includes(productId.toLowerCase()));
+        }) || state.copernicusDiscoveredScenes[0];
+        if (matched) {
+            productId = matched.product_id || matched.id || matched.scene_id || productId;
+            if (!wgsBbox && (matched.wgs_bbox || matched.bbox)) {
+                wgsBbox = matched.wgs_bbox || matched.bbox;
+            }
+        }
+    }
+
+    // Auto-resolve wgsBbox from state.copernicusDiscoveredScenes if missing or invalid
+    if ((!wgsBbox || !Array.isArray(wgsBbox) || wgsBbox.length !== 4) && state.copernicusDiscoveredScenes) {
+        const found = state.copernicusDiscoveredScenes.find(s => (s.product_id === productId || s.id === productId || s.scene_id === productId));
+        if (found) {
+            if (found.wgs_bbox && Array.isArray(found.wgs_bbox) && found.wgs_bbox.length === 4) {
+                wgsBbox = found.wgs_bbox;
+            } else if (found.bbox && Array.isArray(found.bbox) && found.bbox.length === 4) {
+                wgsBbox = found.bbox;
+            } else if (found.geometry && found.geometry.coordinates) {
+                try {
+                    const coords = found.geometry.coordinates;
+                    const gType = found.geometry.type;
+                    let flatPts = [];
+                    if (gType === "Polygon") flatPts = coords.flat(1);
+                    else if (gType === "MultiPolygon") flatPts = coords.flat(2);
+                    if (flatPts.length > 0) {
+                        const lons = flatPts.map(p => p[0]);
+                        const lats = flatPts.map(p => p[1]);
+                        wgsBbox = [Math.min(...lons), Math.min(...lats), Math.max(...lons), Math.max(...lats)];
+                    }
+                } catch(e) {}
+            }
+        }
+    }
+
+    if ((!wgsBbox || !Array.isArray(wgsBbox) || wgsBbox.length !== 4) && state.activeAOIBounds && state.activeAOIBounds.length === 4) {
+        wgsBbox = state.activeAOIBounds;
+    }
+
+    // 1. Establish reference in state
+    state.similarRefSceneId = productId;
+    state.similarRefTileId = productId;
+    state.similarRefBbox = (wgsBbox && Array.isArray(wgsBbox) && wgsBbox.length === 4) ? wgsBbox.map(Number) : null;
+    state.similarRefType = 'COPERNICUS_SCENE';
+
+    // 2. Automatically populate "Reference Source Tile ID" field and dataset.bbox
+    const tileInput = document.getElementById("similar-tile-id-input");
+    if (tileInput) {
+        tileInput.value = productId;
+        if (state.similarRefBbox) {
+            tileInput.dataset.bbox = JSON.stringify(state.similarRefBbox);
+        } else {
+            delete tileInput.dataset.bbox;
+        }
+        tileInput.dispatchEvent(new Event('input', { bubbles: true }));
+        tileInput.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    // 3. Update visible reference indicator from "Reference: Not Selected"
+    const badge = document.getElementById("similar-reference-badge");
+    if (badge) {
+        const shortId = productId.length > 24 ? productId.substring(0, 24) + "..." : productId;
+        badge.textContent = `Reference Scene: ${shortId}`;
+        badge.className = "badge-tag purple";
+        badge.title = productId;
+    }
+
+    // 4. Smooth scroll to Similar-Site Intelligence console & highlight
+    const sec = document.getElementById("similar-sites-section");
+    if (sec) {
+        sec.scrollIntoView({ behavior: 'smooth' });
+        sec.style.transition = 'box-shadow 0.4s ease, border-color 0.4s ease';
+        sec.style.borderColor = 'rgba(168, 85, 247, 0.8)';
+        sec.style.boxShadow = '0 0 25px rgba(168, 85, 247, 0.35)';
+        setTimeout(() => {
+            sec.style.borderColor = '';
+            sec.style.boxShadow = '';
+        }, 2000);
+    }
+}
+window.setReferenceFromCopernicusScene = setReferenceFromCopernicusScene;
+window.setReferenceFromCopernicusSceneByIndex = function(idx) {
+    if (state.copernicusDiscoveredScenes && state.copernicusDiscoveredScenes[idx]) {
+        const sc = state.copernicusDiscoveredScenes[idx];
+        const scId = sc.product_id || sc.id || sc.scene_id;
+        const scBbox = (sc.wgs_bbox && Array.isArray(sc.wgs_bbox) && sc.wgs_bbox.length === 4) ? sc.wgs_bbox : sc.bbox;
+        setReferenceFromCopernicusScene(scId, scBbox);
+    }
+};
+
+// Global capture-phase click handler for Copernicus -> Similar Sites handoff across all browsers
+document.addEventListener('click', (e) => {
+    const btn = e.target && e.target.closest ? e.target.closest('.btn-find-similar-copernicus') : null;
+    if (!btn) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    let productId = btn.dataset.productId || "";
+    let bBox = null;
+    try {
+        if (btn.dataset.bbox) {
+            bBox = JSON.parse(btn.dataset.bbox);
+        }
+    } catch(err) {}
+
+    const idx = parseInt(btn.dataset.idx, 10);
+    if (!isNaN(idx) && state.copernicusDiscoveredScenes && state.copernicusDiscoveredScenes[idx]) {
+        const sc = state.copernicusDiscoveredScenes[idx];
+        productId = sc.product_id || sc.id || sc.scene_id || productId;
+        const scBbox = (sc.wgs_bbox && Array.isArray(sc.wgs_bbox) && sc.wgs_bbox.length === 4)
+            ? sc.wgs_bbox
+            : ((sc.bbox && Array.isArray(sc.bbox) && sc.bbox.length === 4) ? sc.bbox : bBox);
+        setReferenceFromCopernicusScene(productId, scBbox);
+    } else {
+        setReferenceFromCopernicusScene(productId, bBox);
+    }
+}, true);
+
+function setSimilarReferenceTile(tileId, label) {
+    state.similarRefSceneId = null;
+    state.similarRefTileId = tileId;
+    state.similarRefBbox = null;
+    state.similarRefType = 'LOCAL_TILE';
+    const tileInput = document.getElementById("similar-tile-id-input");
+    const badge = document.getElementById("similar-reference-badge");
+    if (tileInput) {
+        tileInput.value = tileId;
+        delete tileInput.dataset.bbox;
+        tileInput.dispatchEvent(new Event('input', { bubbles: true }));
+        tileInput.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    if (badge) {
+        badge.textContent = `Reference Tile: ${tileId.substring(0, 16)}... (${label || 'Local'})`;
+        badge.className = "badge-tag purple";
+        badge.title = tileId;
+    }
+    const sec = document.getElementById("similar-sites-section");
+    if (sec) sec.scrollIntoView({ behavior: 'smooth' });
+}
+window.setSimilarReferenceTile = setSimilarReferenceTile;
+
+function initSimilarSiteUI() {
+    if (window.__similarSiteUIInitialized) return;
+    window.__similarSiteUIInitialized = true;
+
+    const btnRun = document.getElementById("btn-run-similar-sites");
+    const btnCluster = document.getElementById("btn-discover-cluster-sites");
+    const btnUseAOI = document.getElementById("btn-use-active-aoi-ref");
+    const tileInput = document.getElementById("similar-tile-id-input");
+    const semInput = document.getElementById("similar-semantic-input");
+
+    if (btnRun) {
+        btnRun.addEventListener("click", executeSimilarSiteSearch);
+    }
+    if (btnCluster) {
+        btnCluster.addEventListener("click", executeClusterDiscovery);
+    }
+    if (btnUseAOI) {
+        btnUseAOI.addEventListener("click", () => {
+            const badge = document.getElementById("similar-reference-badge");
+            if (state.activeAOIBounds) {
+                if (tileInput) {
+                    tileInput.value = "";
+                    delete tileInput.dataset.bbox;
+                }
+                if (badge) {
+                    badge.textContent = `Reference: Map AOI [${state.activeAOIBounds.map(b => b.toFixed(3)).join(', ')}]`;
+                    badge.className = "badge-tag cyan";
+                }
+            } else if (state.activeAOIPolygon) {
+                if (tileInput) {
+                    tileInput.value = "";
+                    delete tileInput.dataset.bbox;
+                }
+                if (badge) {
+                    badge.textContent = `Reference: Polygon AOI (${state.activeAOIPolygon.length} vertices)`;
+                    badge.className = "badge-tag cyan";
+                }
+            } else {
+                alert("Please draw an AOI on the map (Point, Rectangle, Polygon) first.");
+            }
+        });
+    }
+
+    if (tileInput) {
+        const syncReferenceFromInput = () => {
+            const val = tileInput.value.trim();
+            const badge = document.getElementById("similar-reference-badge");
+            if (!badge) return;
+
+            if (!val) {
+                badge.textContent = "Reference: Not Selected";
+                badge.className = "badge-tag cyan";
+                badge.title = "";
+                state.similarRefSceneId = null;
+                state.similarRefTileId = null;
+                state.similarRefBbox = null;
+                state.similarRefType = null;
+                delete tileInput.dataset.bbox;
+            } else if (val.startsWith("S2") || val.startsWith("S1") || val.includes("MSIL2A") || val.includes("GRD") || val.startsWith("SENTINEL") || val.length > 36) {
+                const shortId = val.length > 24 ? val.substring(0, 24) + "..." : val;
+                badge.textContent = `Reference Scene: ${shortId}`;
+                badge.className = "badge-tag purple";
+                badge.title = val;
+                state.similarRefSceneId = val;
+                state.similarRefTileId = val;
+                state.similarRefType = 'COPERNICUS_SCENE';
+
+                // Recover bbox from dataset.bbox or discovered scenes
+                if (tileInput.dataset.bbox) {
+                    try {
+                        const parsed = JSON.parse(tileInput.dataset.bbox);
+                        if (Array.isArray(parsed) && parsed.length === 4) {
+                            state.similarRefBbox = parsed.map(Number);
+                        }
+                    } catch(e) {}
+                }
+                if (!state.similarRefBbox && state.copernicusDiscoveredScenes) {
+                    const matched = state.copernicusDiscoveredScenes.find(s => (s.product_id === val || s.id === val || s.scene_id === val));
+                    if (matched) {
+                        const mBox = (matched.wgs_bbox && matched.wgs_bbox.length === 4) ? matched.wgs_bbox : matched.bbox;
+                        if (mBox && Array.isArray(mBox) && mBox.length === 4) {
+                            state.similarRefBbox = mBox.map(Number);
+                            tileInput.dataset.bbox = JSON.stringify(state.similarRefBbox);
+                        }
+                    }
+                }
+            } else {
+                const shortId = val.length > 16 ? val.substring(0, 16) + "..." : val;
+                badge.textContent = `Reference Tile: ${shortId}`;
+                badge.className = "badge-tag purple";
+                badge.title = val;
+                state.similarRefSceneId = null;
+                state.similarRefTileId = val;
+                state.similarRefBbox = null;
+                state.similarRefType = 'LOCAL_TILE';
+                delete tileInput.dataset.bbox;
+            }
+        };
+
+        tileInput.addEventListener("input", syncReferenceFromInput);
+        tileInput.addEventListener("change", syncReferenceFromInput);
+    }
+
+    [tileInput, semInput].forEach(inp => {
+        if (inp) {
+            inp.addEventListener("keydown", (e) => {
+                if (e.key === "Enter") executeSimilarSiteSearch();
+            });
+        }
+    });
+}
+
+async function executeSimilarSiteSearch() {
+    const btnRun = document.getElementById("btn-run-similar-sites");
+    const container = document.getElementById("similar-sites-results-container");
+    const tileInput = document.getElementById("similar-tile-id-input");
+    const semInput = document.getElementById("similar-semantic-input");
+    const maxDistSelect = document.getElementById("similar-max-dist-input");
+    const startDateInput = document.getElementById("similar-start-date");
+    const endDateInput = document.getElementById("similar-end-date");
+    const sensorSelect = document.getElementById("similar-sensor-select");
+    const topkSelect = document.getElementById("similar-topk-select");
+
+    if (!container) return;
+
+    const tileId = tileInput ? tileInput.value.trim() : "";
+    const semQuery = semInput ? semInput.value.trim() : "";
+    const maxDist = maxDistSelect && maxDistSelect.value ? parseFloat(maxDistSelect.value) : undefined;
+    const startDate = startDateInput ? startDateInput.value : undefined;
+    const endDate = endDateInput ? endDateInput.value : undefined;
+    const sensor = sensorSelect ? sensorSelect.value : "ALL";
+    const topK = topkSelect ? parseInt(topkSelect.value) : 10;
+
+    let bbox = undefined;
+    let polygon = undefined;
+
+    // 4-Tier Waterfall to resolve spatial bbox/polygon:
+    // Waterfall 1: state.similarRefBbox
+    if (state.similarRefBbox && Array.isArray(state.similarRefBbox) && state.similarRefBbox.length === 4) {
+        bbox = state.similarRefBbox.map(Number);
+    }
+    // Waterfall 2: tileInput dataset.bbox
+    if (!bbox && tileInput && tileInput.dataset.bbox) {
+        try {
+            const parsed = JSON.parse(tileInput.dataset.bbox);
+            if (Array.isArray(parsed) && parsed.length === 4) {
+                bbox = parsed.map(Number);
+                state.similarRefBbox = bbox;
+            }
+        } catch(e) {}
+    }
+    // Waterfall 3: lookup in state.copernicusDiscoveredScenes by tileId
+    if (!bbox && tileId && state.copernicusDiscoveredScenes && state.copernicusDiscoveredScenes.length > 0) {
+        const matched = state.copernicusDiscoveredScenes.find(s => (s.product_id === tileId || s.id === tileId || s.scene_id === tileId));
+        if (matched) {
+            const mBox = (matched.wgs_bbox && matched.wgs_bbox.length === 4) ? matched.wgs_bbox : matched.bbox;
+            if (mBox && Array.isArray(mBox) && mBox.length === 4) {
+                bbox = mBox.map(Number);
+                state.similarRefBbox = bbox;
+                if (tileInput) tileInput.dataset.bbox = JSON.stringify(bbox);
+            }
+        }
+    }
+    // Waterfall 4: state.activeAOIBounds or activeAOIPolygon
+    if (!bbox && state.activeAOIBounds && Array.isArray(state.activeAOIBounds) && state.activeAOIBounds.length === 4) {
+        bbox = state.activeAOIBounds.map(Number);
+    } else if (!bbox && state.activeAOIPolygon) {
+        polygon = state.activeAOIPolygon;
+    }
+
+    if (!tileId && !semQuery && !bbox && !polygon) {
+        alert("Please specify a reference source: select a tile, enter an ID/prompt, or draw a map AOI.");
+        return;
+    }
+
+    if (btnRun) btnRun.disabled = true;
+    container.innerHTML = `
+        <div class="empty-hint" style="padding: 18px; text-align: center;">
+            <span class="spinner-small" style="display:inline-block;width:14px;height:14px;border:2px solid rgba(168,85,247,0.3);border-top-color:#a855f7;border-radius:50%;animation:spin 0.8s linear infinite;margin-right:6px;"></span>
+            Searching genuinely similar sites via 512-D FAISS FlatIP &amp; geospatial distance...
+        </div>
+    `;
+
+    try {
+        const payload = {
+            tile_id: tileId || undefined,
+            text_query: semQuery || undefined,
+            bbox: (bbox && Array.isArray(bbox) && bbox.length === 4) ? bbox.map(Number) : undefined,
+            polygon: polygon,
+            max_distance_km: maxDist,
+            start_date: startDate,
+            end_date: endDate,
+            sensor: sensor,
+            top_k: topK
+        };
+
+        const res = await fetch(`${API_BASE}/similar_sites`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+            throw new Error(data.detail || data.message || `HTTP ${res.status}`);
+        }
+
+        renderSimilarSiteResults(data);
+
+    } catch (err) {
+        console.error("Similar-Site retrieval failed:", err);
+        container.innerHTML = `
+            <div class="empty-hint" style="padding: 14px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px;">
+                <div style="font-weight: 700; color: #f87171; margin-bottom: 4px;">⚠️ SIMILAR-SITE RETRIEVAL ERROR</div>
+                <div style="font-size: 0.8rem; color: #e2e8f0;">${err.message || 'Retrieval failed.'}</div>
+            </div>
+        `;
+    } finally {
+        if (btnRun) btnRun.disabled = false;
+    }
+}
+
+async function executeClusterDiscovery() {
+    const btnCluster = document.getElementById("btn-discover-cluster-sites");
+    const container = document.getElementById("similar-sites-results-container");
+    const tileInput = document.getElementById("similar-tile-id-input");
+
+    let tileId = tileInput ? tileInput.value.trim() : "";
+    if (!tileId && state.selectedTileId) {
+        tileId = state.selectedTileId;
+    }
+    if (!tileId) {
+        // Fallback to first available tile in local catalog
+        if (state.activeAOITiles && state.activeAOITiles.length > 0) {
+            tileId = state.activeAOITiles[0].tile_id;
+        } else {
+            tileId = "f6b0a66f-8c79-4401-bc46-7ef0987dc174";
+        }
+        if (tileInput) tileInput.value = tileId;
+    }
+
+    if (btnCluster) btnCluster.disabled = true;
+    container.innerHTML = `
+        <div class="empty-hint" style="padding: 18px; text-align: center;">
+            <span class="spinner-small" style="display:inline-block;width:14px;height:14px;border:2px solid rgba(56,189,248,0.3);border-top-color:#38bdf8;border-radius:50%;animation:spin 0.8s linear infinite;margin-right:6px;"></span>
+            Discovering spectrally &amp; functionally related sites via unsupervised Landscape Clustering...
+        </div>
+    `;
+
+    try {
+        const res = await fetch(`${API_BASE}/clustering/tile/${tileId}`);
+        const data = await res.json();
+        if (!res.ok) {
+            throw new Error(data.detail || `HTTP ${res.status}`);
+        }
+
+        renderClusterDiscoveryResults(data);
+
+    } catch (err) {
+        console.error("Cluster discovery failed:", err);
+        container.innerHTML = `
+            <div class="empty-hint" style="padding: 14px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px;">
+                <div style="font-weight: 700; color: #f87171; margin-bottom: 4px;">⚠️ CLUSTER DISCOVERY FAILED</div>
+                <div style="font-size: 0.8rem; color: #e2e8f0;">${err.message || 'Error loading cluster members.'}</div>
+            </div>
+        `;
+    } finally {
+        if (btnCluster) btnCluster.disabled = false;
+    }
+}
+
+function renderSimilarSiteResults(data) {
+    const container = document.getElementById("similar-sites-results-container");
+    if (!container) return;
+
+    const results = data.results || [];
+    const ref = data.reference || {};
+
+    if (results.length === 0) {
+        container.innerHTML = `
+            <div class="empty-hint" style="padding: 14px; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 8px;">
+                <div style="font-weight: 700; color: #fbbf24; margin-bottom: 4px;">🔍 No Matching Similar Sites Found</div>
+                <div style="font-size: 0.8rem; color: #cbd5e1;">${data.message || 'No local tiles satisfied the spatial distance or date filters. Try increasing maximum distance or expanding date range.'}</div>
+            </div>
+        `;
+        return;
+    }
+
+    let html = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+            <div>
+                <span style="font-size: 0.88rem; font-weight: 700; color: #d8b4fe;">
+                    🎯 ${results.length} Ranked Similar Sites
+                </span>
+                <span style="font-size: 0.74rem; color: #94a3b8; margin-left: 8px;">
+                    (Reference: ${ref.reference_type || 'Custom'})
+                </span>
+            </div>
+            <div style="display: flex; gap: 6px; align-items: center;">
+                <span class="status-pill local" style="font-size: 0.68rem;">✓ 909 LOCAL VECTORS INDEXED</span>
+                <span class="badge-tag purple" style="font-size: 0.68rem;">FAISS FLAT-IP VERIFIED</span>
+            </div>
+        </div>
+        <div class="similar-site-grid">
+    `;
+
+    results.forEach(item => {
+        const coords = item.coordinates || {};
+        const latStr = coords.lat !== undefined ? `${coords.lat.toFixed(4)}°N` : 'N/A';
+        const lonStr = coords.lon !== undefined ? `${coords.lon.toFixed(4)}°E` : 'N/A';
+        const basis = item.retrieval_basis || {};
+        const factors = basis.factors_calculated || [];
+        const simScore = item.similarity_score !== undefined ? item.similarity_score.toFixed(4) : '0.0000';
+        const matchPct = item.match_percentage !== null && item.match_percentage !== undefined ? `${item.match_percentage}% Match` : 'Spatial Only';
+        const cInfo = item.cluster_info || {};
+        const bboxJson = JSON.stringify(item.wgs_bbox || []).replace(/"/g, '&quot;');
+
+        html += `
+            <div class="similar-site-card">
+                <div class="similar-site-header">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="similar-rank-pill">#${item.rank}</span>
+                        <div>
+                            <div style="font-size: 0.8rem; font-weight: 700; color: #f1f5f9; font-family: var(--font-mono, monospace);">
+                                ${item.tile_id.substring(0, 18)}...
+                            </div>
+                            <div style="font-size: 0.72rem; color: #94a3b8;">
+                                📍 ${item.location} (${latStr}, ${lonStr})
+                            </div>
+                        </div>
+                    </div>
+                    <div class="similar-score-badge">
+                        ${simScore} &bull; ${matchPct}
+                    </div>
+                </div>
+
+                <!-- Scene Metadata Row -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 0.74rem;">
+                    <div style="background: rgba(0,0,0,0.25); padding: 4px 8px; border-radius: 4px;">
+                        <span style="color: #64748b; font-size: 0.66rem; display: block;">SENSOR</span>
+                        <span style="color: #cbd5e1; font-weight: 600;">${item.sensor}</span>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.25); padding: 4px 8px; border-radius: 4px;">
+                        <span style="color: #64748b; font-size: 0.66rem; display: block;">ACQUISITION DATE</span>
+                        <span style="color: #cbd5e1; font-weight: 600;">${item.acquisition_date}</span>
+                    </div>
+                </div>
+
+                <!-- Explainable Similarity Breakdown -->
+                <div class="similar-explain-box">
+                    <div class="similar-explain-title">Retrieval Basis &amp; Calculated Evidence:</div>
+                    <ul class="similar-explain-list">
+                        ${factors.map(f => `<li>${f}</li>`).join('')}
+                    </ul>
+                </div>
+
+                <!-- Cluster Association -->
+                ${cInfo.cluster_id !== undefined ? `
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; background: rgba(168,85,247,0.08); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(168,85,247,0.2);">
+                        <span style="color: #c084fc;">🌐 Cluster ${cInfo.cluster_id}: <strong>${cInfo.cluster_label || 'Landscape'}</strong></span>
+                        <span class="status-pill local" style="font-size: 0.65rem;">LOCAL DATA</span>
+                    </div>
+                ` : ''}
+
+                <!-- Actions Bar -->
+                <div class="similar-actions-row">
+                    <button class="glow-button small-btn" style="padding: 3px 8px; font-size: 0.7rem;" onclick="viewSimilarSiteOnMap(${bboxJson}, ${coords.lat || 0}, ${coords.lon || 0}, '${item.tile_id}')">
+                        🗺️ View on Map
+                    </button>
+                    <button class="glow-button small-btn" style="padding: 3px 8px; font-size: 0.7rem; background: rgba(56,189,248,0.15); border-color: #38bdf8; color: #38bdf8;" onclick="demarcateSimilarSiteAsAOI(${bboxJson}, '${item.tile_id}')">
+                        🎯 Demarcate as AOI
+                    </button>
+                    <button class="glow-button primary-button small-btn" style="padding: 3px 8px; font-size: 0.7rem;" onclick="investigateSimilarSite('${item.tile_id}', ${bboxJson})">
+                        🛡️ Investigate Site
+                    </button>
+                    <button class="mode-pill" style="padding: 3px 8px; font-size: 0.68rem;" onclick="setSimilarReferenceTile('${item.tile_id}', '${item.location}'); executeSimilarSiteSearch();">
+                        🔄 Find Similar
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+
+    html += `</div>`;
+    container.innerHTML = html;
+}
+
+function renderClusterDiscoveryResults(data) {
+    const container = document.getElementById("similar-sites-results-container");
+    if (!container) return;
+
+    const members = data.related_members || [];
+
+    let html = `
+        <div style="background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                <div>
+                    <span style="font-size: 0.95rem; font-weight: 700; color: #38bdf8;">
+                        🌐 Landscape Cluster ${data.cluster_id}: ${data.cluster_label}
+                    </span>
+                    <div style="font-size: 0.76rem; color: #94a3b8; margin-top: 2px;">
+                        Member Pool: <strong>${data.member_count} Tiles</strong> &bull; Silhouette Score: <strong>${data.silhouette_score}</strong> (Unsupervised K-Means)
+                    </div>
+                </div>
+                <span class="badge-tag cyan">CLUSTERING DISCOVERY</span>
+            </div>
+        </div>
+        <div class="similar-site-grid">
+    `;
+
+    members.forEach((m, idx) => {
+        const coords = m.coordinates || {};
+        const latStr = coords.lat ? `${coords.lat.toFixed(4)}°N` : 'N/A';
+        const lonStr = coords.lon ? `${coords.lon.toFixed(4)}°E` : 'N/A';
+        const bboxJson = JSON.stringify(m.wgs_bbox || []).replace(/"/g, '&quot;');
+
+        html += `
+            <div class="similar-site-card">
+                <div class="similar-site-header">
+                    <div>
+                        <span class="similar-rank-pill">#${idx + 1}</span>
+                        <span style="font-size: 0.78rem; font-weight: 700; color: #f1f5f9; font-family: var(--font-mono, monospace); margin-left: 6px;">
+                            ${m.tile_id.substring(0, 18)}...
+                        </span>
+                    </div>
+                    <span class="status-pill local" style="font-size: 0.65rem;">LOCAL DATA</span>
+                </div>
+                <div style="font-size: 0.75rem; color: #cbd5e1;">
+                    <div>📍 Coordinates: <strong>${latStr}, ${lonStr}</strong></div>
+                    <div>🛰️ Sensor: <strong>${m.sensor}</strong> &bull; Date: <strong>${m.acquisition_date}</strong></div>
+                </div>
+                <div class="similar-actions-row">
+                    <button class="glow-button small-btn" style="padding: 3px 8px; font-size: 0.7rem;" onclick="viewSimilarSiteOnMap(${bboxJson}, ${coords.lat || 0}, ${coords.lon || 0}, '${m.tile_id}')">
+                        🗺️ View on Map
+                    </button>
+                    <button class="glow-button primary-button small-btn" style="padding: 3px 8px; font-size: 0.7rem;" onclick="investigateSimilarSite('${m.tile_id}', ${bboxJson})">
+                        🛡️ Investigate Site
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+
+    html += `</div>`;
+    container.innerHTML = html;
+}
+
+window.viewSimilarSiteOnMap = function(wgsBbox, lat, lon, tileId) {
+    if (!state.map) return;
+
+    // Remove previous similar site highlight layer if exists
+    if (state.similarHighlightLayer) {
+        state.map.removeLayer(state.similarHighlightLayer);
+        state.similarHighlightLayer = null;
+    }
+
+    if (wgsBbox && wgsBbox.length === 4) {
+        const bounds = [
+            [wgsBbox[1], wgsBbox[0]],
+            [wgsBbox[3], wgsBbox[2]]
+        ];
+        state.map.fitBounds(bounds, { maxZoom: 14, padding: [30, 30] });
+
+        state.similarHighlightLayer = L.rectangle(bounds, {
+            color: "#c084fc",
+            weight: 3,
+            fillColor: "#c084fc",
+            fillOpacity: 0.25,
+            dashArray: "4, 4"
+        }).addTo(state.map);
+
+        state.similarHighlightLayer.bindPopup(`
+            <div style="font-family: 'Inter', sans-serif; font-size: 0.78rem;">
+                <strong style="color: #c084fc;">🎯 Similar Site Tile</strong><br/>
+                <span class="mono-font" style="font-size: 0.72rem; color: #e2e8f0;">${tileId}</span><br/>
+                <span style="color: #94a3b8;">Coords: ${lat.toFixed(4)}°N, ${lon.toFixed(4)}°E</span><br/>
+                <button class="glow-button primary-button small-btn" style="margin-top: 6px; width: 100%;" onclick="investigateSimilarSite('${tileId}', ${JSON.stringify(wgsBbox)})">
+                    🛡️ Investigate This Site
+                </button>
+            </div>
+        `).openPopup();
+
+    } else if (lat && lon) {
+        state.map.setView([lat, lon], 14);
+        state.similarHighlightLayer = L.circleMarker([lat, lon], {
+            radius: 12,
+            color: "#c084fc",
+            weight: 3,
+            fillColor: "#c084fc",
+            fillOpacity: 0.35
+        }).addTo(state.map);
+    }
+
+    // Scroll map viewport into view
+    const mapEl = document.getElementById("analyst-map");
+    if (mapEl) {
+        mapEl.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+};
+
+window.demarcateSimilarSiteAsAOI = function(wgsBbox, tileId) {
+    if (!wgsBbox || wgsBbox.length !== 4) return;
+    state.activeAOIBounds = wgsBbox;
+    state.activeAOIPolygon = null;
+
+    if (state.map) {
+        if (state.activeAOILayer) {
+            state.map.removeLayer(state.activeAOILayer);
+        }
+        const bounds = [
+            [wgsBbox[1], wgsBbox[0]],
+            [wgsBbox[3], wgsBbox[2]]
+        ];
+        state.activeAOILayer = L.rectangle(bounds, {
+            color: "#38bdf8",
+            weight: 3,
+            fillColor: "#38bdf8",
+            fillOpacity: 0.2
+        }).addTo(state.map);
+        state.map.fitBounds(bounds, { maxZoom: 14 });
+    }
+
+    updateActiveAOISummary("Rectangle AOI", wgsBbox);
+    queryAOITiles(wgsBbox);
+
+    const mapEl = document.getElementById("analyst-map");
+    if (mapEl) {
+        mapEl.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+};
+
+window.investigateSimilarSite = function(tileId, wgsBbox) {
+    // Set selected tile in state
+    state.selectedTileId = tileId;
+    if (wgsBbox && wgsBbox.length === 4) {
+        state.activeAOIBounds = wgsBbox;
+    }
+
+    // Navigate to Temporal or Case Investigation tab
+    const temporalNavBtn = document.querySelector('[data-tab="temporal"]');
+    if (temporalNavBtn) {
+        temporalNavBtn.click();
+    }
+
+    // Populate tile dropdown/input if exists
+    const tileInput = document.getElementById("temporal-tile-input");
+    const tileDropdown = document.getElementById("temporal-tile-dropdown");
+    if (tileInput) tileInput.value = tileId;
+    if (tileDropdown) tileDropdown.value = tileId;
+
+    // Trigger analysis
+    const runBtn = document.getElementById("run-temporal-analysis-btn");
+    if (runBtn) {
+        setTimeout(() => runBtn.click(), 250);
+    }
+};
+
 
 
 

@@ -37,6 +37,19 @@ class CopernicusDiscoveryEngine:
         self.stac_url = stac_url
         self.last_status: str = "Initialized"
         self.last_request_time: Optional[str] = None
+        self._scene_cache: Dict[str, Dict[str, Any]] = {}
+
+    def get_cached_scene(self, scene_or_product_id: str) -> Optional[Dict[str, Any]]:
+        """Retrieves cached STAC scene metadata by product_id/id/scene_id."""
+        if not scene_or_product_id:
+            return None
+        sid = scene_or_product_id.strip()
+        if sid in self._scene_cache:
+            return self._scene_cache[sid]
+        for k, v in self._scene_cache.items():
+            if v.get("product_id") == sid or v.get("id") == sid or v.get("scene_id") == sid:
+                return v
+        return None
 
     def get_service_status(self) -> Dict[str, Any]:
         """
@@ -97,6 +110,9 @@ class CopernicusDiscoveryEngine:
         collection: Optional[str] = None,
         bbox: Optional[List[float]] = None,
         polygon: Optional[List[List[float]]] = None,
+        point: Optional[List[float]] = None,
+        location_name: Optional[str] = None,
+        region: Optional[str] = None,
         start_date: Optional[str] = "2024-01-01",
         end_date: Optional[str] = "2026-12-31",
         max_cloud_cover: Optional[float] = 100.0,
@@ -104,11 +120,43 @@ class CopernicusDiscoveryEngine:
     ) -> Dict[str, Any]:
         """
         Executes live STAC catalog discovery query over Copernicus Data Space API.
+        Supports national location names, coordinates, point/rect/poly AOI.
         No imagery files are downloaded or stored.
+        Strictly distinguishes LOCAL DATA, REMOTE STAC METADATA, ACQUIRED LOCALLY, NOT AVAILABLE LOCALLY.
         """
         target_collection = self.resolve_collection(sensor, collection)
         datetime_str = self.format_datetime_range(start_date, end_date)
         clamped_limit = max(1, min(int(limit), 50))
+
+        resolved_location = None
+        loc_query = location_name or region
+        if loc_query and not bbox and not polygon and not point:
+            try:
+                from geocoder import geocode_location
+                geo = geocode_location(loc_query)
+                if geo.get("status") == "success":
+                    bbox = geo.get("wgs_bbox")
+                    resolved_location = {
+                        "name": geo.get("name"),
+                        "lat": geo.get("lat"),
+                        "lon": geo.get("lon"),
+                        "city": geo.get("city"),
+                        "state": geo.get("state"),
+                        "provider": geo.get("provider")
+                    }
+            except Exception as ge:
+                logger.warning(f"Could not geocode location '{loc_query}': {ge}")
+
+        if point and len(point) >= 2 and not bbox and not polygon:
+            p_lon, p_lat = float(point[0]), float(point[1])
+            bbox = [round(p_lon - 0.05, 6), round(p_lat - 0.05, 6), round(p_lon + 0.05, 6), round(p_lat + 0.05, 6)]
+            if not resolved_location:
+                resolved_location = {
+                    "name": f"Point AOI ({p_lat:.4f}°N, {p_lon:.4f}°E)",
+                    "lat": p_lat,
+                    "lon": p_lon,
+                    "provider": "Point Coordinate AOI"
+                }
 
         payload: Dict[str, Any] = {
             "collections": [target_collection],
@@ -130,6 +178,24 @@ class CopernicusDiscoveryEngine:
                 "coordinates": [ring]
             }
 
+        # Scan locally acquired scene IDs
+        acquired_scene_ids = set()
+        try:
+            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            acq_dir = os.path.join(base_dir, "data", "acquisitions")
+            if os.path.exists(acq_dir):
+                for entry in os.listdir(acq_dir):
+                    man_path = os.path.join(acq_dir, entry, "acquisition_manifest.json")
+                    if os.path.exists(man_path):
+                        with open(man_path, "r", encoding="utf-8") as mf:
+                            m_obj = json.load(mf)
+                            if "scene_id" in m_obj:
+                                acquired_scene_ids.add(m_obj["scene_id"])
+                            if "product_id" in m_obj:
+                                acquired_scene_ids.add(m_obj["product_id"])
+        except Exception:
+            pass
+
         # Execute HTTP POST request to STAC API
         try:
             logger.info(f"Copernicus STAC query: collection={target_collection}, limit={clamped_limit}")
@@ -143,6 +209,7 @@ class CopernicusDiscoveryEngine:
                     "message": f"Copernicus STAC API returned HTTP {resp.status_code}: {resp.text[:200]}",
                     "sensor": sensor,
                     "collection": target_collection,
+                    "resolved_location": resolved_location,
                     "total_discovered": 0,
                     "discovered_scenes": []
                 }
@@ -180,8 +247,55 @@ class CopernicusDiscoveryEngine:
                         source_url = link.get("href")
                         break
 
+                feat_id = feat.get("id", "N/A")
+                is_acquired = feat_id in acquired_scene_ids
+                is_sar = "grd" in target_collection or "slc" in target_collection or (sensor and "SENTINEL-1" in sensor.upper())
+
+                if is_acquired:
+                    data_status = "ACQUIRED LOCALLY"
+                    local_status = "ACQUIRED LOCALLY"
+                    local_cached = True
+                elif is_sar:
+                    data_status = "REMOTE STAC METADATA"
+                    local_status = "NOT AVAILABLE LOCALLY (SAR ARCHITECTURE READY)"
+                    local_cached = False
+                else:
+                    data_status = "REMOTE STAC METADATA"
+                    local_status = "NOT AVAILABLE LOCALLY"
+                    local_cached = False
+
+                # Derive validated WGS84 bbox [min_lon, min_lat, max_lon, max_lat]
+                feat_bbox = feat.get("bbox")
+                if (not feat_bbox or len(feat_bbox) != 4) and feat.get("geometry"):
+                    geom = feat["geometry"]
+                    coords = geom.get("coordinates")
+                    if coords:
+                        try:
+                            g_type = geom.get("type", "")
+                            flat_pts = []
+                            if g_type == "Polygon":
+                                flat_pts = [p for ring in coords for p in ring]
+                            elif g_type == "MultiPolygon":
+                                flat_pts = [p for poly in coords for ring in poly for p in ring]
+                            elif g_type == "Point":
+                                flat_pts = [coords]
+                            if flat_pts:
+                                lons = [float(p[0]) for p in flat_pts if len(p) >= 2]
+                                lats = [float(p[1]) for p in flat_pts if len(p) >= 2]
+                                if lons and lats:
+                                    feat_bbox = [round(min(lons), 6), round(min(lats), 6), round(max(lons), 6), round(max(lats), 6)]
+                        except Exception:
+                            pass
+
+                if (not feat_bbox or len(feat_bbox) != 4) and resolved_location and resolved_location.get("wgs_bbox"):
+                    feat_bbox = resolved_location["wgs_bbox"]
+                elif (not feat_bbox or len(feat_bbox) != 4) and bbox and len(bbox) == 4:
+                    feat_bbox = [float(b) for b in bbox]
+
                 scene_item = {
-                    "product_id": feat.get("id", "N/A"),
+                    "product_id": feat_id,
+                    "id": feat_id,
+                    "scene_id": feat_id,
                     "collection": target_collection,
                     "satellite_platform": platform,
                     "acquisition_time": acq_time,
@@ -190,19 +304,23 @@ class CopernicusDiscoveryEngine:
                     "orbit_direction": orbit_dir if orbit_dir else "N/A",
                     "polarization": polarization if polarization else "N/A",
                     "grid_code": grid_code if grid_code else "N/A",
-                    "wgs_bbox": feat.get("bbox"),
+                    "wgs_bbox": feat_bbox,
+                    "bbox": feat_bbox,
                     "geometry": feat.get("geometry"),
                     "source_url": source_url,
                     "assets": feat.get("assets", {}),
-                    "data_status": "COPERNICUS_DISCOVERED",
-                    "local_cached": False
+                    "data_status": data_status,
+                    "local_status": local_status,
+                    "local_cached": local_cached
                 }
+                self._scene_cache[feat_id] = scene_item
                 discovered_scenes.append(scene_item)
 
             return {
                 "status": "success",
                 "sensor": sensor,
                 "collection": target_collection,
+                "resolved_location": resolved_location,
                 "total_discovered": len(discovered_scenes),
                 "discovered_scenes": discovered_scenes,
                 "data_disclaimer": "COPERNICUS DISCOVERED — Remote catalog metadata only. Imagery not downloaded locally."

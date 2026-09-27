@@ -64,6 +64,9 @@ class CopernicusSearchRequest(BaseModel):
     collection: Optional[str] = None
     bbox: Optional[list] = None
     polygon: Optional[list] = None
+    point: Optional[list] = None
+    location_name: Optional[str] = None
+    region: Optional[str] = None
     start_date: Optional[str] = "2024-01-01"
     end_date: Optional[str] = "2026-12-31"
     max_cloud_cover: Optional[float] = 100.0
@@ -114,6 +117,23 @@ class CopernicusAcquireRequest(BaseModel):
     asset_url: Optional[str] = None
     bbox: Optional[list] = None
     geometry: Optional[dict] = None
+
+
+class SimilarSiteRequest(BaseModel):
+    tile_id: Optional[str] = None
+    bbox: Optional[list] = None
+    polygon: Optional[list] = None
+    point: Optional[list] = None
+    location_name: Optional[str] = None
+    region: Optional[str] = None
+    text_query: Optional[str] = None
+    top_k: Optional[int] = 10
+    max_distance_km: Optional[float] = None
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    sensor: Optional[str] = "ALL"
+    cluster_id: Optional[int] = None
+
 
 
 

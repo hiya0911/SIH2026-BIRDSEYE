@@ -20,6 +20,7 @@ from schemas import (
     AnalystReviewRequest,
     CopernicusSearchRequest,
     CopernicusAcquireRequest,
+    SimilarSiteRequest,
     MultiTemporalChangeRequest,
     RasterIngestRequest
 )
@@ -64,6 +65,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def add_no_cache_headers_for_console(request: Request, call_next):
+    response = await call_next(request)
+    if request.url.path.startswith("/console"):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
 
 
 # =========================================================
@@ -822,6 +833,10 @@ def search_copernicus_stac(request: CopernicusSearchRequest):
         validate_bbox(request.bbox)
     if request.polygon is not None:
         validate_polygon(request.polygon)
+    if request.point is not None:
+        if len(request.point) < 2:
+            raise HTTPException(status_code=400, detail="Point must contain [lon, lat] coordinates.")
+        validate_lat_lon(float(request.point[1]), float(request.point[0]))
 
     # 4. Execute STAC Discovery Query
     res = copernicus_engine.discover_scenes(
@@ -829,6 +844,9 @@ def search_copernicus_stac(request: CopernicusSearchRequest):
         collection=request.collection,
         bbox=request.bbox,
         polygon=request.polygon,
+        point=request.point,
+        location_name=request.location_name,
+        region=request.region,
         start_date=request.start_date,
         end_date=request.end_date,
         max_cloud_cover=request.max_cloud_cover,
@@ -845,6 +863,8 @@ def search_copernicus_stac(request: CopernicusSearchRequest):
                 "sensor": request.sensor,
                 "collection": res.get("collection"),
                 "bbox": request.bbox,
+                "point": request.point,
+                "location_name": request.location_name,
                 "start_date": request.start_date,
                 "end_date": request.end_date,
                 "total_discovered": res.get("total_discovered", 0)
@@ -861,6 +881,9 @@ def search_copernicus_stac(request: CopernicusSearchRequest):
 def search_copernicus_stac_get(
     sensor: str = Query("SENTINEL-2"),
     collection: Optional[str] = None,
+    location_name: Optional[str] = None,
+    point_lon: Optional[float] = None,
+    point_lat: Optional[float] = None,
     min_lon: Optional[float] = None,
     min_lat: Optional[float] = None,
     max_lon: Optional[float] = None,
@@ -876,11 +899,17 @@ def search_copernicus_stac_get(
     bbox = None
     if all(v is not None for v in (min_lon, min_lat, max_lon, max_lat)):
         bbox = [min_lon, min_lat, max_lon, max_lat]
+
+    point = None
+    if point_lon is not None and point_lat is not None:
+        point = [point_lon, point_lat]
     
     req = CopernicusSearchRequest(
         sensor=sensor,
         collection=collection,
         bbox=bbox,
+        point=point,
+        location_name=location_name,
         start_date=start_date,
         end_date=end_date,
         max_cloud_cover=max_cloud_cover,
@@ -975,6 +1004,137 @@ def ingest_copernicus_acquisition(acquisition_id: str):
     if res.get("status") == "FAILED":
         raise HTTPException(status_code=400, detail=res.get("reason", "Ingestion handoff failed."))
     return res
+
+
+# =========================================================
+# PHASE 5D: SIMILAR-SITE INTELLIGENCE ENDPOINTS
+# =========================================================
+
+from similar_sites import SimilarSiteEngine
+
+similar_site_engine = SimilarSiteEngine()
+
+@app.post("/api/similar_sites")
+def find_similar_sites_endpoint(request: SimilarSiteRequest):
+    """
+    Phase 5D: Similar-Site Intelligence Endpoint.
+    Finds genuinely similar Earth-observation sites across India using FAISS inner-product
+    vector retrieval, spatial proximity, and unsupervised Landscape Clustering.
+    """
+    try:
+        # Validate coordinates/bounds if provided
+        if request.bbox is not None:
+            validate_bbox(request.bbox)
+        if request.polygon is not None:
+            validate_polygon(request.polygon)
+        if request.point is not None:
+            if len(request.point) < 2:
+                raise HTTPException(status_code=400, detail="Point must contain [lon, lat] coordinates.")
+            validate_lat_lon(float(request.point[1]), float(request.point[0]))
+
+        res = similar_site_engine.search_similar_sites(
+            tile_id=request.tile_id,
+            bbox=request.bbox,
+            polygon=request.polygon,
+            point=request.point,
+            location_name=request.location_name or request.region,
+            text_query=request.text_query,
+            top_k=request.top_k or 10,
+            max_distance_km=request.max_distance_km,
+            start_date=request.start_date,
+            end_date=request.end_date,
+            sensor=request.sensor or "ALL",
+            cluster_id=request.cluster_id
+        )
+
+        # Log provenance
+        try:
+            prov_doc = create_provenance_document(
+                action="similar_site_intelligence",
+                source_files=[request.tile_id] if request.tile_id else [],
+                output_files=[],
+                parameters={
+                    "tile_id": request.tile_id,
+                    "location_name": request.location_name,
+                    "text_query": request.text_query,
+                    "top_k": request.top_k,
+                    "sensor": request.sensor,
+                    "total_matches": res.get("total_matches", 0)
+                }
+            )
+            provenance_collection.insert_one(prov_doc)
+        except Exception:
+            pass
+
+        return res
+    except ValueError as ve:
+        raise HTTPException(status_code=404 if "not found" in str(ve).lower() else 400, detail=str(ve))
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/similar_sites")
+def find_similar_sites_get(
+    tile_id: Optional[str] = None,
+    text_query: Optional[str] = None,
+    location_name: Optional[str] = None,
+    point_lon: Optional[float] = None,
+    point_lat: Optional[float] = None,
+    min_lon: Optional[float] = None,
+    min_lat: Optional[float] = None,
+    max_lon: Optional[float] = None,
+    max_lat: Optional[float] = None,
+    top_k: int = 10,
+    max_distance_km: Optional[float] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    sensor: str = "ALL",
+    cluster_id: Optional[int] = None
+):
+    """
+    GET convenience endpoint for Similar-Site Intelligence.
+    """
+    bbox = None
+    if all(v is not None for v in [min_lon, min_lat, max_lon, max_lat]):
+        bbox = [min_lon, min_lat, max_lon, max_lat]
+
+    point = None
+    if point_lon is not None and point_lat is not None:
+        point = [point_lon, point_lat]
+
+    req = SimilarSiteRequest(
+        tile_id=tile_id,
+        bbox=bbox,
+        point=point,
+        location_name=location_name,
+        text_query=text_query,
+        top_k=top_k,
+        max_distance_km=max_distance_km,
+        start_date=start_date,
+        end_date=end_date,
+        sensor=sensor,
+        cluster_id=cluster_id
+    )
+    return find_similar_sites_endpoint(req)
+
+
+@app.post("/api/clustering/discover_related")
+@app.get("/api/clustering/tile/{tile_id}")
+def discover_related_sites_endpoint(tile_id: str, limit: int = 15):
+    """
+    Phase 5D: Connects unsupervised clustering to the discovery workflow.
+    Given a tile ID, finds its cluster assignment, member count, silhouette score,
+    and returns ranked related cluster member tiles with geographic coordinates.
+    """
+    try:
+        return similar_site_engine.discover_related_by_cluster(tile_id, limit=limit)
+    except ValueError as ve:
+        raise HTTPException(status_code=404, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 
 

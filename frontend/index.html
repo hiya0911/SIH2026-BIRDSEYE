@@ -25,7 +25,7 @@
     <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
     <script src="vendor/leaflet/leaflet.js"></script>
     
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=5d.4">
 </head>
 <body>
 
@@ -573,19 +573,36 @@
                 </div>
             </div>
 
-            <!-- COPERNICUS DATA SPACE STAC LIVE DISCOVERY CONSOLE -->
+            <!-- NATIONAL EO DISCOVERY CONSOLE (PHASE 5D) -->
             <div class="glass-card copernicus-discovery-card" style="margin-top: 1.25rem;">
                 <div class="card-header-bar">
                     <div class="card-title-group">
                         <span class="card-icon">🛰️</span>
                         <div>
-                            <h2 class="card-title">COPERNICUS DATA SPACE LIVE DISCOVERY (STAC v1)</h2>
-                            <div class="sub-label">Real-time remote catalog discovery for Sentinel-2 (Optical) and Sentinel-1 (C-SAR). Remote discovery only — imagery files are not downloaded.</div>
+                            <h2 class="card-title">NATIONAL EO DISCOVERY</h2>
+                            <div class="sub-label">National-scale Earth-observation discovery across India via Copernicus STAC v1 and national catalog. Search by named location, coordinates, Point/Rectangle/Polygon AOIs. Remote metadata is strictly distinguished from local imagery.</div>
                         </div>
                     </div>
                     <div class="copernicus-status-badge">
                         <span id="copernicus-status-dot" class="status-dot online"></span>
                         <span id="copernicus-status-label" class="status-label">STAC API: ONLINE &bull; 0 CACHED</span>
+                    </div>
+                </div>
+
+                <!-- National Location Search Bar -->
+                <div style="background: rgba(15,23,42,0.5); padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06); margin-top: 10px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+                    <div style="flex: 2; min-width: 240px; display: flex; gap: 8px;">
+                        <input type="text" id="copernicus-location-input" class="glass-input small-input" placeholder="Enter Indian city, locality, or coordinates (e.g. Siliguri, Bengaluru, Mumbai, 22.57, 88.36)..." style="flex: 1;">
+                        <button id="btn-copernicus-locate" class="glass-btn small-btn">Locate &amp; Discover</button>
+                    </div>
+                    <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                        <span style="font-size: 0.72rem; color: #94a3b8; font-weight: 600;">QUICK REGIONS:</span>
+                        <button class="mode-pill quick-chip" onclick="quickSelectCopernicusLocation('Siliguri')">Siliguri</button>
+                        <button class="mode-pill quick-chip" onclick="quickSelectCopernicusLocation('Kolkata')">Kolkata</button>
+                        <button class="mode-pill quick-chip" onclick="quickSelectCopernicusLocation('Bengaluru')">Bengaluru</button>
+                        <button class="mode-pill quick-chip" onclick="quickSelectCopernicusLocation('Mumbai')">Mumbai</button>
+                        <button class="mode-pill quick-chip" onclick="quickSelectCopernicusLocation('Delhi')">Delhi</button>
+                        <button class="mode-pill quick-chip" onclick="quickSelectCopernicusLocation('Ladakh')">Ladakh</button>
                     </div>
                 </div>
 
@@ -645,7 +662,7 @@
                     <!-- Execute Discovery Button -->
                     <div class="form-action-group" style="margin-bottom: 0;">
                         <button id="btn-run-copernicus-discovery" class="glow-button primary-button">
-                            <span class="btn-text">⚡ Run Live Copernicus Discovery</span>
+                            <span class="btn-text">⚡ Run National EO Discovery</span>
                             <span class="btn-icon">➔</span>
                         </button>
                     </div>
@@ -654,7 +671,7 @@
                 <!-- Discovered Results Panel -->
                 <div id="copernicus-results-container" class="copernicus-results-container" style="margin-top: 1rem;">
                     <div class="empty-hint" style="padding: 16px; text-align: center;">
-                        <span>Demarcate an AOI on the map above and click "Run Live Copernicus Discovery" to search remote STAC catalog metadata.</span>
+                        <span>Demarcate an AOI on the map above or enter a location name to search Copernicus STAC and national catalog metadata.</span>
                     </div>
                 </div>
 
@@ -670,6 +687,121 @@
                     </div>
                     <div id="copernicus-acquisitions-container" class="copernicus-acquisitions-container">
                         <div class="empty-hint" style="padding: 10px; font-size: 0.78rem;">No scenes acquired locally yet. Discover a scene above and click "ACQUIRE LOCALLY".</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SIMILAR-SITE INTELLIGENCE CONSOLE (PHASE 5D) -->
+            <div class="glass-card similar-sites-card" id="similar-sites-section" style="margin-top: 1.25rem;">
+                <div class="card-header-bar">
+                    <div class="card-title-group">
+                        <span class="card-icon">🧠</span>
+                        <div>
+                            <h2 class="card-title">SIMILAR-SITE INTELLIGENCE</h2>
+                            <div class="sub-label">Find genuinely similar Earth-observation sites across India using the existing FAISS 512-D vector retrieval, spatial distance, and unsupervised landscape clustering.</div>
+                        </div>
+                    </div>
+                    <div class="similar-status-badge">
+                        <span id="similar-reference-badge" class="badge-tag cyan">Reference: Not Selected</span>
+                    </div>
+                </div>
+
+                <!-- Reference Source & Controls -->
+                <div class="similar-controls-box" style="background: rgba(15,23,42,0.6); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06); margin-top: 10px;">
+                    <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
+                        <!-- Reference Tile Selection -->
+                        <div class="form-group" style="flex: 2; min-width: 240px; margin-bottom: 0;">
+                            <label class="form-label" for="similar-tile-id-input">
+                                <span>Reference Source Tile ID:</span>
+                                <span class="label-hint">Click tile on map, discover scene, or choose below</span>
+                            </label>
+                            <div style="display: flex; gap: 8px;">
+                                <input type="text" id="similar-tile-id-input" class="glass-input mono-font small-input" placeholder="Select tile or enter UUID..." style="flex: 1;">
+                                <button id="btn-use-active-aoi-ref" class="mode-pill" style="padding: 4px 10px; font-size: 0.72rem; white-space: nowrap;" title="Use Currently Demarcated Map AOI">
+                                    📍 Use Map AOI
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Semantic Text Query -->
+                        <div class="form-group" style="flex: 2; min-width: 220px; margin-bottom: 0;">
+                            <label class="form-label" for="similar-semantic-input">
+                                <span>Semantic Characteristic Prompt (Optional):</span>
+                            </label>
+                            <input type="text" id="similar-semantic-input" class="glass-input small-input" placeholder="e.g. Dense Urban Core, Mangrove Wetland, Runway...">
+                        </div>
+
+                        <!-- Distance Filter -->
+                        <div class="form-group" style="width: 140px; margin-bottom: 0;">
+                            <label class="form-label" for="similar-max-dist-input">
+                                <span>Max Distance:</span>
+                            </label>
+                            <select id="similar-max-dist-input" class="glass-select small-select">
+                                <option value="" selected>🌐 All India</option>
+                                <option value="25">Within 25 km</option>
+                                <option value="50">Within 50 km</option>
+                                <option value="100">Within 100 km</option>
+                                <option value="250">Within 250 km</option>
+                            </select>
+                        </div>
+
+                        <!-- Date Range -->
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label" for="similar-start-date">
+                                <span>From:</span>
+                            </label>
+                            <input type="date" id="similar-start-date" class="glass-input small-input" value="2024-01-01" style="padding: 4px 8px;">
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label" for="similar-end-date">
+                                <span>To:</span>
+                            </label>
+                            <input type="date" id="similar-end-date" class="glass-input small-input" value="2026-12-31" style="padding: 4px 8px;">
+                        </div>
+
+                        <!-- Sensor Filter -->
+                        <div class="form-group" style="width: 130px; margin-bottom: 0;">
+                            <label class="form-label" for="similar-sensor-select">
+                                <span>Sensor:</span>
+                            </label>
+                            <select id="similar-sensor-select" class="glass-select small-select">
+                                <option value="ALL" selected>All Sensors</option>
+                                <option value="SENTINEL-2">Sentinel-2 (Optical)</option>
+                                <option value="SENTINEL-1">Sentinel-1 (SAR)</option>
+                            </select>
+                        </div>
+
+                        <!-- Limit -->
+                        <div class="form-group" style="width: 90px; margin-bottom: 0;">
+                            <label class="form-label" for="similar-topk-select">
+                                <span>Top-K:</span>
+                            </label>
+                            <select id="similar-topk-select" class="glass-select small-select">
+                                <option value="5">5 Sites</option>
+                                <option value="10" selected>10 Sites</option>
+                                <option value="15">15 Sites</option>
+                                <option value="20">20 Sites</option>
+                            </select>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="form-action-group" style="margin-bottom: 0; display: flex; gap: 8px;">
+                            <button id="btn-run-similar-sites" class="glow-button primary-button">
+                                <span class="btn-text">⚡ Search Similar Sites</span>
+                                <span class="btn-icon">➔</span>
+                            </button>
+                            <button id="btn-discover-cluster-sites" class="mode-pill highlight" style="padding: 8px 14px; font-size: 0.78rem;">
+                                🌐 Discover Related (Cluster)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Similar Sites Results Container -->
+                <div id="similar-sites-results-container" class="similar-sites-results-container" style="margin-top: 1rem;">
+                    <div class="empty-hint" style="padding: 16px; text-align: center;">
+                        <span>Select a reference tile on the map, choose a discovered scene, or enter a query above, then click "Search Similar Sites".</span>
                     </div>
                 </div>
             </div>
@@ -1697,6 +1829,6 @@
     </footer>
 
     <!-- MAIN SCRIPT -->
-    <script src="script.js"></script>
+    <script src="script.js?v=5d.4"></script>
 </body>
 </html>

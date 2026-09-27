@@ -3614,6 +3614,129 @@ body {
     border-color: rgba(245, 158, 11, 0.3);
 }
 
+/* =========================================================
+ * PHASE 5D: NATIONAL EO DISCOVERY & SIMILAR-SITE INTELLIGENCE
+ * ========================================================= */
+.similar-sites-card {
+    background: rgba(11, 17, 32, 0.9);
+    border: 1px solid rgba(168, 85, 247, 0.4);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.similar-status-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.similar-site-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 14px;
+    margin-top: 14px;
+}
+
+.similar-site-card {
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 14px;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.similar-site-card:hover {
+    border-color: #a855f7;
+    background: rgba(30, 41, 59, 0.9);
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.25);
+}
+
+.similar-site-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding-bottom: 8px;
+}
+
+.similar-rank-pill {
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: rgba(168, 85, 247, 0.25);
+    color: #d8b4fe;
+    border: 1px solid rgba(168, 85, 247, 0.4);
+}
+
+.similar-score-badge {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #10b981;
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 6px;
+    padding: 2px 8px;
+}
+
+.similar-explain-box {
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 0.74rem;
+}
+
+.similar-explain-title {
+    font-weight: 700;
+    color: #94a3b8;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    font-size: 0.68rem;
+    letter-spacing: 0.03em;
+}
+
+.similar-explain-list {
+    margin: 0;
+    padding-left: 14px;
+    color: #cbd5e1;
+}
+
+.similar-explain-list li {
+    margin-bottom: 3px;
+}
+
+.similar-actions-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: auto;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.status-pill.local {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.status-pill.remote {
+    background: rgba(56, 189, 248, 0.15);
+    color: #38bdf8;
+    border: 1px solid rgba(56, 189, 248, 0.35);
+}
+
+.status-pill.acquired {
+    background: rgba(5, 150, 105, 0.2);
+    color: #6ee7b7;
+    border: 1px solid rgba(5, 150, 105, 0.4);
+}
+
+
 
 
 
