@@ -4,7 +4,7 @@
 
 ### 🌍 Satellite Imagery Discovery • Semantic Search • Multi-Temporal Change Analysis
 
-**BIRDSΣY3** is an intelligent satellite imagery discovery and analysis platform developed by **Team ByteSenary** for the **Smart India Hackathon**.
+**BIRDSΣY3** is an intelligent satellite imagery discovery and analysis platform developed by **Team ByteSenary**
 
 It helps analysts search large Earth-observation archives, discover meaningful locations, compare imagery across time, and identify real-world changes with greater speed, accuracy, and confidence.
 
