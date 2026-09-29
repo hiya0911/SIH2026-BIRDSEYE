@@ -1,1834 +1,422 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BIRDSΣY3 — Autonomous Satellite Semantic Retrieval & Multi-Temporal Change Engine</title>
-    
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-    
-    <!-- Chart.js for Unsupervised PCA & Time Series -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <!-- Marked.js for Technical Specification Rendering -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    
-    <!-- KaTeX for Scientific Math Formula Typesetting -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
-    
-    <!-- Leaflet GIS Engine (Local Offline Bundled) -->
-    <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
-    <script src="vendor/leaflet/leaflet.js"></script>
-    
-    <link rel="stylesheet" href="style.css?v=5e.1">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BIRDSΣY3 — Earth Observation Analyst Console</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- TOP SYSTEM STATUS & NAVIGATION -->
-    <header class="app-header">
-        <div class="header-container">
-            <!-- Left: Brand Logo & Title -->
-            <div class="brand-group">
-                <div class="brand-logo">
-                    <span class="logo-symbol">Σ3</span>
-                </div>
-                <div class="brand-title">BIRDS<span class="highlight">ΣY3</span></div>
-            </div>
-
-            <!-- Center: Primary Navigation Tabs -->
-            <nav class="nav-tabs">
-                <button class="tab-btn active" data-tab="semantic">
-                    <span class="tab-icon">🔍</span>
-                    <span class="tab-text">Semantic Retrieval</span>
-                </button>
-                <button class="tab-btn" data-tab="map">
-                    <span class="tab-icon">🗺️</span>
-                    <span class="tab-text">Analyst Map / AOI</span>
-                </button>
-                <button class="tab-btn" data-tab="temporal">
-                    <span class="tab-icon">⏳</span>
-                    <span class="tab-text">Temporal Change</span>
-                </button>
-                <button class="tab-btn" data-tab="preprocessing">
-                    <span class="tab-icon">🧪</span>
-                    <span class="tab-text">Preprocessing Lab</span>
-                </button>
-                <button class="tab-btn" data-tab="clustering">
-                    <span class="tab-icon">🌐</span>
-                    <span class="tab-text">Landscape Clusters</span>
-                </button>
-                <button class="tab-btn" data-tab="techspec">
-                    <span class="tab-icon">📋</span>
-                    <span class="tab-text">Technical Spec</span>
-                </button>
-                <button class="tab-btn" data-tab="metrics">
-                    <span class="tab-icon">📊</span>
-                    <span class="tab-text">Evaluation Metrics</span>
-                </button>
-                <button class="tab-btn" data-tab="investigation">
-                    <span class="tab-icon">🛡️</span>
-                    <span class="tab-text">Evidence & Investigation</span>
-                </button>
-            </nav>
-
-            <!-- Right: System Live Status Badge -->
-            <div class="system-status-badge">
-                <span class="status-dot online"></span>
-                <span class="status-label">BACKEND: ONLINE &bull; 909 TILES INDEXED</span>
-            </div>
+  <!-- ================= HEADER & APP BAR ================= -->
+  <header class="app-header">
+    <div class="bar">
+      <div class="brand">
+        <div class="brand-mark">Σ3</div>
+        <div>
+          <h1>BIRDSΣY3</h1>
+          <p>Earth observation analyst console · Team ByteSenary</p>
         </div>
-    </header>
-
-    <!-- ANALYST COMMAND CENTER WORKFLOW STEPPER & SYSTEM STATUS BAR -->
-    <div class="command-center-banner">
-        <div class="stepper-container">
-            <div class="stepper-title-group">
-                <span class="stepper-title-icon">🎯</span>
-                <span class="stepper-title-text">ANALYST COMMAND CENTER WORKFLOW:</span>
-            </div>
-            <div class="stepper-steps-group">
-                <button class="stepper-step active" data-step="1" data-tab="map">
-                    <span class="step-num">1</span>
-                    <span class="step-label">Location / AOI</span>
-                </button>
-                <span class="step-arrow">➔</span>
-                <button class="stepper-step" data-step="2" data-tab="semantic">
-                    <span class="step-num">2</span>
-                    <span class="step-label">Retrieval</span>
-                </button>
-                <span class="step-arrow">➔</span>
-                <button class="stepper-step" data-step="3" data-tab="preprocessing">
-                    <span class="step-num">3</span>
-                    <span class="step-label">Preprocessing & ARD</span>
-                </button>
-                <span class="step-arrow">➔</span>
-                <button class="stepper-step" data-step="4" data-tab="temporal">
-                    <span class="step-num">4</span>
-                    <span class="step-label">Temporal Change</span>
-                </button>
-                <span class="step-arrow">➔</span>
-                <button class="stepper-step" data-step="5" data-tab="investigation">
-                    <span class="step-num">5</span>
-                    <span class="step-label">False-Alarm & AI Confidence</span>
-                </button>
-                <span class="step-arrow">➔</span>
-                <button class="stepper-step" data-step="6" data-tab="investigation">
-                    <span class="step-num">6</span>
-                    <span class="step-label">Decision & Provenance Export</span>
-                </button>
-            </div>
-            <div class="stepper-actions">
-                <button id="btn-run-judge-demo" class="demo-flow-btn">
-                    <span>🚀 Launch Analyst Judge Demo</span>
-                </button>
-            </div>
-        </div>
-        <div class="cc-status-pills-row">
-            <span class="cc-status-pill green">✓ BACKEND: ONLINE</span>
-            <span class="cc-status-pill blue">🍃 DB: CONNECTED</span>
-            <span class="cc-status-pill cyan">⚡ FAISS: 909 VECTORS</span>
-            <span class="cc-status-pill purple">🧠 MODEL: CLIP ViT-B/32 (512D)</span>
-            <span class="cc-status-pill teal">🔒 OFFLINE: 100% LOCAL</span>
-            <span class="cc-status-pill green">🛡️ SECURITY: VERIFIED</span>
-            <span class="cc-status-pill amber" title="Sentinel-1 SAR C-band data is not currently cached in local storage">🛰️ SAR: NOT CACHED LOCALLY</span>
-            <span class="cc-status-pill gray" title="Local offline reference evaluation timings">📊 GROUND TRUTH: NOT AVAILABLE LOCALLY</span>
-        </div>
+      </div>
+      <div class="header-right">
+        <span class="pill" id="globalPill">
+          <span class="dot" id="systemStatusDot" aria-hidden="true"></span>
+          <span id="statusText">Connecting to local node…</span>
+        </span>
+        <button class="btn small ghost" id="openPalette" aria-label="Open Command Palette">
+          Commands <span class="kbd">Ctrl K</span>
+        </button>
+      </div>
     </div>
 
-    <!-- MAIN APP WRAPPER -->
-    <main class="app-main">
-
-        <!-- ========================================================= -->
-        <!-- TAB 1: SEMANTIC RETRIEVAL -->
-        <!-- ========================================================= -->
-        <section id="semantic" class="tab-section active">
-            <div class="section-hero">
-                <div class="badge-pill">DUAL-STAGE ZERO-SHOT INFERENCE</div>
-                <h1 class="hero-headline">Intelligent Satellite Semantic Search</h1>
-                <p class="hero-description">
-                    Retrieve Sentinel-2 spatial features using pre-trained CLIP zero-shot cross-modal embeddings paired with zero-hallucination physical spectral gating (NDVI, NDWI, NDBI).
-                </p>
-            </div>
-
-            <!-- SEARCH CONTROL CARD -->
-            <div class="glass-card search-card">
-                <div class="card-header-bar">
-                    <div class="card-title-group">
-                        <span class="card-icon">⚡</span>
-                        <h2 class="card-title">Retrieval Specification</h2>
-                    </div>
-                    <!-- Mode Switcher: Text vs Image-to-Image vs Multimodal Fusion -->
-                    <div class="retrieval-mode-switcher">
-                        <button id="mode-text-btn" class="mode-pill active">
-                            <span>🔤 Natural Language</span>
-                        </button>
-                        <button id="mode-image-btn" class="mode-pill">
-                            <span>🖼️ Reference Image</span>
-                        </button>
-                        <button id="mode-multimodal-btn" class="mode-pill">
-                            <span>🔤+🖼️ Multimodal Fusion</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- SUB-CONTAINER 1: TEXT QUERY MODE -->
-                <div id="text-search-controls" class="search-mode-panel active">
-
-                <!-- PRESET DROPDOWN -->
-                <div class="form-group">
-                    <label class="form-label" for="query-preset-select">
-                        <span>Select Preset Query from Catalog:</span>
-                        <span class="label-hint">Curated Earth Observation target classes</span>
-                    </label>
-                    <div class="select-wrapper">
-                        <select id="query-preset-select" class="glass-select">
-                            <option value="" disabled selected>-- Choose a curated satellite query from list --</option>
-                            <option value="Dense forest canopy with high chlorophyll and lush green vegetation">🌲 Dense Forest Canopy (NDVI &gt; 0.45)</option>
-                            <option value="Inland water bodies, lakes, rivers and reservoirs">💧 Inland Water Bodies &amp; Reservoirs (NDWI &gt; 0.15)</option>
-                            <option value="Urban concrete buildings, roads and dense settlements">🏙️ Urban Settlement &amp; Built-up Concrete</option>
-                            <option value="Agricultural cropland, seasonal vegetation and farming fields">🌾 Agricultural Cropland &amp; Cultivated Fields</option>
-                            <option value="Barren dry land, exposed soil and rocky substrate">🏜️ Barren Land &amp; Exposed Earth</option>
-                            <option value="Industrial zones, paved surfaces and transportation networks">🏗️ Industrial Zones &amp; Transportation Networks</option>
-                            <option value="Wetlands, marshes and riparian vegetative zones">🌿 Wetlands &amp; Riparian Buffer Zones</option>
-                        </select>
-                        <span class="select-chevron">▼</span>
-                    </div>
-                </div>
-
-                <!-- CUSTOM QUERY INPUT -->
-                <div class="form-group">
-                    <label class="form-label" for="semantic-query-input">
-                        <span>Active Search Query:</span>
-                        <span class="label-hint">Selected automatically from dropdown, or type custom prompt</span>
-                    </label>
-                    <div class="input-action-row">
-                        <div class="input-wrapper">
-                            <span class="input-icon">🔍</span>
-                            <input 
-                                type="text" 
-                                id="semantic-query-input" 
-                                class="glass-input" 
-                                placeholder="Select from dropdown above or type custom prompt..."
-                                value="Dense forest canopy with high chlorophyll and lush green vegetation"
-                            >
-                        </div>
-                        <button id="semantic-search-btn" class="glow-button primary-button">
-                            <span class="btn-text">Execute Retrieval</span>
-                            <span class="btn-icon">➔</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- QUICK CHIPS -->
-                <div class="quick-chips-row">
-                    <span class="chips-label">Quick Presets:</span>
-                    <button class="query-chip active" data-query="Dense forest canopy with high chlorophyll and lush green vegetation">🌲 Dense Forest</button>
-                    <button class="query-chip" data-query="Inland water bodies, lakes, rivers and reservoirs">💧 Water Bodies</button>
-                    <button class="query-chip" data-query="Urban concrete buildings, roads and dense settlements">🏙️ Urban Built-Up</button>
-                    <button class="query-chip" data-query="Agricultural cropland, seasonal vegetation and farming fields">🌾 Agriculture</button>
-                    <button class="query-chip" data-query="Barren dry land, exposed soil and rocky substrate">🏜️ Barren Land</button>
-                </div>
-
-                <!-- CONTROLS & TOGGLES -->
-                <div class="search-options-grid">
-                    <label class="custom-switch-label">
-                        <div class="switch-control">
-                            <input type="checkbox" id="spectral-gate-check" checked>
-                            <span class="switch-slider"></span>
-                        </div>
-                        <div class="switch-text">
-                            <span class="switch-title">Physical Spectral Gating</span>
-                            <span class="switch-desc">Zero-hallucination physics check (NDVI/NDWI threshold validation)</span>
-                        </div>
-                    </label>
-
-                    <label class="custom-switch-label">
-                        <div class="switch-control">
-                            <input type="checkbox" id="action-mode-check">
-                            <span class="switch-slider"></span>
-                        </div>
-                        <div class="switch-text">
-                            <span class="switch-title">Action / Temporal Change Mode</span>
-                            <span class="switch-desc">Prioritize dynamic change queries over static scene classification</span>
-                        </div>
-                    </label>
-
-                    <div class="top-k-selector">
-                        <label for="top-k-select" class="option-label">Top Results:</label>
-                        <select id="top-k-select" class="glass-select small-select">
-                            <option value="6">6 Tiles</option>
-                            <option value="12" selected>12 Tiles</option>
-                            <option value="24">24 Tiles</option>
-                        </select>
-                    </div>
-
-                    <div class="sensor-selector">
-                        <label for="sensor-filter-select" class="option-label">Sensor Constellation:</label>
-                        <select id="sensor-filter-select" class="glass-select small-select">
-                            <option value="ALL" selected>ALL (Optical + SAR)</option>
-                            <option value="OPTICAL">Sentinel-2 MSI (Optical)</option>
-                            <option value="SAR">Sentinel-1 C-SAR (Radar)</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- DATE RANGE FILTER BAR -->
-                <div class="date-filter-bar" style="display: flex; gap: 15px; align-items: center; margin-top: 12px; padding: 10px 14px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px;">
-                    <span class="chips-label">📅 Temporal Date Filter:</span>
-                    <label for="start-date-input" class="option-label" style="font-size: 0.82rem;">From:</label>
-                    <input type="date" id="start-date-input" class="glass-input small-input" value="2024-01-01" style="width: 140px; padding: 4px 8px; font-size: 0.82rem;">
-                    <label for="end-date-input" class="option-label" style="font-size: 0.82rem;">To:</label>
-                    <input type="date" id="end-date-input" class="glass-input small-input" value="2026-12-31" style="width: 140px; padding: 4px 8px; font-size: 0.82rem;">
-                    <label class="custom-switch-label" style="margin-left: auto; gap: 6px;">
-                        <input type="checkbox" id="diversity-control-check" checked>
-                        <span style="font-size: 0.8rem; color: #a1a1aa;">Spatial Diversity Control</span>
-                    </label>
-                </div>
-
-                <div id="sar-sensor-notice" class="sar-sensor-notice hidden">
-                    🛰️ <strong>SENTINEL-1 SAR — NOT CACHED LOCALLY:</strong> Sentinel-1 C-SAR data is not currently available in local storage. Add compatible Sentinel-1 GRD data to enable SAR evidence.
-                </div>
-                </div> <!-- End #text-search-controls -->
-
-                <!-- SUB-CONTAINER 2: IMAGE-TO-IMAGE UPLOAD SEARCH -->
-                <div id="image-search-controls" class="search-mode-panel">
-                    <div class="image-upload-wrapper">
-                        <div id="image-dropzone" class="image-dropzone">
-                            <input type="file" id="image-file-input" accept=".tif,.tiff,.png,.jpg,.jpeg,.webp" style="display: none;">
-                            <div class="dropzone-content">
-                                <span class="dropzone-icon">🛰️</span>
-                                <div class="dropzone-title">Upload Reference Satellite Image or Tile</div>
-                                <p class="dropzone-sub">Drag &amp; drop a GeoTIFF (.tif), PNG, or JPEG patch, or <span class="highlight-link">browse from disk</span></p>
-                                <span class="badge-tag">Auto-normalized 512-D CLIP Embedding</span>
-                            </div>
-                        </div>
-
-                        <!-- Image Preview Box -->
-                        <div id="image-preview-card" class="image-preview-card" style="display: none;">
-                            <div class="preview-thumb-box">
-                                <img id="uploaded-preview-img" src="" alt="Uploaded reference preview">
-                            </div>
-                            <div class="preview-info-box">
-                                <div class="preview-filename" id="preview-filename">reference_patch.tif</div>
-                                <div class="preview-filesize" id="preview-filesize">0 KB</div>
-                                <div class="preview-meta-tag">Status: Ready for Embedding Extraction</div>
-                                <div class="preview-actions">
-                                    <button id="execute-image-search-btn" class="glow-button primary-button">
-                                        <span class="btn-text">Execute Visual Similarity Search</span>
-                                        <span class="btn-icon">⚡</span>
-                                    </button>
-                                    <button id="clear-upload-btn" class="glass-btn small-btn">Remove</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div> <!-- End #image-search-controls -->
-
-                <!-- SUB-CONTAINER 3: MULTIMODAL FUSION SEARCH -->
-                <div id="multimodal-search-controls" class="search-mode-panel">
-                    <div class="multimodal-panel-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                        <!-- Left: Text Modality Input -->
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <label class="form-label" for="multimodal-query-input">
-                                <span>Modality 1 — Natural Language Query:</span>
-                                <span class="label-hint">Text semantic description</span>
-                            </label>
-                            <div class="input-wrapper">
-                                <span class="input-icon">🔤</span>
-                                <input type="text" id="multimodal-query-input" class="glass-input" placeholder="e.g. new construction near roads..." value="new construction near roads">
-                            </div>
-                            <div style="margin-top: 10px; display: flex; align-items: center; gap: 10px;">
-                                <label style="font-size: 0.82rem; color: #a1a1aa;">Text Fusion Weight:</label>
-                                <input type="range" id="text-weight-slider" min="0" max="1" step="0.1" value="0.5" style="accent-color: #3b82f6; flex: 1;">
-                                <span id="text-weight-val" style="font-size: 0.82rem; font-weight: 600; color: #60a5fa;">0.50</span>
-                            </div>
-                        </div>
-
-                        <!-- Right: Reference Image Modality Input -->
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <label class="form-label">
-                                <span>Modality 2 — Reference Satellite Image:</span>
-                                <span class="label-hint">Uploaded image patch</span>
-                            </label>
-                            <div id="mm-image-dropzone" class="image-dropzone" style="padding: 16px;">
-                                <input type="file" id="mm-image-file-input" accept=".tif,.tiff,.png,.jpg,.jpeg,.webp" style="display: none;">
-                                <div class="dropzone-content">
-                                    <span class="dropzone-icon" style="font-size: 1.4rem;">🖼️</span>
-                                    <div class="dropzone-title" style="font-size: 0.88rem;">Upload Patch or Drag Image</div>
-                                    <span id="mm-file-name-label" class="badge-tag" style="margin-top: 4px;">No image attached (Optional if text present)</span>
-                                </div>
-                            </div>
-                            <div style="margin-top: 10px; display: flex; align-items: center; gap: 10px;">
-                                <label style="font-size: 0.82rem; color: #a1a1aa;">Image Fusion Weight:</label>
-                                <input type="range" id="image-weight-slider" min="0" max="1" step="0.1" value="0.5" style="accent-color: #10b981; flex: 1;">
-                                <span id="image-weight-val" style="font-size: 0.82rem; font-weight: 600; color: #34d399;">0.50</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Multimodal Action Row -->
-                    <div style="margin-top: 16px; display: flex; justify-content: flex-end; align-items: center; gap: 12px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.08);">
-                        <span style="font-size: 0.82rem; color: #a1a1aa;">Deterministic Retrieval Fusion Formula: <code>wt × S_text + wi × S_image</code></span>
-                        <button id="execute-multimodal-search-btn" class="glow-button primary-button">
-                            <span class="btn-text">Execute Multimodal Retrieval</span>
-                            <span class="btn-icon">⚡</span>
-                        </button>
-                    </div>
-                </div> <!-- End #multimodal-search-controls -->
-            </div>
-
-            <!-- RESULTS SECTION -->
-            <div class="results-header">
-                <div class="results-title-group">
-                    <h3 class="results-title">Retrieved Sentinel-2 Tiles</h3>
-                    <span id="results-count-badge" class="badge-tag">Ready</span>
-                </div>
-                <div id="retrieval-metrics-bar" class="retrieval-metrics-bar"></div>
-            </div>
-
-            <div id="semantic-results-container" class="tiles-grid">
-                <!-- Initial empty / ready state -->
-                <div class="empty-state-card">
-                    <div class="empty-icon">🛰️</div>
-                    <div class="empty-title">Ready for Multi-Modal Retrieval</div>
-                    <p class="empty-desc">Choose a query from the dropdown above and click "Execute Retrieval" to query the 909-tile FAISS index.</p>
-                </div>
-            </div>
-        </section>
-
-        <!-- ========================================================= -->
-        <!-- NEW TAB: ANALYST SATELLITE MAP & AOI CONSOLE -->
-        <!-- ========================================================= -->
-        <section id="map" class="tab-section">
-            <div class="section-hero">
-                <div class="badge-pill">GEOSPATIAL AREA OF INTEREST (AOI) ENGINE</div>
-                <h1 class="hero-headline">Interactive Satellite Analyst Map &amp; AOI Workspace</h1>
-                <p class="hero-description">
-                    Navigate real Sentinel-2 Level-2A optical footprints across the Kolkata / Sundarbans theater. Search locations, draw point, rectangle, or polygon AOIs, calculate real surface area, inspect intersecting catalog scenes, and trigger downstream change analysis.
-                </p>
-            </div>
-
-            <!-- MAP CONTROL BAR -->
-            <div class="glass-card map-control-bar">
-                <div class="map-controls-row" style="margin-bottom: 0.75rem;">
-                    <!-- Geographic Location Search -->
-                    <div class="map-control-group flex-1" style="position: relative;">
-                        <label class="form-label" for="map-location-search-input">
-                            <span>Geographic Location Intelligence Search:</span>
-                            <span class="label-hint">Fine-grained India search: localities, towns, cities, districts, states &amp; coordinates</span>
-                        </label>
-                        <div class="coord-inputs-pair">
-                            <div class="search-input-wrapper" style="position: relative; flex: 1;">
-                                <input type="text" id="map-location-search-input" class="glass-input" placeholder="Search locality, city, district or coords (e.g. Lake Town, Kolkata; Siliguri; Mumbai; 22.5726, 88.3639)..." autocomplete="off">
-                                <div id="map-search-suggestions" class="search-suggestions-dropdown hidden"></div>
-                            </div>
-                            <button id="map-location-search-btn" class="glow-button primary-button small-btn">🔍 Search</button>
-                        </div>
-                    </div>
-
-                    <!-- Location Preset Quick Jump -->
-                    <div class="map-control-group flex-1">
-                        <label class="form-label" for="map-preset-select">
-                            <span>Strategic Theater &amp; Metro Presets:</span>
-                        </label>
-                        <div class="select-wrapper">
-                            <select id="map-preset-select" class="glass-select">
-                                <option value="kolkata_core" selected>📍 Kolkata Urban Core (22.5726°N, 88.3639°E)</option>
-                                <option value="lake_town">🏙️ Lake Town, Kolkata (22.5976°N, 88.4026°E)</option>
-                                <option value="siliguri">🏔️ Siliguri Metropolitan Region (26.7271°N, 88.4315°E)</option>
-                                <option value="salt_lake">🏢 Salt Lake Sector V &amp; New Town Corridor</option>
-                                <option value="delhi">🏛️ New Delhi / NCR Region (28.6139°N, 77.2090°E)</option>
-                                <option value="mumbai">🌉 Mumbai Metropolis (19.0760°N, 72.8777°E)</option>
-                                <option value="bengaluru">💻 Bengaluru Tech Hub (12.9716°N, 77.5946°E)</option>
-                                <option value="hooghly_river">🌊 Hooghly River Channel &amp; Howrah Port</option>
-                                <option value="wetlands">🌿 East Kolkata Wetlands (Ramsar Zone)</option>
-                                <option value="darjeeling">⛰️ Darjeeling Hill Station (27.0410°N, 88.2663°E)</option>
-                            </select>
-                            <span class="select-chevron">▼</span>
-                        </div>
-                    </div>
-
-                </div>
-
-                <div class="map-controls-row">
-                    <!-- Manual Lat/Lon Coordinates Input -->
-                    <div class="map-control-group">
-                        <label class="form-label" for="coord-lat-input">
-                            <span>Latitude / Longitude:</span>
-                        </label>
-                        <div class="coord-inputs-pair">
-                            <input type="number" step="0.0001" id="coord-lat-input" class="glass-input small-input mono-font" value="22.5726" placeholder="Lat">
-                            <input type="number" step="0.0001" id="coord-lon-input" class="glass-input small-input mono-font" value="88.3639" placeholder="Lon">
-                            <button id="jump-coord-btn" class="glass-btn small-btn">Jump</button>
-                        </div>
-                    </div>
-
-                    <!-- AOI Selection Tools -->
-                    <div class="map-control-group aoi-tools-group flex-1">
-                        <label class="form-label">
-                            <span>AOI Selection Modes &amp; Layers:</span>
-                        </label>
-                        <div class="aoi-btn-group">
-                            <button id="draw-point-btn" class="aoi-tool-btn" title="Select Point Location">
-                                <span>📍 Point</span>
-                            </button>
-                            <button id="draw-rect-btn" class="aoi-tool-btn" title="Draw Rectangle AOI">
-                                <span>⬚ Rectangle</span>
-                            </button>
-                            <button id="draw-poly-btn" class="aoi-tool-btn" title="Draw Polygon AOI">
-                                <span>⬡ Polygon</span>
-                            </button>
-                            <button id="clear-aoi-btn" class="aoi-tool-btn danger" title="Clear Active AOI">
-                                <span>✕ Clear AOI</span>
-                            </button>
-                            <button id="toggle-footprints-btn" class="aoi-tool-btn active" title="Toggle 909 Tile Footprints">
-                                <span>🌐 Footprints: ON</span>
-                            </button>
-                            <button id="aoi-search-btn" class="aoi-tool-btn highlight-btn" title="Constrain Search to AOI">
-                                <span>🔍 Constrain Search to AOI</span>
-                            </button>
-                            <button id="aoi-analyze-btn" class="aoi-tool-btn highlight-btn" title="Run Tri-Epoch AOI Analysis">
-                                <span>⏳ Run Tri-Epoch AOI Analysis</span>
-                            </button>
-                            <button id="aoi-investigate-btn" class="aoi-tool-btn highlight-btn" title="Investigate Selected AOI">
-                                <span>🛡️ Investigate Selected AOI</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- REAL-TIME TELEMETRY HUD -->
-                <div class="map-hud-bar">
-                    <div class="hud-item">
-                        <span class="hud-label">COORDINATES:</span>
-                        <span id="hud-coords" class="hud-val mono-font">22.5726° N, 88.3639° E</span>
-                    </div>
-                    <div class="hud-item">
-                        <span class="hud-label">UTM 45N:</span>
-                        <span id="hud-utm" class="hud-val mono-font">639,820 E, 2,496,560 N</span>
-                    </div>
-                    <div class="hud-item">
-                        <span class="hud-label">ZOOM LEVEL:</span>
-                        <span id="hud-zoom" class="hud-val mono-font">12.0</span>
-                    </div>
-                    <div class="hud-item">
-                        <span class="hud-label">INDEXED TILES IN VIEW:</span>
-                        <span id="hud-tiles-count" class="hud-val highlight">909 Available</span>
-                    </div>
-                    <div class="hud-item">
-                        <span class="hud-label">SAR STATUS:</span>
-                        <span class="status-pill partial">SENTINEL-1 SAR — NOT CACHED LOCALLY</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- MAP & INSPECTOR DUAL-COLUMN WORKSPACE -->
-            <div class="map-workspace-grid">
-                <!-- Left: Interactive Leaflet Map Container -->
-                <div class="glass-card map-viewport-card">
-                    <div id="analyst-map" class="analyst-map-viewport"></div>
-                    <div class="map-hint-banner">
-                        <span>💡 <strong>Tip:</strong> Click map to select location point, or choose "Rectangle" / "Polygon" to define boundary. Click any tile footprint to inspect.</span>
-                    </div>
-                </div>
-
-                <!-- Right: AOI Intelligence & Selected Tiles Inspector -->
-                <div class="glass-card aoi-inspector-card">
-                    <div class="card-header-bar">
-                        <div class="card-title-group">
-                            <span class="card-icon">🎯</span>
-                            <h2 class="card-title">SELECTED AOI INFORMATION PANEL</h2>
-                        </div>
-                        <span id="aoi-matches-badge" class="badge-tag">No AOI Selected</span>
-                    </div>
-
-                    <!-- Active AOI Summary Box -->
-                    <div class="aoi-summary-box" id="aoi-summary-box">
-                        <div class="aoi-summary-empty">
-                            <div class="empty-icon small">🗺️</div>
-                            <p>Demarcate an Area of Interest (Point, Rectangle, Polygon) or search a location to inspect spatial intersections.</p>
-                        </div>
-                    </div>
-
-                    <!-- AOI Execute Analysis Action -->
-                    <div class="aoi-action-box" id="aoi-action-box" style="display: none;">
-                        <button id="analyze-aoi-btn" class="glow-button primary-button" style="width: 100%;">
-                            <span class="btn-text">⚡ Proceed to AOI Change Analysis</span>
-                            <span class="btn-icon">➔</span>
-                        </button>
-                    </div>
-
-                    <!-- Intersecting Tiles List -->
-                    <div class="aoi-tiles-header">
-                        <span class="sub-heading">Matching Sentinel-2 Scenes / Tiles:</span>
-                    </div>
-                    <div id="aoi-intersecting-tiles-list" class="aoi-tiles-scroll-list">
-                        <div class="empty-hint">Intersecting tile footprints will appear here</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- NATIONAL EO DISCOVERY CONSOLE (PHASE 5D) -->
-            <div class="glass-card copernicus-discovery-card" style="margin-top: 1.25rem;">
-                <div class="card-header-bar">
-                    <div class="card-title-group">
-                        <span class="card-icon">🛰️</span>
-                        <div>
-                            <h2 class="card-title">NATIONAL EO DISCOVERY</h2>
-                            <div class="sub-label">National-scale Earth-observation discovery across India via Copernicus STAC v1 and national catalog. Search by named location, coordinates, Point/Rectangle/Polygon AOIs. Remote metadata is strictly distinguished from local imagery.</div>
-                        </div>
-                    </div>
-                    <div class="copernicus-status-badge">
-                        <span id="copernicus-status-dot" class="status-dot online"></span>
-                        <span id="copernicus-status-label" class="status-label">STAC API: ONLINE &bull; 0 CACHED</span>
-                    </div>
-                </div>
-
-                <!-- National Location Search Bar -->
-                <div style="background: rgba(15,23,42,0.5); padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06); margin-top: 10px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
-                    <div style="flex: 2; min-width: 240px; display: flex; gap: 8px;">
-                        <input type="text" id="copernicus-location-input" class="glass-input small-input" placeholder="Enter Indian city, locality, or coordinates (e.g. Siliguri, Bengaluru, Mumbai, 22.57, 88.36)..." style="flex: 1;">
-                        <button id="btn-copernicus-locate" class="glass-btn small-btn">Locate &amp; Discover</button>
-                    </div>
-                    <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
-                        <span style="font-size: 0.72rem; color: #94a3b8; font-weight: 600;">QUICK REGIONS:</span>
-                        <button class="mode-pill quick-chip" onclick="quickSelectCopernicusLocation('Siliguri')">Siliguri</button>
-                        <button class="mode-pill quick-chip" onclick="quickSelectCopernicusLocation('Kolkata')">Kolkata</button>
-                        <button class="mode-pill quick-chip" onclick="quickSelectCopernicusLocation('Bengaluru')">Bengaluru</button>
-                        <button class="mode-pill quick-chip" onclick="quickSelectCopernicusLocation('Mumbai')">Mumbai</button>
-                        <button class="mode-pill quick-chip" onclick="quickSelectCopernicusLocation('Delhi')">Delhi</button>
-                        <button class="mode-pill quick-chip" onclick="quickSelectCopernicusLocation('Ladakh')">Ladakh</button>
-                    </div>
-                </div>
-
-                <div class="copernicus-controls-grid" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-top: 10px;">
-                    <!-- Sensor Selector -->
-                    <div class="form-group" style="flex: 1; min-width: 200px; margin-bottom: 0;">
-                        <label class="form-label" for="copernicus-sensor-select">
-                            <span>Satellite Sensor Constellation:</span>
-                        </label>
-                        <div class="select-wrapper">
-                            <select id="copernicus-sensor-select" class="glass-select">
-                                <option value="SENTINEL-2" selected>🛰️ Sentinel-2 Optical (L2A BOA Reflectance)</option>
-                                <option value="SENTINEL-1">📡 Sentinel-1 C-SAR (GRD Radar)</option>
-                                <option value="SENTINEL-2-L1C">🛰️ Sentinel-2 Optical (L1C TOA Reflectance)</option>
-                            </select>
-                            <span class="select-chevron">▼</span>
-                        </div>
-                    </div>
-
-                    <!-- Start Date -->
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label class="form-label" for="copernicus-start-date">
-                            <span>From Date:</span>
-                        </label>
-                        <input type="date" id="copernicus-start-date" class="glass-input small-input" value="2024-01-01" style="padding: 4px 8px;">
-                    </div>
-
-                    <!-- End Date -->
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label class="form-label" for="copernicus-end-date">
-                            <span>To Date:</span>
-                        </label>
-                        <input type="date" id="copernicus-end-date" class="glass-input small-input" value="2026-12-31" style="padding: 4px 8px;">
-                    </div>
-
-                    <!-- Cloud Limit (Sentinel-2) -->
-                    <div class="form-group" id="copernicus-cloud-group" style="margin-bottom: 0;">
-                        <label class="form-label" for="copernicus-cloud-limit">
-                            <span>Max Cloud %:</span>
-                        </label>
-                        <input type="number" id="copernicus-cloud-limit" class="glass-input small-input mono-font" value="30" min="0" max="100" style="width: 80px; padding: 4px 8px;">
-                    </div>
-
-                    <!-- Result Limit -->
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label class="form-label" for="copernicus-result-limit">
-                            <span>Limit:</span>
-                        </label>
-                        <select id="copernicus-result-limit" class="glass-select small-select">
-                            <option value="5">5 Scenes</option>
-                            <option value="10" selected>10 Scenes</option>
-                            <option value="20">20 Scenes</option>
-                            <option value="50">50 Scenes</option>
-                        </select>
-                    </div>
-
-                    <!-- Execute Discovery Button -->
-                    <div class="form-action-group" style="margin-bottom: 0;">
-                        <button id="btn-run-copernicus-discovery" class="glow-button primary-button">
-                            <span class="btn-text">⚡ Run National EO Discovery</span>
-                            <span class="btn-icon">➔</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Discovered Results Panel -->
-                <div id="copernicus-results-container" class="copernicus-results-container" style="margin-top: 1rem;">
-                    <div class="empty-hint" style="padding: 16px; text-align: center;">
-                        <span>Demarcate an AOI on the map above or enter a location name to search Copernicus STAC and national catalog metadata.</span>
-                    </div>
-                </div>
-
-                <!-- Local Acquisitions Panel (Phase 5C) -->
-                <div class="copernicus-acquisitions-panel" style="margin-top: 1.25rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1rem;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                        <div style="font-size: 0.85rem; font-weight: 700; color: #10b981;">
-                            💾 SECURE LOCAL IMAGERY CACHE (<span id="local-acq-count">0</span> Acquired)
-                        </div>
-                        <button id="btn-refresh-acquisitions" class="mode-pill" style="padding: 2px 10px; font-size: 0.72rem;">
-                            🔄 Refresh Cache
-                        </button>
-                    </div>
-                    <div id="copernicus-acquisitions-container" class="copernicus-acquisitions-container">
-                        <div class="empty-hint" style="padding: 10px; font-size: 0.78rem;">No scenes acquired locally yet. Discover a scene above and click "ACQUIRE LOCALLY".</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- SIMILAR-SITE INTELLIGENCE CONSOLE (PHASE 5D) -->
-            <div class="glass-card similar-sites-card" id="similar-sites-section" style="margin-top: 1.25rem;">
-                <div class="card-header-bar">
-                    <div class="card-title-group">
-                        <span class="card-icon">🧠</span>
-                        <div>
-                            <h2 class="card-title">SIMILAR-SITE INTELLIGENCE</h2>
-                            <div class="sub-label">Find genuinely similar Earth-observation sites across India using the existing FAISS 512-D vector retrieval, spatial distance, and unsupervised landscape clustering.</div>
-                        </div>
-                    </div>
-                    <div class="similar-status-badge">
-                        <span id="similar-reference-badge" class="badge-tag cyan">Reference: Not Selected</span>
-                    </div>
-                </div>
-
-                <!-- Reference Source & Controls -->
-                <div class="similar-controls-box" style="background: rgba(15,23,42,0.6); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06); margin-top: 10px;">
-                    <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
-                        <!-- Reference Tile Selection -->
-                        <div class="form-group" style="flex: 2; min-width: 240px; margin-bottom: 0;">
-                            <label class="form-label" for="similar-tile-id-input">
-                                <span>Reference Source Tile ID:</span>
-                                <span class="label-hint">Click tile on map, discover scene, or choose below</span>
-                            </label>
-                            <div style="display: flex; gap: 8px;">
-                                <input type="text" id="similar-tile-id-input" class="glass-input mono-font small-input" placeholder="Select tile or enter UUID..." style="flex: 1;">
-                                <button id="btn-use-active-aoi-ref" class="mode-pill" style="padding: 4px 10px; font-size: 0.72rem; white-space: nowrap;" title="Use Currently Demarcated Map AOI">
-                                    📍 Use Map AOI
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Semantic Text Query -->
-                        <div class="form-group" style="flex: 2; min-width: 220px; margin-bottom: 0;">
-                            <label class="form-label" for="similar-semantic-input">
-                                <span>Semantic Characteristic Prompt (Optional):</span>
-                            </label>
-                            <input type="text" id="similar-semantic-input" class="glass-input small-input" placeholder="e.g. Dense Urban Core, Mangrove Wetland, Runway...">
-                        </div>
-
-                        <!-- Distance Filter -->
-                        <div class="form-group" style="width: 140px; margin-bottom: 0;">
-                            <label class="form-label" for="similar-max-dist-input">
-                                <span>Max Distance:</span>
-                            </label>
-                            <select id="similar-max-dist-input" class="glass-select small-select">
-                                <option value="" selected>🌐 All India</option>
-                                <option value="25">Within 25 km</option>
-                                <option value="50">Within 50 km</option>
-                                <option value="100">Within 100 km</option>
-                                <option value="250">Within 250 km</option>
-                            </select>
-                        </div>
-
-                        <!-- Date Range -->
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <label class="form-label" for="similar-start-date">
-                                <span>From:</span>
-                            </label>
-                            <input type="date" id="similar-start-date" class="glass-input small-input" value="2024-01-01" style="padding: 4px 8px;">
-                        </div>
-
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <label class="form-label" for="similar-end-date">
-                                <span>To:</span>
-                            </label>
-                            <input type="date" id="similar-end-date" class="glass-input small-input" value="2026-12-31" style="padding: 4px 8px;">
-                        </div>
-
-                        <!-- Sensor Filter -->
-                        <div class="form-group" style="width: 130px; margin-bottom: 0;">
-                            <label class="form-label" for="similar-sensor-select">
-                                <span>Sensor:</span>
-                            </label>
-                            <select id="similar-sensor-select" class="glass-select small-select">
-                                <option value="ALL" selected>All Sensors</option>
-                                <option value="SENTINEL-2">Sentinel-2 (Optical)</option>
-                                <option value="SENTINEL-1">Sentinel-1 (SAR)</option>
-                            </select>
-                        </div>
-
-                        <!-- Limit -->
-                        <div class="form-group" style="width: 90px; margin-bottom: 0;">
-                            <label class="form-label" for="similar-topk-select">
-                                <span>Top-K:</span>
-                            </label>
-                            <select id="similar-topk-select" class="glass-select small-select">
-                                <option value="5">5 Sites</option>
-                                <option value="10" selected>10 Sites</option>
-                                <option value="15">15 Sites</option>
-                                <option value="20">20 Sites</option>
-                            </select>
-                        </div>
-
-                        <!-- Action Buttons -->
-                        <div class="form-action-group" style="margin-bottom: 0; display: flex; gap: 8px;">
-                            <button id="btn-run-similar-sites" class="glow-button primary-button">
-                                <span class="btn-text">⚡ Search Similar Sites</span>
-                                <span class="btn-icon">➔</span>
-                            </button>
-                            <button id="btn-discover-cluster-sites" class="mode-pill highlight" style="padding: 8px 14px; font-size: 0.78rem;">
-                                🌐 Discover Related (Cluster)
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Similar Sites Results Container -->
-                <div id="similar-sites-results-container" class="similar-sites-results-container" style="margin-top: 1rem;">
-                    <div class="empty-hint" style="padding: 16px; text-align: center;">
-                        <span>Select a reference tile on the map, choose a discovered scene, or enter a query above, then click "Search Similar Sites".</span>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-
-
-        <!-- ========================================================= -->
-        <!-- TAB 2: TEMPORAL CHANGE ANALYSIS -->
-        <!-- ========================================================= -->
-        <section id="temporal" class="tab-section">
-            <div class="section-hero">
-                <div class="badge-pill">MULTI-EPOCH RADIAL &amp; SPECTRAL ANALYSIS</div>
-                <h1 class="hero-headline">Tri-Epoch Sub-Pixel Temporal Change</h1>
-                <p class="hero-description">
-                    Execute rigorous change detection across <strong>2024 (Sentinel-2B)</strong>, <strong>2025 (Sentinel-2B)</strong>, and <strong>2026 (Sentinel-2C)</strong> with sub-pixel co-registration, SCL cloud/shadow masking, and Otsu false-alarm suppression.
-                </p>
-            </div>
-
-            <!-- TILE SELECTION CARD -->
-            <div class="glass-card control-card">
-                <div class="card-header-bar">
-                    <div class="card-title-group">
-                        <span class="card-icon">🎯</span>
-                        <h2 class="card-title">Select Sentinel-2 Tile For Tri-Epoch Analysis</h2>
-                    </div>
-                    <span id="tile-count-indicator" class="badge-tag">Loading indexed tiles...</span>
-                </div>
-
-                <div class="tile-picker-layout">
-                    <div class="form-group flex-1">
-                        <label class="form-label" for="temporal-tile-dropdown">
-                            <span>Choose Tile ID from Indexed Database:</span>
-                            <span class="label-hint">Directly populated from MongoDB catalog</span>
-                        </label>
-                        <div class="select-wrapper">
-                            <select id="temporal-tile-dropdown" class="glass-select">
-                                <option value="" disabled selected>Loading tiles from server...</option>
-                            </select>
-                            <span class="select-chevron">▼</span>
-                        </div>
-                    </div>
-
-                    <div class="form-group flex-1">
-                        <label class="form-label" for="temporal-tile-input">
-                            <span>Selected Tile UUID:</span>
-                            <span class="label-hint">Auto-synced with dropdown</span>
-                        </label>
-                        <input 
-                            type="text" 
-                            id="temporal-tile-input" 
-                            class="glass-input mono-font" 
-                            placeholder="Select from dropdown above or paste UUID..."
-                            readonly
-                        >
-                    </div>
-
-                    <div class="form-action-group">
-                        <button id="run-temporal-analysis-btn" class="glow-button primary-button">
-                            <span class="btn-text">Analyze Temporal Delta</span>
-                            <span class="btn-icon">⚡</span>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="tile-meta-preview" id="selected-tile-meta">
-                    <span class="meta-item"><strong>CRS:</strong> <span id="meta-crs">EPSG:32644</span></span>
-                    <span class="meta-item"><strong>Bounding Box:</strong> <span id="meta-bbox">Select a tile above</span></span>
-                    <span class="meta-item"><strong>Valid Pixel Ratio:</strong> <span id="meta-valid">100%</span></span>
-                </div>
-            </div>
-
-            <!-- SIH MULTI-TEMPORAL AOI CHANGE ANALYSIS CARD -->
-            <div class="glass-card control-card" style="margin-top: 1.25rem;">
-                <div class="card-header-bar">
-                    <div class="card-title-group">
-                        <span class="card-icon">⏳</span>
-                        <div>
-                            <h2 class="card-title">SIH MULTI-TEMPORAL AOI CHANGE ANALYSIS</h2>
-                            <div class="sub-label">Dynamic AOI &amp; time-window observation pipeline, 4 core behaviors (Appearance, Disappearance, Expansion, Contraction), earliest supported observation &amp; persistence audit.</div>
-                        </div>
-                    </div>
-                    <span id="multitemporal-aoi-badge" class="badge-tag cyan">Active AOI: Map Workspace Default</span>
-                </div>
-
-                <div class="multitemporal-controls-grid" style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; margin-top: 12px;">
-                    <!-- Start Date -->
-                    <div class="form-group" style="flex: 1; min-width: 180px; margin-bottom: 0;">
-                        <label class="form-label" for="multitemporal-start-date">
-                            <span>Start Date:</span>
-                        </label>
-                        <input type="date" id="multitemporal-start-date" class="glass-input" value="2024-01-01">
-                    </div>
-
-                    <!-- End Date -->
-                    <div class="form-group" style="flex: 1; min-width: 180px; margin-bottom: 0;">
-                        <label class="form-label" for="multitemporal-end-date">
-                            <span>End Date:</span>
-                        </label>
-                        <input type="date" id="multitemporal-end-date" class="glass-input" value="2026-12-31">
-                    </div>
-
-                    <!-- Sensor Dropdown -->
-                    <div class="form-group" style="flex: 1; min-width: 220px; margin-bottom: 0;">
-                        <label class="form-label" for="multitemporal-sensor-select">
-                            <span>Satellite Sensor Constellation:</span>
-                        </label>
-                        <div class="select-wrapper">
-                            <select id="multitemporal-sensor-select" class="glass-select">
-                                <option value="SENTINEL-2" selected>🛰️ Sentinel-2 Optical (L2A BOA Reflectance)</option>
-                                <option value="SENTINEL-1">📡 Sentinel-1 C-SAR (Synthetic Aperture Radar)</option>
-                            </select>
-                            <span class="select-chevron">▼</span>
-                        </div>
-                    </div>
-
-                    <!-- Run Button -->
-                    <div class="form-action-group" style="margin-bottom: 0;">
-                        <button id="run-multitemporal-aoi-btn" class="glow-button primary-button">
-                            <span class="btn-text">Run Multi-Temporal Analysis</span>
-                            <span class="btn-icon">⚡</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- TEMPORAL ANALYSIS RESULTS CONTAINER -->
-            <div id="temporal-results-container" class="temporal-results-wrapper" style="margin-top: 1.25rem;">
-                <div class="empty-state-card">
-                    <div class="empty-icon">⏳</div>
-                    <div class="empty-title">Select a Tile and Run Analysis</div>
-                    <p class="empty-desc">Choose any tile from the dropdown above and click "Analyze Temporal Delta" to run sub-pixel co-registration, multi-epoch matrix calculations, and inspect the "Why Did AI Detect This Change?" explainability audit.</p>
-                </div>
-
-                <!-- PREVIEW BANNER: WHY DID AI DETECT THIS CHANGE -->
-                <div class="glass-card why-detected-board" style="margin-top: 1.5rem; opacity: 0.85;">
-                    <div class="card-header-bar">
-                        <div class="card-title-group">
-                            <span class="card-icon">🧠</span>
-                            <div>
-                                <h3 class="card-title">Why Did AI Detect This Change? &bull; Physical Explainability Audit</h3>
-                                <div class="sub-label">Deterministic spectral triggering rules, verifiable surface reflectance deltas &amp; canopy dynamics</div>
-                            </div>
-                        </div>
-                        <span class="badge-tag green">Zero Hallucination</span>
-                    </div>
-                    <div class="evidence-cards-grid">
-                        <div class="evidence-card">
-                            <div class="evidence-header">
-                                <span class="evidence-cat-name">Built-up Expansion Audit</span>
-                                <span class="evidence-trigger-chip">ΔBR &gt; 0.35 &amp; ΔNDVI &lt; -0.10</span>
-                            </div>
-                            <div class="evidence-basis-text">
-                                Triggered only upon simultaneous physical surface reflectance surge and canopy loss verified across cloud-free Sentinel-2 pixels.
-                            </div>
-                        </div>
-                        <div class="evidence-card">
-                            <div class="evidence-header">
-                                <span class="evidence-cat-name">Vegetation Loss vs Seasonal Drift</span>
-                                <span class="evidence-trigger-chip">ΔNDVI &lt; -0.20 (drift-compensated)</span>
-                            </div>
-                            <div class="evidence-basis-text">
-                                Distinguishes true land clearance from widespread seasonal phenological vegetation browning by subtracting regional drift baseline μ_pheno.
-                            </div>
-                        </div>
-                        <div class="evidence-card">
-                            <div class="evidence-header">
-                                <span class="evidence-cat-name">Confounder &amp; False-Alarm Suppression</span>
-                                <span class="evidence-trigger-chip">SCL + 3×3 Median Filter</span>
-                            </div>
-                            <div class="evidence-basis-text">
-                                Eliminates transient cloud shadows (SCL 3) and isolated single-pixel sensor noise via morphological median filtering.
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- ========================================================= -->
-        <!-- TAB: VISIBLE PREPROCESSING LAB & QUALITY ASSESSMENT -->
-        <!-- ========================================================= -->
-        <section id="preprocessing" class="tab-section">
-            <div class="section-hero">
-                <div class="badge-pill">VISIBLE LEVEL-2A INGESTION PIPELINE</div>
-                <h1 class="hero-headline">Visible Preprocessing Lab &amp; Quality Assessment</h1>
-                <p class="hero-description">
-                    Transparent, verifiable 8-stage Earth Observation data readiness pipeline: Raw Scene Ingestion → XML Telemetry Validation → Granule Verification → SCL Cloud/Shadow Masking → Radiometric Calibration (BOA) → FFT Sub-Pixel Co-Registration → Phenological Normalization → Analysis-Ready Product.
-                </p>
-            </div>
-
-            <!-- CONTROLLER CARD -->
-            <div class="glass-card control-card">
-                <div class="card-header-bar">
-                    <div class="card-title-group">
-                        <span class="card-icon">🧪</span>
-                        <h2 class="card-title">Configure Level-2A Preprocessing Pipeline</h2>
-                    </div>
-                    <div class="prep-modality-switcher">
-                        <button id="prep-mode-optical" class="mode-pill active">🧪 Optical (Sentinel-2)</button>
-                        <button id="prep-mode-sar" class="mode-pill">🛰️ Radar (Sentinel-1 SAR)</button>
-                    </div>
-                    <span id="preprocessing-status-badge" class="badge-tag green">Pipeline Ready</span>
-                </div>
-
-                <!-- SAR Preprocessing Panel (Visible when Radar mode is active) -->
-                <div id="sar-prep-panel" class="sar-prep-panel hidden" style="padding: 1.25rem;">
-                    <div class="sar-notice-card" style="background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 10px; padding: 1rem;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                            <h3 style="font-size: 0.95rem; color: #38bdf8; margin: 0;">🛰️ SENTINEL-1 C-SAR PREPROCESSING PIPELINE</h3>
-                            <span class="risk-pill moderate">STATUS: NOT CACHED LOCALLY</span>
-                        </div>
-                        <p class="section-subtext" style="color: #cbd5e1; font-size: 0.8rem; line-height: 1.45;">
-                            Sentinel-1 SAR data is not currently available in local storage. When compatible Sentinel-1 IW GRDH GeoTIFF products are placed into project storage, the 8-stage SAR processing pipeline will execute automatically.
-                        </p>
-                    </div>
-                    <div class="prep-stages-mini-grid" style="margin-top: 1rem;">
-                        <div class="mini-stage-badge warning"><span class="stage-name">1. Product & Metadata Validation</span><span class="stage-status">NOT RUN</span></div>
-                        <div class="mini-stage-badge warning"><span class="stage-name">2. GRD Structure Verification</span><span class="stage-status">NOT RUN</span></div>
-                        <div class="mini-stage-badge warning"><span class="stage-name">3. Radiometric Calibration (σ⁰)</span><span class="stage-status">NOT RUN</span></div>
-                        <div class="mini-stage-badge warning"><span class="stage-name">4. Terrain & Geometric Prep</span><span class="stage-status">NOT RUN</span></div>
-                        <div class="mini-stage-badge warning"><span class="stage-name">5. Speckle Noise Suppression</span><span class="stage-status">NOT RUN</span></div>
-                        <div class="mini-stage-badge warning"><span class="stage-name">6. VV/VH Dual-Pol Preparation</span><span class="stage-status">NOT RUN</span></div>
-                        <div class="mini-stage-badge warning"><span class="stage-name">7. AOI Slice Extraction</span><span class="stage-status">NOT RUN</span></div>
-                        <div class="mini-stage-badge warning"><span class="stage-name">8. Analysis-Ready SAR Handoff</span><span class="stage-status">NOT RUN</span></div>
-                    </div>
-                </div>
-
-                <div class="tile-picker-layout">
-                    <!-- Scene Selector -->
-                    <div class="form-group flex-1">
-                        <label class="form-label" for="prep-scene-select">
-                            <span>Target Sentinel-2 Scene Epoch:</span>
-                            <span class="label-hint">Official Copernicus SAFE products</span>
-                        </label>
-                        <div class="select-wrapper">
-                            <select id="prep-scene-select" class="glass-select">
-                                <option value="2024" selected>2024 — Sentinel-2B (45.86% Cloud, Orbit 33, Baseline 05.10)</option>
-                                <option value="2025">2025 — Sentinel-2B (2.66% Cloud, Orbit 33, Baseline 05.11)</option>
-                                <option value="2026">2026 — Sentinel-2C (0.00% Cloud, Orbit 33, Baseline 05.12)</option>
-                            </select>
-                            <span class="select-chevron">▼</span>
-                        </div>
-                    </div>
-
-                    <!-- Tile Selector -->
-                    <div class="form-group flex-1">
-                        <label class="form-label" for="prep-tile-select">
-                            <span>Spatial Window Tile (Optional):</span>
-                            <span class="label-hint">Pick from 909 indexed tiles or full granule center</span>
-                        </label>
-                        <div class="select-wrapper">
-                            <select id="prep-tile-select" class="glass-select">
-                                <option value="" selected>Default Granule Center (256×256 px / 6.55 km²)</option>
-                            </select>
-                            <span class="select-chevron">▼</span>
-                        </div>
-                    </div>
-
-                    <!-- Baseline Co-Registration Reference Epoch -->
-                    <div class="form-group" style="min-width: 180px;">
-                        <label class="form-label" for="prep-baseline-select">
-                            <span>Co-Registration Baseline:</span>
-                            <span class="label-hint">2D FFT Reference</span>
-                        </label>
-                        <div class="select-wrapper">
-                            <select id="prep-baseline-select" class="glass-select">
-                                <option value="2024" selected>2024 Baseline</option>
-                                <option value="2025">2025 Baseline</option>
-                            </select>
-                            <span class="select-chevron">▼</span>
-                        </div>
-                    </div>
-
-                    <div class="form-action-group">
-                        <button id="run-pipeline-btn" class="glow-button primary-button">
-                            <span class="btn-text">Execute Pipeline</span>
-                            <span class="btn-icon">⚡</span>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="tile-meta-preview" id="prep-scene-meta">
-                    <span class="meta-item"><strong>Platform:</strong> <span id="prep-meta-platform">Sentinel-2B</span></span>
-                    <span class="meta-item"><strong>ESA Product:</strong> <span id="prep-meta-safe" class="mono-font" style="font-size: 0.78rem;">S2B_MSIL2A_20240223T043809...SAFE</span></span>
-                    <span class="meta-item"><strong>Solar Zenith:</strong> <span id="prep-meta-zenith">39.31°</span></span>
-                    <span class="meta-item"><strong>Relative Orbit:</strong> <span id="prep-meta-orbit">R033</span></span>
-                </div>
-            </div>
-
-            <!-- QUALITY SUMMARY KPI CARDS -->
-            <div id="prep-kpi-row" class="kpi-summary-grid" style="margin-top: 1.5rem; display: none;">
-                <div class="kpi-card cyan">
-                    <div class="kpi-label">🛡️ Valid Pixel Ratio</div>
-                    <div class="kpi-value" id="kpi-prep-valid">100.0%</div>
-                    <div class="kpi-sub">Cloud &amp; shadow cleared</div>
-                </div>
-                <div class="kpi-card amber">
-                    <div class="kpi-label">☁️ SCL Cloud Contamination</div>
-                    <div class="kpi-value" id="kpi-prep-cloud">0.0%</div>
-                    <div class="kpi-sub">Medium/High prob &amp; cirrus</div>
-                </div>
-                <div class="kpi-card emerald">
-                    <div class="kpi-label">📡 Dynamic SNR Proxy</div>
-                    <div class="kpi-value" id="kpi-prep-snr">8.22</div>
-                    <div class="kpi-sub">Red band signal-to-noise</div>
-                </div>
-                <div class="kpi-card purple">
-                    <div class="kpi-label">📐 Co-Registration RMSE</div>
-                    <div class="kpi-value" id="kpi-prep-rmse">0.838 px</div>
-                    <div class="kpi-sub">Sub-pixel 2D FFT alignment</div>
-                </div>
-            </div>
-
-            <!-- DUAL COLUMN WORKSPACE: PIPELINE STAGES ON LEFT, PREVIEWS ON RIGHT -->
-            <div class="preprocessing-workspace-grid" style="margin-top: 1.5rem;">
-                <!-- Left: 8 Interactive Pipeline Stages -->
-                <div class="glass-card pipeline-stages-card">
-                    <div class="card-header-bar">
-                        <div class="card-title-group">
-                            <span class="card-icon">⚙️</span>
-                            <h2 class="card-title">8-Stage Execution Audit Trail</h2>
-                        </div>
-                        <span class="badge-tag">Zero Fabricated Data</span>
-                    </div>
-
-                    <div id="pipeline-stages-container" class="stages-flow-list">
-                        <div class="empty-state-card" style="padding: 2.5rem 1rem;">
-                            <div class="empty-icon small">🧪</div>
-                            <div class="empty-title">Pipeline Ready for Execution</div>
-                            <p class="empty-desc">Click "Execute Pipeline" above to run the 8-stage Level-2A ingestion and quality verification engine.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Right: Interactive Visual Previewer -->
-                <div class="glass-card preview-card">
-                    <div class="card-header-bar">
-                        <div class="card-title-group">
-                            <span class="card-icon">👁️</span>
-                            <h2 class="card-title">Raw vs Processed Imagery</h2>
-                        </div>
-                        <!-- 3-Way Mode Switcher -->
-                        <div class="preview-mode-switcher">
-                            <button id="preview-mode-raw" class="preview-pill" data-mode="raw">
-                                <span>📷 Raw Sensor DN</span>
-                            </button>
-                            <button id="preview-mode-scl" class="preview-pill" data-mode="scl">
-                                <span>🎭 SCL Quality Mask</span>
-                            </button>
-                            <button id="preview-mode-ard" class="preview-pill active" data-mode="ard">
-                                <span>🛰️ Analysis-Ready BOA</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="preview-viewer-box">
-                        <div id="preview-loading-overlay" class="preview-loading" style="display: none;">
-                            <div class="spinner"></div>
-                            <span>Executing Level-2A calibration...</span>
-                        </div>
-                        <img id="prep-preview-img" class="prep-display-img" src="" alt="Preprocessing Preview" style="display: none;">
-                        <div id="prep-preview-placeholder" class="empty-inspector">
-                            <div class="empty-icon">🛰️</div>
-                            <p>Execute pipeline to view calibrated Level-2A imagery with interactive raw vs mask comparison.</p>
-                        </div>
-                    </div>
-
-                    <div id="preview-caption-box" class="preview-caption-banner" style="display: none;">
-                        <span id="preview-mode-label" class="caption-mode-title">Analysis-Ready Surface Reflectance (BOA)</span>
-                        <p id="preview-mode-desc" class="caption-mode-desc">Calibrated using physical BOA formula ρ = DN / 10000. SCL cloud, shadow, and saturated pixels are highlighted.</p>
-                    </div>
-
-                    <!-- SCL Color Legend (visible when in SCL mode) -->
-                    <div id="scl-legend-box" class="scl-legend-grid" style="display: none;">
-                        <div class="scl-legend-item"><span class="scl-swatch" style="background: #10b981;"></span> Vegetation (SCL 4)</div>
-                        <div class="scl-legend-item"><span class="scl-swatch" style="background: #d97706;"></span> Non-Veg / Soil (SCL 5)</div>
-                        <div class="scl-legend-item"><span class="scl-swatch" style="background: #2563eb;"></span> Water (SCL 6)</div>
-                        <div class="scl-legend-item"><span class="scl-swatch" style="background: #1e1b4b;"></span> Cloud Shadow (SCL 3)</div>
-                        <div class="scl-legend-item"><span class="scl-swatch" style="background: #f1f5f9;"></span> Cloud (SCL 8, 9, 10)</div>
-                        <div class="scl-legend-item"><span class="scl-swatch" style="background: #334155;"></span> Dark / Saturated</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- DATA INGESTION & OPERATIONAL READINESS CARD -->
-            <div class="glass-card ingestion-console-card" style="margin-top: 1.5rem;">
-                <div class="card-header-bar">
-                    <div class="card-title-group">
-                        <span class="card-icon">📥</span>
-                        <div>
-                            <h2 class="card-title">Secure Offline Data Ingestion &amp; Operational Readiness</h2>
-                            <div class="sub-label">Controlled incremental GeoTIFF / COG tile ingestion &amp; safety validation</div>
-                        </div>
-                    </div>
-                    <span id="ingest-security-badge" class="badge-tag green">LOCAL / ON-PREMISE SECURE</span>
-                </div>
-
-                <div class="ingest-split-grid" style="display: flex; gap: 1.5rem; flex-wrap: wrap; margin-top: 1rem;">
-                    <!-- Controls Column -->
-                    <div style="flex: 1; min-width: 280px;">
-                        <div class="form-group">
-                            <label class="form-label" for="ingest-file-path-input">
-                                <span>Local GeoTIFF / COG Tile Path:</span>
-                                <span class="label-hint">Must reside within root data directory</span>
-                            </label>
-                            <input type="text" id="ingest-file-path-input" class="glass-input" placeholder="e.g. data/tiles/tile_sample.tif" value="data/tiles/tiles_metadata.json">
-                        </div>
-                        <div class="form-group" style="margin-top: 0.75rem;">
-                            <label class="form-label" for="ingest-source-label">
-                                <span>Source Scene / Description Label:</span>
-                            </label>
-                            <input type="text" id="ingest-source-label" class="glass-input" value="Analyst Local Ingestion Import">
-                        </div>
-                        <div class="form-action-group" style="margin-top: 1rem;">
-                            <button id="btn-run-ingest" class="glow-button primary-button" style="width: 100%;">
-                                <span class="btn-text">Ingest Local Imagery Tile</span>
-                                <span class="btn-icon">⚡</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Live Ingestion Telemetry & Duplicate Status Column -->
-                    <div style="flex: 1.2; min-width: 300px; background: rgba(15, 23, 42, 0.6); border-radius: 8px; padding: 1rem; border: 1px solid rgba(255, 255, 255, 0.08);">
-                        <div style="font-weight: 700; color: #38bdf8; font-size: 0.85rem; margin-bottom: 0.75rem; display: flex; justify-content: space-between;">
-                            <span>INGESTION AUDIT TELEMETRY</span>
-                            <span id="ingest-result-pill" class="badge-tag gray">READY</span>
-                        </div>
-                        <div id="ingest-telemetry-box" style="font-size: 0.8rem; color: #cbd5e1; display: flex; flex-direction: column; gap: 0.4rem;">
-                            <div style="display:flex; justify-content:space-between;"><span>Format / CRS:</span> <strong id="ing-fmt">GeoTIFF / EPSG:32645</strong></div>
-                            <div style="display:flex; justify-content:space-between;"><span>Safety &amp; Path Check:</span> <strong id="ing-safe" style="color: #34d399;">PASSED (NO PATH TRAVERSAL)</strong></div>
-                            <div style="display:flex; justify-content:space-between;"><span>Duplicate Detection:</span> <strong id="ing-dup">CHECKED (SHA-256 Digest)</strong></div>
-                            <div style="display:flex; justify-content:space-between;"><span>Incremental Indexing:</span> <strong id="ing-faiss">FAISS IndexFlatIP (512-D)</strong></div>
-                            <div style="display:flex; justify-content:space-between;"><span>15-Field Provenance:</span> <strong id="ing-prov">LOGGED TO MONGODB</strong></div>
-                        </div>
-                        <div id="ingest-status-msg" style="margin-top: 0.75rem; font-size: 0.75rem; color: #94a3b8; font-style: italic;">
-                            Ready for ingestion. Provide file path and click Ingest.
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- ========================================================= -->
-        <!-- TAB 3: CLUSTERING -->
-        <!-- ========================================================= -->
-        <section id="clustering" class="tab-section">
-            <div class="section-hero">
-                <div class="badge-pill">UNSUPERVISED SPECTRAL DISCOVERY</div>
-                <h1 class="hero-headline">Unsupervised Landscape Clustering</h1>
-                <p class="hero-description">
-                    k-Means clustering on FAISS embedding manifold projected onto a 2D Principal Component Analysis (PCA) spectral plane.
-                </p>
-            </div>
-
-            <div class="clustering-grid">
-                <!-- CHART PANEL -->
-                <div class="glass-card chart-panel">
-                    <div class="card-header-bar">
-                        <div class="card-title-group">
-                            <span class="card-icon">📊</span>
-                            <h2 class="card-title">2D PCA Spectral Landscape Map</h2>
-                        </div>
-                        <span class="badge-tag">909 Tile Embeddings</span>
-                    </div>
-                    <div class="chart-box">
-                        <canvas id="pcaChart"></canvas>
-                    </div>
-                    <div class="chart-caption">
-                        💡 <strong>Interactive:</strong> Click any point on the scatter plot to inspect the Sentinel-2 tile and its cluster signatures.
-                    </div>
-                </div>
-
-                <!-- INSPECTOR PANEL -->
-                <div class="glass-card inspector-panel">
-                    <div class="card-header-bar">
-                        <div class="card-title-group">
-                            <span class="card-icon">🔬</span>
-                            <h2 class="card-title">Cluster Inspector</h2>
-                        </div>
-                    </div>
-
-                    <div id="inspector-content" class="inspector-details">
-                        <div class="empty-inspector">
-                            <div class="empty-icon small">👆</div>
-                            <p>Click any point in the 2D PCA scatter plot to inspect the tile image and cluster classification.</p>
-                        </div>
-                    </div>
-
-                    <div id="inspector-image-box" class="inspector-image-box"></div>
-                </div>
-            </div>
-        </section>
-
-        <!-- ========================================================= -->
-        <!-- TAB 4: TECHNICAL SPECIFICATION -->
-        <!-- ========================================================= -->
-        <section id="techspec" class="tab-section">
-            <div class="section-hero">
-                <div class="badge-pill">OFFICIAL SIH 2026 DOCUMENTATION</div>
-                <h1 class="hero-headline">System Technical Specification</h1>
-                <p class="hero-description">
-                    Single Source of Truth covering mathematical formulations, multi-temporal algorithms, physical gating, and system architecture.
-                </p>
-            </div>
-
-            <!-- Tech Spec Dual-Column Layout with Sticky Sidebar -->
-            <div class="techspec-layout-container">
-                <!-- Sticky Navigation Sidebar -->
-                <aside class="techspec-sidebar">
-                    <div class="sidebar-header">
-                        <span class="sidebar-icon">📑</span>
-                        <span class="sidebar-title">Table of Contents</span>
-                    </div>
-                    <div class="sidebar-search">
-                        <input type="text" id="techspec-filter-input" class="sidebar-search-input" placeholder="Filter sections...">
-                    </div>
-                    <nav id="techspec-toc" class="toc-nav-list">
-                        <!-- Populated dynamically from rendered markdown headings -->
-                    </nav>
-                </aside>
-
-                <!-- Main Document Reader -->
-                <article class="techspec-article">
-                    <div class="techspec-nav-banner">
-                        <div class="doc-meta-group">
-                            <span class="doc-icon">📄</span>
-                            <div>
-                                <div class="doc-title">TECHNICAL_SPECIFICATION.md</div>
-                                <div class="doc-version-tag">Verified SIH 2026 Baseline &bull; 100% On-Premises &bull; v1.0.0</div>
-                            </div>
-                        </div>
-                        <div class="doc-actions">
-                            <a href="http://localhost:8000/static_docs/TECHNICAL_SPECIFICATION.md" target="_blank" class="glass-btn small-btn">Raw Markdown ↗</a>
-                        </div>
-                    </div>
-
-                    <div id="techspec-markdown-body" class="markdown-body">
-                        <div class="loading-state">
-                            <div class="spinner"></div>
-                            <p>Loading Technical Specification document...</p>
-                        </div>
-                    </div>
-                </article>
-            </div>
-
-            <!-- Back to top button -->
-            <button id="techspec-back-to-top" class="back-to-top-btn" title="Back to top">↑</button>
-        </section>
-
-        <!-- ========================================================= -->
-        <!-- TAB 5: EVALUATION METRICS -->
-        <!-- ========================================================= -->
-        <section id="metrics" class="tab-section">
-            <div class="section-hero">
-                <div class="badge-pill">REPRODUCIBLE SYSTEM VALIDATION &amp; BENCHMARKS</div>
-                <h1 class="hero-headline">Data, Retrieval &amp; Model System Evaluation</h1>
-                <p class="hero-description">
-                    Reproducible evaluation protocol for Sentinel-2 spatial features, 909-tile FAISS retrieval, 8-stage preprocessing telemetry, false-alarm suppression, and local reference timings.
-                </p>
-            </div>
-
-            <!-- LIVE EVALUATION BENCHMARK BOARD -->
-            <div class="glass-card evaluation-hero-board">
-                <div class="card-header-bar">
-                    <div class="card-title-group">
-                        <span class="card-icon">⚡</span>
-                        <div>
-                            <h2 class="card-title">System Evaluation &amp; Benchmarking Console</h2>
-                            <div class="sub-label">Direct backend benchmark execution over 909 Sentinel-2 tiles &amp; tri-epoch rasters</div>
-                        </div>
-                    </div>
-                    <div class="eval-actions-group">
-                        <span id="eval-status-indicator" class="status-pill verified">STATUS: EVALUATED &amp; VERIFIED</span>
-                        <button id="trigger-eval-btn" class="primary-btn glow-btn">
-                            <span class="btn-icon">⚡</span> Re-Run Live Benchmark
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Ground Truth Honesty Banner -->
-                <div class="honest-gt-banner" style="background: rgba(234, 179, 8, 0.1); border: 1px solid rgba(234, 179, 8, 0.3); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between;">
-                    <div style="display: flex; align-items: center; gap: 0.75rem;">
-                        <span style="font-size: 1.2rem;">⚠️</span>
-                        <div>
-                            <strong style="color: #fde047;">GROUND TRUTH STATUS: NOT AVAILABLE LOCALLY</strong>
-                            <div style="font-size: 0.8rem; color: #cbd5e1;">Formal human-annotated pixel masks (IoU, Precision, Recall, F1) are not present in local datasets. All metrics below represent real runtime system validation &amp; offline reference timings without fabricated labels.</div>
-                        </div>
-                    </div>
-                    <span class="risk-pill low" style="background: rgba(234, 179, 8, 0.2); color: #fde047; border: 1px solid rgba(234, 179, 8, 0.4);">ZERO FABRICATION</span>
-                </div>
-
-                <!-- Real System KPI Summary Grid -->
-                <div class="eval-kpi-grid">
-                    <div class="eval-kpi-card highlight-glow">
-                        <div class="kpi-header">
-                            <span class="kpi-title">Indexed Tiles</span>
-                            <span class="kpi-badge pass">FAISS 512D</span>
-                        </div>
-                        <div class="kpi-val" id="kpi-indexed-tiles">909</div>
-                        <div class="kpi-sub">Sentinel-2 256x256 tiles indexed in FAISS (Tile Grid T45QXF)</div>
-                    </div>
-
-                    <div class="eval-kpi-card">
-                        <div class="kpi-header">
-                            <span class="kpi-title">Staged SAFE Scenes</span>
-                            <span class="kpi-badge pass">L2A BOA</span>
-                        </div>
-                        <div class="kpi-val" id="kpi-safe-scenes">3 Scenes</div>
-                        <div class="kpi-sub">Tri-epoch Sentinel-2B/2C SAFE products (2024, 2025, 2026)</div>
-                    </div>
-
-                    <div class="eval-kpi-card highlight-emerald">
-                        <div class="kpi-header">
-                            <span class="kpi-title">False-Alarm Suppression</span>
-                            <span class="kpi-badge pass">SUPPRESSED</span>
-                        </div>
-                        <div class="kpi-val" id="kpi-fa-status">PASS</div>
-                        <div class="kpi-sub">SCL cloud/shadow masking + 3x3 spatial median filter</div>
-                    </div>
-
-                    <div class="eval-kpi-card">
-                        <div class="kpi-header">
-                            <span class="kpi-title">Multimodal Fusion</span>
-                            <span class="kpi-badge pass">w_t + w_i = 1.0</span>
-                        </div>
-                        <div class="kpi-val" id="kpi-fusion">VALIDATED</div>
-                        <div class="kpi-sub">Deterministic text (50%) + image patch (50%) vector fusion</div>
-                    </div>
-
-                    <div class="eval-kpi-card">
-                        <div class="kpi-header">
-                            <span class="kpi-title">Text Embedding Latency</span>
-                            <span class="kpi-badge pass">LOCAL CPU</span>
-                        </div>
-                        <div class="kpi-val" id="kpi-text-lat">-- ms</div>
-                        <div class="kpi-sub">OpenAI CLIP ViT-B/32 query vector extraction</div>
-                    </div>
-
-                    <div class="eval-kpi-card">
-                        <div class="kpi-header">
-                            <span class="kpi-title">FAISS Search Latency</span>
-                            <span class="kpi-badge pass">LOCAL CPU</span>
-                        </div>
-                        <div class="kpi-val" id="kpi-faiss-lat">-- ms</div>
-                        <div class="kpi-sub">Top-10 cosine inner-product candidate search</div>
-                    </div>
-                </div>
-
-                <!-- Detailed Validation & System Inventory Breakdown -->
-                <div class="eval-split-panel" style="margin-top: 1.5rem;">
-                    <!-- System & Provenance Inventory -->
-                    <div class="confusion-matrix-box" style="flex: 1;">
-                        <h3 class="box-title">System &amp; Model Provenance Inventory</h3>
-                        <div class="provenance-inventory-list" style="font-size: 0.85rem; color: #e2e8f0; display: flex; flex-direction: column; gap: 0.6rem;">
-                            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.4rem;">
-                                <span style="color: #94a3b8;">Embedding Model:</span>
-                                <strong>OpenAI CLIP ViT-B/32 (512-D) [KNOWN]</strong>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.4rem;">
-                                <span style="color: #94a3b8;">Vector Index:</span>
-                                <strong>FAISS IndexFlatIP (Cosine Similarity) [KNOWN]</strong>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.4rem;">
-                                <span style="color: #94a3b8;">Constellation / Sensor:</span>
-                                <strong>Sentinel-2B &amp; Sentinel-2C MSI L2A [KNOWN]</strong>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.4rem;">
-                                <span style="color: #94a3b8;">Sentinel-1 SAR C-band:</span>
-                                <strong style="color: #f59e0b;">SAR_NOT_CACHED_LOCALLY [HONEST]</strong>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.4rem;">
-                                <span style="color: #94a3b8;">Spatial Projection / CRS:</span>
-                                <strong>EPSG:32645 (UTM Zone 45N) &amp; WGS84 [KNOWN]</strong>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; padding-bottom: 0.2rem;">
-                                <span style="color: #94a3b8;">Ground Truth Annotations:</span>
-                                <strong style="color: #ef4444;">UNAVAILABLE_LOCALLY [NOT RECORDED]</strong>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Retrieval Smoke Suite Validation -->
-                    <div class="retrieval-breakdown-box" style="flex: 1;">
-                        <h3 class="box-title">Semantic Retrieval System Validation (4 Test Queries)</h3>
-                        <div class="retrieval-query-list" id="retrieval-query-list">
-                            <div class="query-eval-row">
-                                <div class="query-eval-name">🏙️ Urban Settlements</div>
-                                <div class="eval-bar-wrapper">
-                                    <div class="eval-bar-fill" style="width: 100%;"></div>
-                                </div>
-                                <div class="query-eval-score">Rank Monotonic: TRUE | Top Match: OK</div>
-                            </div>
-                            <div class="query-eval-row">
-                                <div class="query-eval-name">🌲 Dense Forest Canopy</div>
-                                <div class="eval-bar-wrapper">
-                                    <div class="eval-bar-fill" style="width: 100%;"></div>
-                                </div>
-                                <div class="query-eval-score">Rank Monotonic: TRUE | Top Match: OK</div>
-                            </div>
-                            <div class="query-eval-row">
-                                <div class="query-eval-name">🏜️ Barren / Exposed Soil</div>
-                                <div class="eval-bar-wrapper">
-                                    <div class="eval-bar-fill" style="width: 100%;"></div>
-                                </div>
-                                <div class="query-eval-score">Rank Monotonic: TRUE | Top Match: OK</div>
-                            </div>
-                            <div class="query-eval-row">
-                                <div class="query-eval-name">💧 Inland Water Bodies</div>
-                                <div class="eval-bar-wrapper">
-                                    <div class="eval-bar-fill" style="width: 100%;"></div>
-                                </div>
-                                <div class="query-eval-score">Rank Monotonic: TRUE | Top Match: OK</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Metrics Dual-Column Documentation Layout with Sticky Sidebar -->
-            <div class="techspec-layout-container">
-                <!-- Sticky Navigation Sidebar -->
-                <aside class="techspec-sidebar">
-                    <div class="sidebar-header">
-                        <span class="sidebar-icon">📊</span>
-                        <span class="sidebar-title">Evaluation Index</span>
-                    </div>
-                    <div class="sidebar-search">
-                        <input type="text" id="metrics-filter-input" class="sidebar-search-input" placeholder="Search metrics...">
-                    </div>
-                    <nav id="metrics-toc" class="toc-nav-list">
-                        <!-- Populated dynamically from rendered markdown headings -->
-                    </nav>
-                </aside>
-
-                <!-- Main Document Reader -->
-                <article class="techspec-article">
-                    <div class="techspec-nav-banner">
-                        <div class="doc-meta-group">
-                            <span class="doc-icon">📈</span>
-                            <div>
-                                <div class="doc-title">EVALUATION_REPORT.md</div>
-                                <div class="doc-version-tag">Verified SIH 2026 Audit Protocol &bull; 0 Fabricated Values &bull; Reproducible Report</div>
-                            </div>
-                        </div>
-                        <div class="doc-actions">
-                            <a href="http://localhost:8000/static_docs/EVALUATION_REPORT.md" target="_blank" class="glass-btn small-btn">Raw Markdown ↗</a>
-                        </div>
-                    </div>
-
-                    <div id="metrics-markdown-body" class="markdown-body">
-                        <div class="loading-state">
-                            <div class="spinner"></div>
-                            <p>Loading Evaluation Report document...</p>
-                        </div>
-                    </div>
-                </article>
-            </div>
-
-            <!-- Back to top button -->
-            <button id="metrics-back-to-top" class="back-to-top-btn" title="Back to top">↑</button>
-        </section>
-
-        <!-- ========================================================= -->
-        <!-- TAB 8: EVIDENCE & INVESTIGATION CONSOLE (PHASE 3) -->
-        <!-- ========================================================= -->
-        <section id="investigation" class="tab-section">
-            <div class="section-hero">
-                <div class="badge-pill">ACTIVE LEARNING & AUDITABLE PROVENANCE</div>
-                <h1 class="hero-headline">Evidence Workspace & Analyst Review</h1>
-                <p class="hero-description">
-                    Conduct human-in-the-loop verification (CONFIRM / REJECT / FLAG), trace end-to-end 8-stage sensor provenance lineage, inspect Sentinel-1 SAR availability status, and export formal evidence reports.
-                </p>
-            </div>
-
-            <!-- CASE SELECTOR & ACTION BAR -->
-            <div class="glass-card case-selector-card">
-                <div class="case-bar-content">
-                    <div class="case-select-group">
-                        <label for="investigation-case-select" class="form-label">Active Investigation Case:</label>
-                        <select id="investigation-case-select" class="glass-select">
-                            <option value="">Loading cases...</option>
-                        </select>
-                    </div>
-                    <div class="case-actions-group">
-                        <button id="btn-refresh-cases" class="glass-btn small-btn">🔄 Refresh Cases</button>
-                        <button id="btn-create-case" class="glass-btn small-btn accent-btn">➕ New Case from Current Tile</button>
-                        <button id="btn-view-aoi-map" class="glass-btn small-btn accent-btn">🗺️ View AOI on Map</button>
-                        <span id="case-status-badge" class="risk-pill low">STATUS: PENDING</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- INVESTIGATION PROCESS FLOW BANNER -->
-            <div class="glass-card process-flow-card" style="margin-top: 1rem; margin-bottom: 1.5rem; padding: 1rem 1.25rem;">
-                <div style="font-size: 0.8rem; font-weight: 700; color: #38bdf8; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 0.75rem;">
-                    🔍 EXPLAINABLE INVESTIGATION PROCESS LINEAGE:
-                </div>
-                <div class="investigation-pipeline-stepper" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
-                    <div class="mini-stage-badge passed"><span class="stage-name">1. OBSERVATION</span></div>
-                    <div style="color: #64748b;">➔</div>
-                    <div class="mini-stage-badge passed"><span class="stage-name">2. PREPROCESSING</span></div>
-                    <div style="color: #64748b;">➔</div>
-                    <div class="mini-stage-badge passed"><span class="stage-name">3. CHANGE</span></div>
-                    <div style="color: #64748b;">➔</div>
-                    <div class="mini-stage-badge passed"><span class="stage-name">4. FALSE-ALARM CHECK</span></div>
-                    <div style="color: #64748b;">➔</div>
-                    <div class="mini-stage-badge passed"><span class="stage-name">5. EXPLANATION</span></div>
-                    <div style="color: #64748b;">➔</div>
-                    <div class="mini-stage-badge passed"><span class="stage-name">6. ANALYST DECISION</span></div>
-                    <div style="color: #64748b;">➔</div>
-                    <div class="mini-stage-badge passed"><span class="stage-name">7. EVIDENCE</span></div>
-                </div>
-            </div>
-
-
-            <!-- ANALYST REVIEW ACTION BOARD -->
-            <div class="glass-card analyst-review-card">
-                <div class="card-header-bar">
-                    <h3>✍️ Analyst Review & Feedback (Active Learning Loop)</h3>
-                    <span class="sub-tag">HUMAN-IN-THE-LOOP VERIFICATION</span>
-                </div>
-                <div class="review-controls-body">
-                    <div class="review-meta-bar">
-                        <div class="meta-item"><strong>Case ID:</strong> <code id="review-display-case-id">CASE-2026-e87b4d6c</code></div>
-                        <div class="meta-item"><strong>Change / Result ID:</strong> <code id="review-display-change-id">e87b4d6c-9cdb-4293-8a8b-7ad7a5af6e43</code></div>
-                        <div class="meta-item"><strong>Review Status:</strong> <span id="review-display-status" class="status-pill not-implemented">NO REVIEW YET</span></div>
-                    </div>
-                    
-                    <p class="section-subtext">Select an analyst decision, provide your rationale/evidence observation, and record the review:</p>
-                    
-                    <div class="decision-buttons-grid">
-                        <button type="button" class="review-btn btn-confirm" id="btn-review-confirm" data-decision="CONFIRM">
-                            <span class="btn-icon">✓</span>
-                            <span class="btn-title">CONFIRM CHANGE</span>
-                            <span class="btn-sub">Verified real spectral/ground-truth change</span>
-                        </button>
-                        <button type="button" class="review-btn btn-reject" id="btn-review-reject" data-decision="REJECT">
-                            <span class="btn-icon">✗</span>
-                            <span class="btn-title">REJECT CHANGE</span>
-                            <span class="btn-sub">False alarm (cloud shadow, registration, noise)</span>
-                        </button>
-                        <button type="button" class="review-btn btn-flag" id="btn-review-flag" data-decision="FLAG">
-                            <span class="btn-icon">⚠️</span>
-                            <span class="btn-title">FLAG FOR REVIEW</span>
-                            <span class="btn-sub">Ambiguous feature needing senior verification</span>
-                        </button>
-                    </div>
-
-                    <div class="rationale-input-group">
-                        <label for="analyst-rationale-input" class="form-label">Analyst Rationale & Notes:</label>
-                        <textarea id="analyst-rationale-input" class="glass-textarea" rows="2" placeholder="Describe spectral triggers, visual ground-truth evidence, or false-alarm suppression reasons..."></textarea>
-                    </div>
-
-                    <div class="analyst-submit-bar">
-                        <div class="analyst-meta-field">
-                            <span class="field-label">Analyst ID:</span>
-                            <input type="text" id="analyst-id-input" class="glass-input" value="analyst">
-                        </div>
-                        <button id="btn-submit-review" class="glass-btn primary-btn glow">💾 Record Analyst Review</button>
-                    </div>
-                    <div id="review-submission-status" class="status-msg"></div>
-
-                    <!-- Review History Timeline -->
-                    <div class="review-history-section">
-                        <h4 class="history-title">📜 Audit Log & Review History Timeline</h4>
-                        <div id="review-history-list" class="review-history-timeline">
-                            <!-- Populated dynamically -->
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- EVIDENCE WORKSPACE GRID (PHASE 3C UNIFIED CONSOLE) -->
-            <div class="evidence-workspace-container">
-                <!-- 1. Executive Investigation Summary Card -->
-                <div id="ws-investigation-summary-card" class="glass-card workspace-card summary-highlight-card">
-                    <div class="card-header-bar">
-                        <h3>📋 Executive Investigation Summary</h3>
-                        <span class="sub-tag">REAL SYSTEM MEASUREMENTS</span>
-                    </div>
-                    <div id="ws-summary-box" class="summary-grid-3col">
-                        <!-- Populated dynamically -->
-                    </div>
-                </div>
-
-                <div class="evidence-grid-2col">
-                    <!-- 2. Before / After Evidence & AOI Metadata -->
-                    <div class="glass-card workspace-card">
-                        <div class="card-header-bar">
-                            <h4>🗺️ Before / After Imagery & AOI Evidence</h4>
-                            <span class="sub-tag">REAL SENSOR RASTERS</span>
-                        </div>
-                        <div id="workspace-imagery-body" class="workspace-body">
-                            <div class="thumbnail-compare-row">
-                                <div class="thumb-box">
-                                    <div class="thumb-label">2024 Baseline (Sentinel-2B)</div>
-                                    <img id="ws-thumb-2024" src="" alt="2024 Baseline" class="thumb-img-display" />
-                                </div>
-                                <div class="thumb-box">
-                                    <div class="thumb-label">2026 Target (Sentinel-2C)</div>
-                                    <img id="ws-thumb-2026" src="" alt="2026 Target" class="thumb-img-display" />
-                                </div>
-                                <div class="thumb-box">
-                                    <div class="thumb-label">Change Mask Overlay</div>
-                                    <img id="ws-thumb-heatmap" src="" alt="Change Heatmap" class="thumb-img-display" />
-                                </div>
-                            </div>
-                            <div id="ws-location-meta" class="location-meta-box"></div>
-                        </div>
-                    </div>
-
-                    <!-- 3. Preprocessing & Data Quality Stage Summary (8-Stage Pipeline) -->
-                    <div id="ws-preprocessing-summary-card" class="glass-card workspace-card">
-                        <div class="card-header-bar">
-                            <h4>🧪 8-Stage Preprocessing & Quality Summary</h4>
-                            <button id="btn-open-prep-lab" class="glass-btn small-btn accent-btn">Open Preprocessing Lab ↗</button>
-                        </div>
-                        <div class="workspace-body">
-                            <div id="ws-prep-meta" class="prep-meta-box"></div>
-                            <div id="ws-prep-stages-list" class="prep-stages-mini-grid">
-                                <!-- Populated dynamically -->
-                            </div>
-                            
-                            <!-- SAR Status Panel -->
-                            <div class="sar-status-panel">
-                                <div class="sar-panel-header">
-                                    <span class="sar-icon">🛰️</span>
-                                    <span class="sar-title">Sentinel-1 C-SAR Status</span>
-                                    <span id="sar-badge" class="risk-pill low">NOT CACHED</span>
-                                </div>
-                                <div id="sar-status-message" class="sar-message-text"></div>
-                                <div class="sar-capabilities-list">
-                                    <div class="cap-item">⚡ VV/VH Dual-Polarization SAR Ready</div>
-                                    <div class="cap-item">☁️ All-Weather Cloud Penetration Architecture</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 4. False-Alarm Analysis & AI Explainability Row -->
-                <div class="evidence-grid-2col">
-                    <!-- False-Alarm Analysis Card -->
-                    <div id="ws-false-alarm-card" class="glass-card workspace-card">
-                        <div class="card-header-bar">
-                            <h4>⚡ False-Alarm Suppression Audit</h4>
-                            <span id="ws-fa-risk-badge" class="risk-pill low">RISK: LOW</span>
-                        </div>
-                        <div id="ws-false-alarm-body" class="workspace-body">
-                            <!-- Populated dynamically -->
-                        </div>
-                    </div>
-
-                    <!-- AI Confidence & Explainability Card -->
-                    <div id="ws-explainability-card" class="glass-card workspace-card">
-                        <div class="card-header-bar">
-                            <h4>💡 Why Did AI Detect This Change?</h4>
-                            <span id="ws-ai-confidence-badge" class="badge-tag">AI CONFIDENCE: 95%</span>
-                        </div>
-                        <div id="ws-explainability-body" class="workspace-body">
-                            <!-- Populated dynamically -->
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 5. Multi-Temporal Timeline Card -->
-                <div id="ws-timeline-card" class="glass-card workspace-card">
-                    <div class="card-header-bar">
-                        <h4>⏳ Multi-Temporal Observation Timeline</h4>
-                        <span class="sub-tag">2024 → 2025 → 2026 PROGRESSION</span>
-                    </div>
-                    <div id="ws-timeline-body" class="timeline-horizontal-container">
-                        <!-- Populated dynamically -->
-                    </div>
-                </div>
-
-                <!-- 6. Provenance Entry Point Card -->
-                <div id="ws-provenance-entry-card" class="glass-card workspace-card">
-                    <div class="card-header-bar">
-                        <h4>🔗 Traceable 9-Stage End-to-End Provenance & SHA-256 Lineage Chain</h4>
-                        <span class="sub-tag">END-TO-END REPRODUCIBILITY & HASH VERIFICATION</span>
-                    </div>
-                    <div id="provenance-chain-container" class="provenance-chain-horizontal">
-                        <!-- Populated dynamically -->
-                    </div>
-                </div>
-
-                <!-- 7. Report Export Bar -->
-                <div class="glass-card report-export-card">
-                    <div class="report-export-content">
-                        <div>
-                            <h3>📄 Automated Satellite Incident Evidence Report & Package Export</h3>
-                            <p class="section-subtext">Generates complete 20-section audit document (Markdown) and structured JSON evidence package containing actual system measurements, SHA-256 hashes, preprocessing quality logs, explainability triggers, and analyst decision trace.</p>
-                            <div id="export-status-message" class="export-status-text"></div>
-                        </div>
-                        <div class="export-btn-group">
-                            <button id="btn-export-report" class="glass-btn primary-btn glow">📄 Generate Evidence Report</button>
-                            <button id="btn-export-json" class="glass-btn accent-btn glow">📦 Export JSON Evidence</button>
-                        </div>
-                    </div>
-                    <div id="export-report-modal" class="report-modal hidden">
-                        <div class="modal-header">
-                            <h4 id="report-modal-title">Incident Report Preview & Export</h4>
-                            <button id="btn-close-report-modal" class="close-modal-btn">✕</button>
-                        </div>
-                        <div class="modal-body">
-                            <pre id="report-markdown-text" class="report-markdown-display"></pre>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-    </main>
-
-    <!-- FOOTER -->
-    <footer class="app-footer">
-        <div class="footer-container">
-            <div><strong>BIRDSΣY3</strong> &bull; SIH 2026 Remote Sensing Platform</div>
-            <div class="footer-links">
-                <span>FastAPI + MongoDB + FAISS + PyTorch CLIP + Rasterio</span>
-            </div>
+    <!-- Master 11-Tab Navigation Structure -->
+    <nav class="tabs" role="tablist" aria-label="Console modules">
+      <button role="tab" data-tab="overview" aria-selected="true" id="tab-overview">1. Overview</button>
+      <button role="tab" data-tab="retrieval" aria-selected="false" id="tab-retrieval">2. Semantic Retrieval</button>
+      <button role="tab" data-tab="temporal" aria-selected="false" id="tab-temporal">3. Change Analysis</button>
+      <button role="tab" data-tab="preprocessing" aria-selected="false" id="tab-preprocessing">4. Preprocessing Lab</button>
+      <button role="tab" data-tab="suppression" aria-selected="false" id="tab-suppression">5. False Alarm</button>
+      <button role="tab" data-tab="clusters" aria-selected="false" id="tab-clusters">6. Discovery &amp; Cluster</button>
+      <button role="tab" data-tab="evaluation" aria-selected="false" id="tab-evaluation">7. Evaluation Metrics</button>
+      <button role="tab" data-tab="ingest" aria-selected="false" id="tab-ingest">8. Ingestion</button>
+      <button role="tab" data-tab="brief" aria-selected="false" id="tab-brief">9. Analyst Brief &amp; Provenance</button>
+      <button role="tab" data-tab="mission" aria-selected="false" id="tab-mission">10. Mission Board</button>
+      <button role="tab" data-tab="spec" aria-selected="false" id="tab-spec">11. Technical Specifications</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- ================= 1. OVERVIEW ================= -->
+    <section class="tab-panel" data-panel="overview" id="panel-overview">
+      <div class="about">
+        <div class="about-hero">
+          <h2>Ask the archive a question in plain language, then watch the ground <em>change</em>.</h2>
+          <p class="about-lede">
+            Real Sentinel-2 Level-2A surface reflectance tiles across the Indian subcontinent. Search the archive by meaning using OpenAI CLIP ViT-B/32 (512-D), verify against physical spectral indices, and trace genuine land-cover transformations over time.
+          </p>
+
+          <dl class="meta-block">
+            <dt>Problem statement</dt>
+            <dd>Semantic retrieval and multi-temporal change analysis of satellite imagery <span class="code-tag">PS 26227</span></dd>
+            <dt>Team ByteSenary</dt>
+            <dd>
+              <ul class="team">
+                <li>Hiya Maity</li>
+                <li>Kaninika Das</li>
+                <li>Oindrila Chowdhury</li>
+                <li>Pritha Das</li>
+                <li>Sreya Kundu</li>
+                <li>Srijita Chakraborty</li>
+              </ul>
+            </dd>
+          </dl>
         </div>
-    </footer>
 
-    <!-- MAIN SCRIPT -->
-    <script src="script.js?v=5e.1"></script>
+        <div>
+          <!-- Real Telemetry Card -->
+          <div class="card">
+            <div class="card-head">
+              <h3>Live System Telemetry</h3>
+              <span class="badge indexed" id="telemetryBadge">Online</span>
+            </div>
+            <div class="kv" id="overviewTelemetry">
+              <div>
+                <span>Tiles Catalog</span>
+                <strong id="statTilesCount">909 GeoTIFFs</strong>
+              </div>
+              <div>
+                <span>FAISS Vectors</span>
+                <strong id="statVectorsCount">908 (512-D)</strong>
+              </div>
+              <div>
+                <span>Embedding Model</span>
+                <strong id="statModel">CLIP ViT-B/32</strong>
+              </div>
+              <div>
+                <span>Optical Sensor</span>
+                <strong style="color:var(--signal)">Sentinel-2 (Operational)</strong>
+              </div>
+              <div>
+                <span>Radar / SAR</span>
+                <strong style="color:var(--flare)">S-1 (Architecture Ready)</strong>
+              </div>
+              <div>
+                <span>Execution Mode</span>
+                <strong id="statMode">Air-Gapped Offline</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Actions Grid -->
+          <div class="card" style="margin-top:14px">
+            <div class="card-head"><h3>Quick Launch Modules</h3></div>
+            <div class="entry-grid">
+              <button class="entry" data-goto="retrieval">
+                <i>01</i>
+                <span>
+                  <b>Semantic Retrieval</b>
+                  <span>Search tiles using natural-language descriptions or uploaded reference images.</span>
+                </span>
+              </button>
+              <button class="entry" data-goto="temporal">
+                <i>02</i>
+                <span>
+                  <b>Change Analysis</b>
+                  <span>Resolve and compare two observation dates using interactive split sliders.</span>
+                </span>
+              </button>
+              <button class="entry" data-goto="preprocessing">
+                <i>03</i>
+                <span>
+                  <b>Preprocessing Lab</b>
+                  <span>Inspect raw Sentinel-2 SAFE input through the 8-stage ARD normalization pipeline.</span>
+                </span>
+              </button>
+              <button class="entry" data-goto="evaluation">
+                <i>04</i>
+                <span>
+                  <b>Evaluation Benchmarks</b>
+                  <span>Run reproducible offline query benchmarks and rank monotonicity validation.</span>
+                </span>
+              </button>
+            </div>
+          </div>
+
+          <div class="card" style="margin-top:14px">
+            <div class="card-head"><h3>Air-Gapped &amp; Sovereign Architecture</h3></div>
+            <p class="small muted" style="margin:0">
+              Coastlines, graticules, and vector boundaries are bundled directly within the console canvas renderer. Vector searches, embedding inferences, and spectral calculations run completely on-premises with zero outbound cloud calls.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 2. SEMANTIC RETRIEVAL ================= -->
+    <section class="tab-panel" data-panel="retrieval" id="panel-retrieval" hidden>
+      <h1 class="page-title">Semantic Retrieval</h1>
+      <p class="page-sub">
+        Describe the scene in natural language, upload an image anchor, or draw an Area of Interest (AOI). Queries are projected into 512-D CLIP latent space and resolved against the local FAISS index, with optional physical spectral index gating.
+      </p>
+
+      <!-- Search Controls Card -->
+      <div class="card">
+        <div class="grid" style="grid-template-columns:minmax(260px,2.2fr) repeat(2,minmax(120px,.7fr));">
+          <div>
+            <label for="q">Natural language search query</label>
+            <div class="row" style="flex-wrap:nowrap">
+              <input id="q" value="Dense forest canopy with high chlorophyll" placeholder="Dense forest canopy with high chlorophyll…">
+              <button class="btn primary" id="searchBtn">Search</button>
+              <button class="btn" id="imgBtn" title="Upload an image to anchor the search">Image</button>
+              <input type="file" id="imgInput" accept="image/*" hidden>
+            </div>
+            <div class="chips" id="presetChips" style="margin-top:9px"></div>
+            <p id="anchorTag" class="small" style="color:var(--signal);margin:9px 0 0" hidden></p>
+          </div>
+          <div>
+            <label for="dStart">From</label>
+            <input id="dStart" type="date" value="2024-01-01">
+          </div>
+          <div>
+            <label for="dEnd">To</label>
+            <input id="dEnd" type="date" value="2026-12-31">
+          </div>
+        </div>
+
+        <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-top:12px">
+          <div>
+            <label for="cloudMax">Cloud cover at most (%)</label>
+            <input id="cloudMax" type="number" min="0" max="100" placeholder="100">
+          </div>
+          <div>
+            <label for="resMax">Ground resolution at most (m)</label>
+            <input id="resMax" type="number" min="1" placeholder="10" value="10">
+          </div>
+          <div>
+            <label for="confMin">Minimum match (%)</label>
+            <input id="confMin" type="number" min="0" max="100" placeholder="0">
+          </div>
+          <div>
+            <label for="topK">Result count</label>
+            <select id="topK">
+              <option value="6">6 results</option>
+              <option value="12" selected>12 results</option>
+              <option value="24">24 results</option>
+              <option value="36">36 results</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:12px">
+          <div>
+            <span class="lab">Sensors</span>
+            <div class="chips" id="sensorChips">
+              <button class="chip on" data-sensor="Sentinel-2" id="sensorS2">Copernicus Sentinel-2 (Operational)</button>
+              <button class="chip" data-sensor="Sentinel-1" id="sensorS1" title="SAR C-band pipeline ready; real granules not cached locally">Copernicus Sentinel-1 (Architecture Ready — Data Not Cached)</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:12px;justify-content:space-between">
+          <div class="chips">
+            <button class="chip on" id="gateToggle" aria-pressed="true">Spectral gating on (NDVI/NDWI)</button>
+            <button class="chip" id="actionToggle" aria-pressed="false">Action mode off</button>
+            <button class="chip on" id="diversityToggle" aria-pressed="true">Diversity control on</button>
+          </div>
+          <div class="row">
+            <button class="btn small" id="drawRectBtn">Draw rectangle area</button>
+            <button class="btn small" id="drawPolyBtn">Draw polygon area</button>
+            <button class="btn small ghost" id="clearAoiBtn">Clear area</button>
+            <button class="btn small ghost" id="clearFiltersBtn">Reset filters</button>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:12px;justify-content:space-between;background:#0A171E;border:1px solid var(--line);border-radius:9px;padding:10px 12px">
+          <div class="row" style="gap:20px">
+            <span class="small muted">Area of interest <strong id="aoiState" style="color:var(--text)">not set</strong></span>
+            <span class="small muted">Size <strong id="aoiArea" style="color:var(--text)">—</strong></span>
+            <span class="small muted">Shape <strong id="aoiShape" style="color:var(--text)">—</strong></span>
+          </div>
+          <span id="aoiHint" class="small mono muted">Draw on the map to constrain search, or leave empty to search all 909 tiles.</span>
+        </div>
+      </div>
+
+      <!-- Split Layout: Result List & Vector Canvas Map -->
+      <div class="split" style="margin-top:14px">
+        <div class="listcol card">
+          <div class="card-head">
+            <h3>Retrieved Tiles</h3>
+            <span id="resultMeta" class="small mono muted">0 tiles</span>
+          </div>
+          <div id="resultsList" class="scroll-list">
+            <p class="empty">Type a query above or click one of the presets to search the local catalog.</p>
+          </div>
+        </div>
+        <div class="mapcol">
+          <div id="retrievalMap" class="geomap"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 3. CHANGE ANALYSIS (PLACEHOLDER) ================= -->
+    <section class="tab-panel" data-panel="temporal" id="panel-temporal" hidden>
+      <div class="card placeholder-card">
+        <span class="badge">Tab 3</span>
+        <h2>Change Analysis Module</h2>
+        <span class="pill" style="margin:12px 0"><span class="dot" style="background:var(--flare)"></span>Integration pending — Phase 2</span>
+        <p class="muted" style="max-width:600px;margin:0 auto 16px">
+          Multi-temporal pairwise and tri-epoch spectral differencing (&Delta;NDVI, &Delta;NDWI), interactive before/after split comparison slider, confidence breakdown bars, and observation timeline will be connected in Phase 2.
+        </p>
+        <div id="temporalSelectedTileBanner" class="small mono muted" style="margin-top:8px"></div>
+        <button class="btn primary" data-goto="retrieval" style="margin-top:16px">Return to Semantic Retrieval</button>
+      </div>
+    </section>
+
+    <!-- ================= 4. PREPROCESSING LAB (PLACEHOLDER) ================= -->
+    <section class="tab-panel" data-panel="preprocessing" id="panel-preprocessing" hidden>
+      <div class="card placeholder-card">
+        <span class="badge">Tab 4</span>
+        <h2>Preprocessing Lab</h2>
+        <span class="pill" style="margin:12px 0"><span class="dot" style="background:var(--flare)"></span>Integration pending — Phase 3</span>
+        <p class="muted" style="max-width:600px;margin:0 auto 16px">
+          The 8-stage raw Sentinel-2 SAFE to Analysis-Ready Data (ARD) verification pipeline (XML metadata validation, SCL cloud/shadow masking, radiometric calibration, and sub-pixel co-registration) will be connected in Phase 3.
+        </p>
+        <button class="btn primary" data-goto="overview" style="margin-top:16px">Return to Overview</button>
+      </div>
+    </section>
+
+    <!-- ================= 5. FALSE ALARM (PLACEHOLDER) ================= -->
+    <section class="tab-panel" data-panel="suppression" id="panel-suppression" hidden>
+      <div class="card placeholder-card">
+        <span class="badge">Tab 5</span>
+        <h2>False Alarm Suppression</h2>
+        <span class="pill" style="margin:12px 0"><span class="dot" style="background:var(--flare)"></span>Integration pending — Phase 4</span>
+        <p class="muted" style="max-width:600px;margin:0 auto 16px">
+          Precision-favoured false-alarm suppression funnel, regional terrain profile thresholds, candidate inspector, and removal audit breakdowns will be connected in Phase 4.
+        </p>
+        <button class="btn primary" data-goto="overview" style="margin-top:16px">Return to Overview</button>
+      </div>
+    </section>
+
+    <!-- ================= 6. DISCOVERY & CLUSTER (PLACEHOLDER) ================= -->
+    <section class="tab-panel" data-panel="clusters" id="panel-clusters" hidden>
+      <div class="card placeholder-card">
+        <span class="badge">Tab 6</span>
+        <h2>Discovery &amp; Cluster</h2>
+        <span class="pill" style="margin:12px 0"><span class="dot" style="background:var(--flare)"></span>Integration pending — Phase 5</span>
+        <p class="muted" style="max-width:600px;margin:0 auto 16px">
+          2D FAISS embedding space scatter plot, similar-site discovery passes, candidate confirmation/rejection review cards, and active reranking feedback loops will be connected in Phase 5.
+        </p>
+        <button class="btn primary" data-goto="overview" style="margin-top:16px">Return to Overview</button>
+      </div>
+    </section>
+
+    <!-- ================= 7. EVALUATION METRICS (PLACEHOLDER) ================= -->
+    <section class="tab-panel" data-panel="evaluation" id="panel-evaluation" hidden>
+      <div class="card placeholder-card">
+        <span class="badge">Tab 7</span>
+        <h2>Evaluation Metrics</h2>
+        <span class="pill" style="margin:12px 0"><span class="dot" style="background:var(--flare)"></span>Integration pending — Phase 6</span>
+        <p class="muted" style="max-width:600px;margin:0 auto 16px">
+          System evaluation engine executing test query suites, rank monotonicity checks, physical gating validation, and offline reproducibility verification will be connected in Phase 6.
+        </p>
+        <button class="btn primary" data-goto="overview" style="margin-top:16px">Return to Overview</button>
+      </div>
+    </section>
+
+    <!-- ================= 8. INGESTION (PLACEHOLDER) ================= -->
+    <section class="tab-panel" data-panel="ingest" id="panel-ingest" hidden>
+      <div class="card placeholder-card">
+        <span class="badge">Tab 8</span>
+        <h2>Ingestion &amp; Indexing</h2>
+        <span class="pill" style="margin:12px 0"><span class="dot" style="background:var(--flare)"></span>Integration pending — Phase 7</span>
+        <p class="muted" style="max-width:600px;margin:0 auto 16px">
+          Air-gapped GeoTIFF ingestion, dynamic tiling, incremental FAISS embedding insertion, and indexing telemetry will be connected in Phase 7.
+        </p>
+        <button class="btn primary" data-goto="overview" style="margin-top:16px">Return to Overview</button>
+      </div>
+    </section>
+
+    <!-- ================= 9. ANALYST BRIEF & PROVENANCE (PLACEHOLDER) ================= -->
+    <section class="tab-panel" data-panel="brief" id="panel-brief" hidden>
+      <div class="card placeholder-card">
+        <span class="badge">Tab 9</span>
+        <h2>Analyst Brief &amp; Provenance</h2>
+        <span class="pill" style="margin:12px 0"><span class="dot" style="background:var(--flare)"></span>Integration pending — Phase 8</span>
+        <p class="muted" style="max-width:600px;margin:0 auto 16px">
+          Dynamic narrative briefing generation, cryptographic SHA-256 provenance audit records, and printable intelligence reports will be connected in Phase 8.
+        </p>
+        <button class="btn primary" data-goto="overview" style="margin-top:16px">Return to Overview</button>
+      </div>
+    </section>
+
+    <!-- ================= 10. MISSION BOARD (PLACEHOLDER) ================= -->
+    <section class="tab-panel" data-panel="mission" id="panel-mission" hidden>
+      <div class="card placeholder-card">
+        <span class="badge">Tab 10</span>
+        <h2>Mission Board</h2>
+        <span class="pill" style="margin:12px 0"><span class="dot" style="background:var(--flare)"></span>Integration pending — Phase 9</span>
+        <p class="muted" style="max-width:600px;margin:0 auto 16px">
+          Session KPI aggregates, prioritized review queue, module status monitors, and session report exports will be connected in Phase 9.
+        </p>
+        <button class="btn primary" data-goto="overview" style="margin-top:16px">Return to Overview</button>
+      </div>
+    </section>
+
+    <!-- ================= 11. TECHNICAL SPECIFICATIONS (PLACEHOLDER) ================= -->
+    <section class="tab-panel" data-panel="spec" id="panel-spec" hidden>
+      <div class="card placeholder-card">
+        <span class="badge">Tab 11</span>
+        <h2>Technical Specifications</h2>
+        <span class="pill" style="margin:12px 0"><span class="dot" style="background:var(--flare)"></span>Integration pending — Phase 10</span>
+        <p class="muted" style="max-width:600px;margin:0 auto 16px">
+          Authoritative technical specifications covering the CLIP ViT-B/32 cosine similarity formulation, &Delta;NDVI/&Delta;NDWI spectral gating, SCL quality masking, and air-gapped on-premises architecture will be integrated in Phase 10.
+        </p>
+        <button class="btn primary" data-goto="overview" style="margin-top:16px">Return to Overview</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- ================= FOOTER ================= -->
+  <footer class="app-footer">
+    <span>BIRDSΣY3 · Smart India Hackathon 2026 · Problem Statement 26227</span>
+    <span class="mono small">Python · FastAPI · MongoDB · FAISS · PyTorch CLIP ViT-B/32 · Rasterio · Sentinel-2 L2A</span>
+    <span class="small">Team ByteSenary — Hiya Maity, Kaninika Das, Oindrila Chowdhury, Pritha Das, Sreya Kundu, Srijita Chakraborty</span>
+  </footer>
+
+  <!-- ================= MODALS & DRAWERS ================= -->
+  <div class="scrim" id="scrim"></div>
+
+  <aside class="drawer" id="drawer" aria-hidden="true">
+    <div class="drawer-head">
+      <h3 id="drawerTitle">Detail</h3>
+      <button class="x" id="drawerClose" aria-label="Close">✕</button>
+    </div>
+    <div id="drawerBody"></div>
+  </aside>
+
+  <div class="modal" id="detailModal" hidden>
+    <div class="modal-card" id="detailCard"></div>
+  </div>
+
+  <!-- Command Palette Modal (Ctrl+K) -->
+  <div class="modal" id="palette" hidden>
+    <div class="modal-card" style="max-width:560px">
+      <div class="row" style="justify-content:space-between">
+        <h3>Command Palette</h3>
+        <button class="x" id="paletteClose" aria-label="Close">✕</button>
+      </div>
+      <input id="paletteInput" placeholder="Jump to a module or run a query…" autocomplete="off" style="margin-top:12px">
+      <div class="cmdlist" id="paletteList"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <!-- Client Script -->
+  <script src="script.js"></script>
 </body>
 </html>
