@@ -401,29 +401,195 @@
       </div>
     </section>
 
-    <!-- ================= 4. PREPROCESSING LAB (PLACEHOLDER) ================= -->
+    <!-- ================= 4. PREPROCESSING LAB ================= -->
     <section class="tab-panel" data-panel="preprocessing" id="panel-preprocessing" hidden>
-      <div class="card placeholder-card">
-        <span class="badge">Tab 4</span>
-        <h2>Preprocessing Lab</h2>
-        <span class="pill" style="margin:12px 0"><span class="dot" style="background:var(--flare)"></span>Integration pending — Phase 3</span>
-        <p class="muted" style="max-width:600px;margin:0 auto 16px">
-          The 8-stage raw Sentinel-2 SAFE to Analysis-Ready Data (ARD) verification pipeline (XML metadata validation, SCL cloud/shadow masking, radiometric calibration, and sub-pixel co-registration) will be connected in Phase 3.
+      <h1 class="page-title">Preprocessing Lab</h1>
+      <p class="page-sub">
+        Deterministic 8-stage verification pipeline transforming raw ESA Sentinel-2 L1C/L2A SAFE archives into Analysis-Ready Data (ARD). Inspect sub-pixel co-registration via 2D FFT phase correlation, 20m-to-10m SCL cloud/shadow screening, BOA radiometric calibration, and phenological baseline normalization.
+      </p>
+
+      <!-- Preprocessing Controls Card -->
+      <div class="card">
+        <div class="grid" style="grid-template-columns: minmax(200px, 1.8fr) minmax(160px, 1fr) minmax(160px, 1fr) minmax(170px, 1.2fr); align-items:end">
+          <div>
+            <label for="prepTileInput">Target Tile ID</label>
+            <input id="prepTileInput" class="mono" placeholder="Enter tile ID (e.g. f8f0001f...)" value="">
+          </div>
+          <div>
+            <label for="prepSceneSel">Observation Epoch</label>
+            <select id="prepSceneSel"></select>
+          </div>
+          <div>
+            <label for="prepBaselineSel">Co-registration Reference</label>
+            <select id="prepBaselineSel">
+              <option value="2024">2024 (Sentinel-2B Baseline)</option>
+              <option value="2025">2025 (Sentinel-2B)</option>
+              <option value="2026">2026 (Sentinel-2C)</option>
+            </select>
+          </div>
+          <div>
+            <button class="btn primary" id="runPipelineBtn" style="width:100%">Run Pipeline</button>
+          </div>
+        </div>
+        <p id="prepSceneMeta" class="small mono muted" style="margin:12px 0 0">
+          Loading Sentinel-2 SAFE catalog metadata…
         </p>
-        <button class="btn primary" data-goto="overview" style="margin-top:16px">Return to Overview</button>
+      </div>
+
+      <!-- State / Progress Banner -->
+      <div id="prepStateBanner" class="card" style="margin-top:14px" hidden></div>
+
+      <!-- Preprocessing Results Container -->
+      <div id="prepResultsContainer">
+        
+        <!-- Summary Telemetry Cards -->
+        <div class="stats" id="prepSummaryStats" style="margin-top:14px"></div>
+
+        <!-- 3 Visual Previews (Raw -> SCL Mask -> ARD BOA) -->
+        <div class="card" style="margin-top:14px">
+          <div class="card-head">
+            <h3>ARD Transformation Previews</h3>
+            <span class="small mono muted">Real 10 m BOA Surface Reflectance</span>
+          </div>
+          <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px">
+            <div class="card" style="background:#071318; padding:10px; text-align:center">
+              <div class="small mono muted" style="margin-bottom:6px">1. Raw Uncalibrated L1C/L2A DN</div>
+              <img id="prevRawRgb" style="width:100%; height:220px; object-fit:cover; border-radius:8px; border:1px solid var(--line)" alt="Raw RGB" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220' fill='%2311212C'><rect width='220' height='220'/><text x='50%' y='50%' fill='%237D97A3' font-size='11' text-anchor='middle' dy='.3em'>Raw DN (L1C/L2A)</text></svg>">
+              <span class="small mono muted" style="display:block; margin-top:6px">Raw Sentinel-2 MSI Digital Numbers</span>
+            </div>
+            <div class="card" style="background:#071318; padding:10px; text-align:center">
+              <div class="small mono muted" style="margin-bottom:6px">2. SCL Scene Classification Mask</div>
+              <img id="prevSclMask" style="width:100%; height:220px; object-fit:cover; border-radius:8px; border:1px solid var(--line)" alt="SCL Mask" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220' fill='%2311212C'><rect width='220' height='220'/><text x='50%' y='50%' fill='%237D97A3' font-size='11' text-anchor='middle' dy='.3em'>SCL Classification Layer</text></svg>">
+              <div class="small mono" style="margin-top:6px; display:flex; justify-content:center; gap:8px; flex-wrap:wrap">
+                <span style="color:#10B981">■ Veg</span>
+                <span style="color:#D97706">■ Soil</span>
+                <span style="color:#2563EB">■ Water</span>
+                <span style="color:#F1F5F9">■ Cloud</span>
+                <span style="color:#6366F1">■ Shadow</span>
+              </div>
+            </div>
+            <div class="card" style="background:#071318; padding:10px; text-align:center">
+              <div class="small mono muted" style="margin-bottom:6px">3. Analysis-Ready BOA Surface Reflectance</div>
+              <img id="prevArdRgb" style="width:100%; height:220px; object-fit:cover; border-radius:8px; border:1px solid var(--line)" alt="ARD Reflectance" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220' fill='%2311212C'><rect width='220' height='220'/><text x='50%' y='50%' fill='%235FE3C0' font-size='11' text-anchor='middle' dy='.3em'>Analysis-Ready Data</text></svg>">
+              <span class="small mono" style="display:block; margin-top:6px; color:var(--signal)">Calibrated &amp; Masked (ρ = DN / 10000)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 8-Stage Execution Verification Grid -->
+        <h2 class="section" style="margin-top:22px">8-Stage ARD Verification Pipeline</h2>
+        <div id="prepStagesList" style="display:grid; gap:10px"></div>
+
+        <div class="row" style="margin-top:16px; justify-content:flex-end">
+          <button class="btn" id="prepToChangeBtn">Send to Change Analysis</button>
+          <button class="btn ghost" id="prepToFalseAlarmBtn">Inspect False Alarm Suppression</button>
+        </div>
+
       </div>
     </section>
 
-    <!-- ================= 5. FALSE ALARM (PLACEHOLDER) ================= -->
+    <!-- ================= 5. FALSE ALARM ================= -->
     <section class="tab-panel" data-panel="suppression" id="panel-suppression" hidden>
-      <div class="card placeholder-card">
-        <span class="badge">Tab 5</span>
-        <h2>False Alarm Suppression</h2>
-        <span class="pill" style="margin:12px 0"><span class="dot" style="background:var(--flare)"></span>Integration pending — Phase 4</span>
-        <p class="muted" style="max-width:600px;margin:0 auto 16px">
-          Precision-favoured false-alarm suppression funnel, regional terrain profile thresholds, candidate inspector, and removal audit breakdowns will be connected in Phase 4.
-        </p>
-        <button class="btn primary" data-goto="overview" style="margin-top:16px">Return to Overview</button>
+      <h1 class="page-title">False Alarm Suppression</h1>
+      <p class="page-sub">
+        Precision-favoured false-alarm elimination framework. Evaluates physical confounders across 6 independent quality checks: SCL cloud/shadow screening, regional phenological drift baseline subtraction, solar zenith illumination correction, sub-pixel 2D FFT co-registration, and tri-epoch multi-date persistence verification.
+      </p>
+
+      <!-- Selection & Terrain Profile Card -->
+      <div class="card">
+        <div class="grid" style="grid-template-columns: minmax(220px, 2fr) minmax(220px, 1.5fr) minmax(140px, 1fr); align-items:end">
+          <div>
+            <label for="supTileInput">Target Tile ID</label>
+            <input id="supTileInput" class="mono" placeholder="Enter tile ID (e.g. f8f0001f...)" value="">
+          </div>
+          <div>
+            <label for="terrainSel">Regional Terrain Profile</label>
+            <select id="terrainSel"></select>
+          </div>
+          <div>
+            <button class="btn primary" id="supAnalyzeBtn" style="width:100%">Screen Confounders</button>
+          </div>
+        </div>
+        <div class="row" style="margin-top:12px; justify-content:space-between">
+          <p id="supTileMeta" class="small mono muted" style="margin:0">
+            Target tile: Active tile anchor · Sentinel-2 MSI Level-2A
+          </p>
+          <span id="terrainNote" class="small muted"></span>
+        </div>
+      </div>
+
+      <!-- State Banner -->
+      <div id="supStateBanner" class="card" style="margin-top:14px" hidden></div>
+
+      <!-- False Alarm Content -->
+      <div id="supBody">
+        
+        <!-- Precision Over Recall Banner -->
+        <div class="card" style="border-left:3px solid var(--flare); margin-top:14px; background:#0C1C22">
+          <strong style="color:var(--flare)">Precision-Favoured Suppression Policy:</strong>
+          <span class="small muted" style="display:block; margin-top:4px">
+            This pipeline penalizes false positives over marginal change detections. Borderline candidate pixels caused by sub-pixel misregistration, phenological greening, solar angle differences, or cirrus haze are systematically eliminated before reporting.
+          </span>
+        </div>
+
+        <!-- Candidate Funnel -->
+        <h2 class="section" style="margin-top:20px">Candidate Elimination Funnel</h2>
+        <div class="card">
+          <div class="funnel" id="funnel"></div>
+          <div class="row" style="justify-content:center; margin-top:12px">
+            <span class="small mono muted">Click any funnel stage to inspect physical elimination thresholds</span>
+          </div>
+        </div>
+
+        <!-- Split View: Candidate Inspector (Left) + Before/After Comparison Preview (Right) -->
+        <div class="split" style="margin-top:14px">
+          
+          <!-- Left: 6 Verified False-Alarm Checks & Verdict -->
+          <div class="card">
+            <div class="card-head">
+              <h3>False-Alarm Verification Checks</h3>
+              <span id="supRiskBadge" class="badge indexed">LOW RISK</span>
+            </div>
+            
+            <div class="diag" id="candDiag"></div>
+
+            <div class="stage-rows" id="candStages" style="margin-top:12px"></div>
+
+            <div class="card" style="margin-top:12px; background:#071318; padding:10px">
+              <div class="card-head" style="margin-bottom:4px">
+                <span class="small mono" style="color:var(--signal)">SCREENING VERDICT</span>
+              </div>
+              <p id="supVerdictText" class="small muted" style="margin:0"></p>
+            </div>
+          </div>
+
+          <!-- Right: Interactive Before/After Observation Viewer -->
+          <div class="card">
+            <div class="card-head">
+              <h3>Observation Pair Comparison</h3>
+              <span id="supCmpLabel" class="small mono muted">2024-02-23 vs 2026-02-27</span>
+            </div>
+
+            <div class="cmp" id="supCmp" style="height:260px">
+              <div class="layer before" id="supBefore"></div>
+              <div class="layer after" id="supAfter"></div>
+              <span class="tag l" id="supTagL">earlier · 2024</span>
+              <span class="tag r" id="supTagR">later · 2026</span>
+              <div class="divider" id="supDiv"></div>
+              <button class="handle" id="supHandle" aria-label="Drag to compare observations">↔</button>
+            </div>
+            <input id="supRange" class="slider-control" type="range" min="0" max="100" value="50" aria-label="False alarm comparison slider">
+            <p id="supReadout" class="small mono muted" style="margin-top:10px; text-align:center">Drag handle or slide range to inspect surface alterations</p>
+          </div>
+
+        </div>
+
+        <!-- Where the Removals Came From -->
+        <h2 class="section" style="margin-top:20px">Elimination Breakdown by Mechanism</h2>
+        <div class="card">
+          <div class="agg" id="agg"></div>
+        </div>
+
       </div>
     </section>
 
