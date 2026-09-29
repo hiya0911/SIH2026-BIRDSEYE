@@ -752,6 +752,220 @@ input:focus, select:focus, textarea:focus {
   color: var(--text);
 }
 
+/* ---------------- Change Analysis: Comparison Slider ---------------- */
+.cmp {
+  position: relative;
+  width: 100%;
+  height: 380px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+  user-select: none;
+  background: #08141B;
+}
+
+.cmp .layer {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.cmp .after {
+  clip-path: inset(0 0 0 50%);
+}
+
+.cmp .divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  background: var(--signal);
+  pointer-events: none;
+  box-shadow: 0 0 10px rgba(95, 227, 192, 0.6);
+}
+
+.cmp .handle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--signal);
+  color: #05100D;
+  border: 0;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 14px;
+  z-index: 4;
+  cursor: ew-resize;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+  transition: transform .1s;
+}
+
+.cmp .handle:hover {
+  transform: translate(-50%, -50%) scale(1.1);
+}
+
+.cmp .tag {
+  position: absolute;
+  top: 10px;
+  z-index: 3;
+  background: rgba(6, 14, 18, 0.88);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 4px 9px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.cmp .tag.l { left: 10px; }
+.cmp .tag.r { right: 10px; }
+
+input[type=range].slider-control {
+  accent-color: var(--signal);
+  width: 100%;
+  margin-top: 10px;
+  padding: 0;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+/* ---------------- Change Analysis: Confidence & Evidence Meters ---------------- */
+.conf-head {
+  text-align: center;
+  border-bottom: 1px solid var(--line-soft);
+  padding-bottom: 14px;
+}
+
+.conf-head b {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 46px;
+  color: var(--signal);
+  line-height: 1;
+}
+
+.conf-head span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.bars {
+  margin-top: 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.bar-row {
+  display: grid;
+  gap: 4px;
+}
+
+.bar-row .r {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.bar-row .t {
+  height: 6px;
+  background: #071318;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.bar-row .f {
+  height: 100%;
+  background: var(--signal);
+  border-radius: 4px;
+  transition: width .3s ease;
+}
+
+.signals {
+  margin-top: 14px;
+  display: grid;
+  gap: 6px;
+  font-size: 12.5px;
+}
+
+.sig {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.sig.good { color: var(--signal); }
+.sig.warn { color: var(--flare); }
+.sig.bad { color: var(--danger); }
+
+/* ---------------- Change Analysis: Multi-Epoch Observation Ribbon ---------------- */
+.ribbon {
+  position: relative;
+  height: 76px;
+  margin: 26px 14px 10px;
+  border-top: 1px solid var(--line);
+}
+
+.rp {
+  position: absolute;
+  top: -10px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--flare);
+  border: 3px solid var(--void);
+  padding: 0;
+  cursor: pointer;
+  transition: transform .15s, background .15s;
+}
+
+.rp:hover, .rp.on {
+  background: var(--signal);
+  transform: scale(1.3);
+}
+
+.rp b {
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10.5px;
+  color: var(--muted);
+  white-space: nowrap;
+  font-weight: 500;
+  font-family: var(--font-mono);
+}
+
+.rp.on b {
+  color: var(--signal);
+  font-weight: 600;
+}
+
+/* Category cards list */
+.change-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #0A171E;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+}
+
+.change-card:hover {
+  border-color: var(--signal);
+}
+
 /* ---------------- Drawer & Modals ---------------- */
 .scrim {
   position: fixed;

@@ -261,17 +261,143 @@
       </div>
     </section>
 
-    <!-- ================= 3. CHANGE ANALYSIS (PLACEHOLDER) ================= -->
+    <!-- ================= 3. CHANGE ANALYSIS ================= -->
     <section class="tab-panel" data-panel="temporal" id="panel-temporal" hidden>
-      <div class="card placeholder-card">
-        <span class="badge">Tab 3</span>
-        <h2>Change Analysis Module</h2>
-        <span class="pill" style="margin:12px 0"><span class="dot" style="background:var(--flare)"></span>Integration pending — Phase 2</span>
-        <p class="muted" style="max-width:600px;margin:0 auto 16px">
-          Multi-temporal pairwise and tri-epoch spectral differencing (&Delta;NDVI, &Delta;NDWI), interactive before/after split comparison slider, confidence breakdown bars, and observation timeline will be connected in Phase 2.
+      <h1 class="page-title">Change Analysis</h1>
+      <p class="page-sub">
+        Pairwise and tri-epoch multi-temporal Sentinel-2 surface reflectance differencing. Verify pixel-level land-cover transformations across 2024, 2025, and 2026 observation epochs with sub-pixel co-registration, SCL cloud screening, and phenological baseline compensation.
+      </p>
+
+      <!-- Tile Selection & Date Window Card -->
+      <div class="card">
+        <div class="grid" style="grid-template-columns:minmax(220px, 2fr) repeat(2, minmax(140px, 1fr)) minmax(160px, 1.2fr); align-items:end;">
+          <div>
+            <label for="temporalTileInput">Target Tile ID</label>
+            <input id="temporalTileInput" class="mono" placeholder="Enter or select tile ID (e.g. e87b4d6c...)" value="">
+          </div>
+          <div>
+            <label for="temporalDateStart">Baseline Date</label>
+            <input id="temporalDateStart" type="date" value="2024-01-01">
+          </div>
+          <div>
+            <label for="temporalDateEnd">Comparison Date</label>
+            <input id="temporalDateEnd" type="date" value="2026-12-31">
+          </div>
+          <div>
+            <button class="btn primary" id="resolveChangesBtn" style="width:100%">Resolve Changes</button>
+          </div>
+        </div>
+        <p id="temporalTileMeta" class="small mono muted" style="margin:12px 0 0">
+          No tile selected yet. Select a tile from Semantic Retrieval or enter a tile ID above.
         </p>
-        <div id="temporalSelectedTileBanner" class="small mono muted" style="margin-top:8px"></div>
-        <button class="btn primary" data-goto="retrieval" style="margin-top:16px">Return to Semantic Retrieval</button>
+      </div>
+
+      <!-- State Banner -->
+      <div id="temporalStateBanner" class="card" style="margin-top:14px">
+        <p style="margin:0;color:var(--muted)">Select a tile and click 'Resolve Changes' to analyze spectral differences across observation epochs.</p>
+      </div>
+
+      <!-- Results View (Hidden until resolved) -->
+      <div id="temporalResultsContainer" hidden>
+        
+        <!-- Top Split: Change Categories & Earliest Observation (Left) + Before/After Comparison Slider (Right) -->
+        <div class="split" style="margin-top:14px; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);">
+          
+          <!-- Left: Change Categories & Earliest Observation -->
+          <div class="card">
+            <div class="card-head">
+              <h3>Detected Change Categories</h3>
+              <span id="temporalTotalChangeBadge" class="badge indexed">Total Change: —</span>
+            </div>
+            
+            <div id="changeCategoriesList" class="scroll-list" style="max-height:260px"></div>
+
+            <!-- Earliest Supported Observation Card -->
+            <div class="card" style="margin-top:12px; background:#071318; border:1px solid var(--signal)">
+              <div class="card-head" style="margin-bottom:4px">
+                <span class="badge indexed" style="font-size:10px">EARLIEST SUPPORTED OBSERVATION</span>
+                <strong id="earliestObsDate" style="color:var(--signal)">—</strong>
+              </div>
+              <p id="earliestObsInterval" class="small mono" style="margin:4px 0; color:var(--text)">Observation Interval: —</p>
+              <p id="earliestObsDisclaimer" class="small muted" style="margin:0; font-size:11px"></p>
+            </div>
+          </div>
+
+          <!-- Right: Interactive Before/After Split Comparison Slider -->
+          <div class="card">
+            <div class="card-head">
+              <h3>Multi-Temporal Observation Viewer</h3>
+              <div class="row" style="gap:6px">
+                <button class="chip on small" id="modeBeforeAfter">Baseline vs Latest</button>
+                <button class="chip small" id="modeChangeMask">Compare Change Mask</button>
+              </div>
+            </div>
+
+            <!-- Split Comparison Slider Container -->
+            <div class="cmp" id="cmpBox">
+              <div class="layer before" id="cmpBefore"></div>
+              <div class="layer after" id="cmpAfter"></div>
+              <span class="tag l" id="cmpTagL">earlier · 2024-02-23</span>
+              <span class="tag r" id="cmpTagR">later · 2026-02-27</span>
+              <div class="divider" id="cmpDiv"></div>
+              <button class="handle" id="cmpHandle" aria-label="Drag to compare observations">↔</button>
+            </div>
+            <input id="cmpRange" class="slider-control" type="range" min="0" max="100" value="50" aria-label="Comparison position slider">
+            <div class="row" style="justify-content:space-between; margin-top:6px">
+              <span class="small mono muted" id="cmpFootnote">Sentinel-2 MSI Level-2A (10 m BOA Surface Reflectance)</span>
+              <span class="small mono muted">Drag handle or slide range</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom Split: Confidence & Evidence Meters (Left) + Multi-Epoch Observation Ribbon & Quality Checks (Right) -->
+        <div class="split" style="margin-top:14px; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);">
+          
+          <!-- Left: Evidence Strength & Confidence -->
+          <div class="card">
+            <div class="card-head">
+              <h3>Evidence Strength &amp; Confidence</h3>
+              <span class="small mono muted">Rule-based scoring</span>
+            </div>
+
+            <div class="conf-head">
+              <b id="confScoreNum">—</b>
+              <span id="confScoreLabel">Rule-based evidence score</span>
+            </div>
+
+            <div class="bars" id="evidenceBarsList"></div>
+
+            <div class="signals" id="evidenceSignalsList"></div>
+
+            <div class="row" style="margin-top:16px">
+              <button class="btn primary small" id="whyLocationBtn">Why this location?</button>
+              <button class="btn ghost small" id="viewQualityChecksBtn">Quality Screening</button>
+            </div>
+          </div>
+
+          <!-- Right: Observation Ribbon & Quality Checks Telemetry -->
+          <div>
+            <!-- Observation Ribbon -->
+            <div class="card">
+              <div class="card-head">
+                <h3>Multi-Epoch Observation Ribbon</h3>
+                <span class="small muted">Click an observation epoch to load it into the comparison slider</span>
+              </div>
+              <div class="ribbon" id="observationRibbon"></div>
+              <div class="kv" id="ribbonStatsGrid" style="margin-top:10px"></div>
+            </div>
+
+            <!-- Quality Checks Card -->
+            <div class="card" style="margin-top:14px">
+              <div class="card-head">
+                <h3>Quality Checks &amp; False-Alarm Screening</h3>
+                <span class="badge indexed" id="qualityVerdictBadge">VERIFIED CLEAN</span>
+              </div>
+              <div class="kv" id="qualityChecksGrid"></div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </section>
 
