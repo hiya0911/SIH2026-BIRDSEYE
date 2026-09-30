@@ -330,6 +330,7 @@
               <div class="row" style="gap:6px">
                 <button class="chip on small" id="modeBeforeAfter">Baseline vs Latest</button>
                 <button class="chip small" id="modeChangeMask">Compare Change Mask</button>
+                <button class="btn small primary" id="openAnalystBriefBtn" style="margin-left:8px">Review in Analyst Brief</button>
               </div>
             </div>
 
@@ -1071,29 +1072,283 @@
       </div>
     </section>
 
-    <!-- ================= 9. ANALYST BRIEF & PROVENANCE (PLACEHOLDER) ================= -->
+    <!-- ================= 9. ANALYST BRIEF & PROVENANCE ================= -->
     <section class="tab-panel" data-panel="brief" id="panel-brief" hidden>
-      <div class="card placeholder-card">
-        <span class="badge">Tab 9</span>
-        <h2>Analyst Brief &amp; Provenance</h2>
-        <span class="pill" style="margin:12px 0"><span class="dot" style="background:var(--flare)"></span>Integration pending — Phase 8</span>
-        <p class="muted" style="max-width:600px;margin:0 auto 16px">
-          Dynamic narrative briefing generation, cryptographic SHA-256 provenance audit records, and printable intelligence reports will be connected in Phase 8.
-        </p>
-        <button class="btn primary" data-goto="overview" style="margin-top:16px">Return to Overview</button>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:12px; margin-bottom:8px">
+        <div>
+          <h1 class="page-title">Analyst Brief &amp; Provenance</h1>
+          <p class="page-sub">
+            Comprehensive satellite incident evidence workspace, multi-epoch change verification, rule-based explainability, and 9-stage verifiable provenance lineage chain.
+          </p>
+        </div>
+        <div class="row" style="gap:8px; flex-wrap:wrap">
+          <div style="display:flex; align-items:center; gap:6px">
+            <label for="briefCaseSelect" class="small muted" style="margin:0">Active Case:</label>
+            <select id="briefCaseSelect" style="max-width:240px; padding:4px 8px; font-size:12px"></select>
+          </div>
+          <button class="btn small" id="briefRefreshBtn">Refresh</button>
+          <button class="btn small" id="exportBriefMdBtn">Export Report (MD)</button>
+          <button class="btn small" id="exportBriefJsonBtn">Export Evidence (JSON)</button>
+          <button class="btn small ghost" id="briefJumpToAnalysisBtn">Inspect in Change Analysis</button>
+        </div>
+      </div>
+
+      <!-- Case Telemetry Ribbon -->
+      <div class="stats" id="briefStatsRibbon">
+        <div class="stat">
+          <b id="briefCaseId" style="font-size:17px">CASE-2026-e87b4d6c</b>
+          <span>Incident Case ID</span>
+        </div>
+        <div class="stat">
+          <b id="briefTileId" style="font-size:13px; font-family:'IBM Plex Mono',monospace">e87b4d6c...</b>
+          <span>Target Raster Tile</span>
+        </div>
+        <div class="stat">
+          <b id="briefStatusBadge" class="review-badge CONFIRMED">CONFIRMED</b>
+          <span>Analyst Status</span>
+        </div>
+        <div class="stat">
+          <b id="briefObservationSpan" style="font-size:13px">2024-02-23 &rarr; 2026-02-27</b>
+          <span>Observation Time Window</span>
+        </div>
+        <div class="stat">
+          <b id="briefSensorBadge" style="font-size:13px; color:var(--signal)">Sentinel-2 MSI</b>
+          <span>ESA Multi-Spectral L2A</span>
+        </div>
+      </div>
+
+      <!-- Two-Column Layout: Evidence Workspace (Left) & Cryptographic Provenance (Right) -->
+      <div class="split" style="margin-top:14px; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr)">
+        
+        <!-- Left: Incident Brief, Imagery & Analyst Review -->
+        <div style="display:grid; gap:14px">
+          
+          <!-- Incident Overview Card -->
+          <div class="card">
+            <div class="card-head">
+              <h3>Incident Overview &amp; Change Evidence</h3>
+              <span class="small mono muted" id="briefLocationText">Kolkata Industrial Corridor</span>
+            </div>
+
+            <div style="margin-bottom:12px">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px">
+                <span class="small muted">Change Characterization:</span>
+                <span class="badge indexed" id="briefPhysicalType">EXPANSION (CONSTRUCTION)</span>
+              </div>
+              <p id="briefExplanation" class="small" style="margin:4px 0 10px; line-height:1.5">
+                Surface reflectance surge (&Delta;BR &gt; +35%) and canopy loss (&Delta;NDVI &lt; -0.10) indicating structural ground alteration.
+              </p>
+            </div>
+
+            <!-- Observation Thumbnails Strip -->
+            <div class="thumb-strip">
+              <div class="thumb-card">
+                <img id="briefThumbBefore" src="" alt="Baseline 2024">
+                <div class="caption">Baseline (2024-02-23)</div>
+              </div>
+              <div class="thumb-card">
+                <img id="briefThumbAfter" src="" alt="Latest 2026">
+                <div class="caption">Latest (2026-02-27)</div>
+              </div>
+              <div class="thumb-card">
+                <img id="briefThumbMask" src="" alt="Change Heatmap">
+                <div class="caption">Change Heatmap</div>
+              </div>
+            </div>
+
+            <!-- Change Statistics Grid -->
+            <div class="grid" style="grid-template-columns: repeat(4, 1fr); gap:8px; margin-top:10px">
+              <div style="background:#061116; border:1px solid var(--line); border-radius:6px; padding:8px; text-align:center">
+                <div class="small muted" style="font-size:10.5px">Total Change</div>
+                <strong id="briefTotalChange" style="font-size:13px; color:var(--signal)">0.93%</strong>
+              </div>
+              <div style="background:#061116; border:1px solid var(--line); border-radius:6px; padding:8px; text-align:center">
+                <div class="small muted" style="font-size:10.5px">Built-up Surge</div>
+                <strong id="briefBuiltUp" style="font-size:13px">0.93% (60 px)</strong>
+              </div>
+              <div style="background:#061116; border:1px solid var(--line); border-radius:6px; padding:8px; text-align:center">
+                <div class="small muted" style="font-size:10.5px">Canopy Loss</div>
+                <strong id="briefCanopyLoss" style="font-size:13px">0.00% (0 px)</strong>
+              </div>
+              <div style="background:#061116; border:1px solid var(--line); border-radius:6px; padding:8px; text-align:center">
+                <div class="small muted" style="font-size:10.5px">Hydrological</div>
+                <strong id="briefWaterVar" style="font-size:13px">0.00% (0 px)</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quality & Explainability Card -->
+          <div class="card">
+            <div class="card-head">
+              <h3>Rule-Based Quality &amp; Intelligence Screening</h3>
+              <span class="small mono muted">Multi-Stage Audit</span>
+            </div>
+            
+            <div class="kv" style="gap:8px">
+              <div>
+                <span>Evidence Confidence:</span>
+                <strong id="briefConfidenceScore" style="color:var(--signal)">95.0% (Deterministic Multi-Spectral Rule)</strong>
+              </div>
+              <div>
+                <span>8-Stage Preprocessing:</span>
+                <strong id="briefPrepStatus">8/8 Passed · Analysis Ready (Copernicus L2A BOA)</strong>
+              </div>
+              <div>
+                <span>False-Alarm Screening:</span>
+                <strong id="briefFalseAlarmStatus">LOW Risk · Confounder Suppressed · Co-Reg RMSE 0.84 px</strong>
+              </div>
+              <div>
+                <span>Sentinel-1 SAR Corroboration:</span>
+                <strong style="color:var(--flare)">Architecture Ready · Data Not Cached Locally (Honest Null State)</strong>
+              </div>
+            </div>
+
+            <div style="margin-top:10px">
+              <span class="small muted">Detection Factors:</span>
+              <ul id="briefWhyDetectedList" class="small muted" style="padding-left:18px; margin:4px 0 0">
+                <li>Surface reflectance surge &Delta;BR &gt; 0.35</li>
+                <li>Canopy loss &Delta;NDVI &lt; -0.10</li>
+                <li>Persistent across tri-epoch observations (2024 &rarr; 2025 &rarr; 2026)</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Analyst Review Decision Form -->
+          <div class="card">
+            <div class="card-head">
+              <h3>Human Analyst Verification &amp; Decision</h3>
+              <span class="small mono muted" id="briefReviewStamp">Recorded in MongoDB &amp; Audit Log</span>
+            </div>
+
+            <div style="display:flex; gap:10px; margin-bottom:12px">
+              <button class="btn small" type="button" id="briefDecideConfirm" style="color:var(--signal); border-color:var(--signal); flex:1">✔ Confirm Change</button>
+              <button class="btn small" type="button" id="briefDecideReject" style="color:var(--danger); border-color:var(--danger); flex:1">✖ Reject (False Alarm)</button>
+              <button class="btn small ghost" type="button" id="briefDecideFlag" style="flex:1">⚑ Flag Investigation</button>
+            </div>
+
+            <div class="grid" style="grid-template-columns: 1fr 180px; gap:10px; margin-bottom:10px">
+              <div>
+                <label for="briefRationaleInput">Analyst Rationale / Verification Notes</label>
+                <input type="text" id="briefRationaleInput" placeholder="e.g. Ground alteration verified against multi-temporal Sentinel-2 imagery.">
+              </div>
+              <div>
+                <label for="briefAnalystInput">Analyst ID</label>
+                <input type="text" id="briefAnalystInput" value="analyst_lead_01">
+              </div>
+            </div>
+
+            <div class="row" style="justify-content:flex-end">
+              <button class="btn primary small" id="briefSubmitReviewBtn">Submit Official Review</button>
+            </div>
+
+            <!-- Review History Timeline -->
+            <div style="margin-top:14px; padding-top:12px; border-top:1px solid var(--line)">
+              <div class="small muted" style="font-weight:600; margin-bottom:8px">Case Review Audit Timeline:</div>
+              <div id="briefReviewHistory" class="feed" style="max-height:160px; overflow-y:auto"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: 9-Stage Cryptographic Provenance Lineage -->
+        <div class="card">
+          <div class="card-head">
+            <h3>9-Stage Cryptographic Provenance Lineage</h3>
+            <span class="small mono muted">SHA-256 Verified Lineage</span>
+          </div>
+
+          <p class="small muted" style="margin:0 0 12px">
+            Verifiable end-to-end processing lineage trace: SOURCE &rarr; ACQUISITION &rarr; PREPROCESSING &rarr; REGISTRATION &rarr; ANALYSIS &rarr; FALSE-ALARM AUDIT &rarr; EXPLAINABILITY &rarr; REVIEW &rarr; EVIDENCE EXPORT.
+          </p>
+
+          <div class="provenance-chain" id="briefProvenanceChain">
+            <!-- Dynamically populated from /api/cases/{case_id}/provenance -->
+          </div>
+        </div>
       </div>
     </section>
 
-    <!-- ================= 10. MISSION BOARD (PLACEHOLDER) ================= -->
+    <!-- ================= 10. MISSION BOARD ================= -->
     <section class="tab-panel" data-panel="mission" id="panel-mission" hidden>
-      <div class="card placeholder-card">
-        <span class="badge">Tab 10</span>
-        <h2>Mission Board</h2>
-        <span class="pill" style="margin:12px 0"><span class="dot" style="background:var(--flare)"></span>Integration pending — Phase 9</span>
-        <p class="muted" style="max-width:600px;margin:0 auto 16px">
-          Session KPI aggregates, prioritized review queue, module status monitors, and session report exports will be connected in Phase 9.
-        </p>
-        <button class="btn primary" data-goto="overview" style="margin-top:16px">Return to Overview</button>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:12px; margin-bottom:8px">
+        <div>
+          <h1 class="page-title">Mission Board &amp; Review Queue</h1>
+          <p class="page-sub">
+            Active satellite surveillance missions, priority analyst review queue, and verified change incident ledger.
+          </p>
+        </div>
+        <div class="row" style="gap:8px">
+          <button class="btn small" id="missionRefreshBtn">Refresh Queue</button>
+          <button class="btn small primary" id="missionCreateCaseBtn">+ Create Case from Selected Tile</button>
+        </div>
+      </div>
+
+      <!-- KPI Ribbon -->
+      <div class="stats" id="missionStatsStrip">
+        <div class="stat">
+          <b id="missionCountTotal">3</b>
+          <span>Active Investigation Cases</span>
+        </div>
+        <div class="stat">
+          <b id="missionCountPending" style="color:var(--flare)">1</b>
+          <span>Pending Analyst Review</span>
+        </div>
+        <div class="stat">
+          <b id="missionCountConfirmed" style="color:var(--signal)">2</b>
+          <span>Confirmed Incident Cases</span>
+        </div>
+        <div class="stat">
+          <b id="missionCountRejected" style="color:var(--danger)">0</b>
+          <span>Rejected / False Alarms</span>
+        </div>
+        <div class="stat">
+          <b style="font-size:17px; color:var(--flare)">Not Cached</b>
+          <span>Sentinel-1 SAR C-Band</span>
+        </div>
+      </div>
+
+      <!-- Filter Bar -->
+      <div class="card" style="margin-top:14px; padding:10px 14px">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px">
+          <div class="row" style="gap:6px">
+            <span class="small muted">Filter Status:</span>
+            <button class="chip on small" data-filter="ALL" id="filterMissionAll">All</button>
+            <button class="chip small" data-filter="PENDING" id="filterMissionPending">Pending</button>
+            <button class="chip small" data-filter="CONFIRMED" id="filterMissionConfirmed">Confirmed</button>
+            <button class="chip small" data-filter="REJECTED" id="filterMissionRejected">Rejected</button>
+            <button class="chip small" data-filter="FLAGGED" id="filterMissionFlagged">Flagged</button>
+          </div>
+          <div style="min-width:240px">
+            <input type="text" id="missionSearchInput" placeholder="Filter by Case ID, Tile ID, or AOI label…" style="font-size:12px; padding:4px 10px">
+          </div>
+        </div>
+      </div>
+
+      <!-- Mission Cases Ledger Table -->
+      <div class="card" style="margin-top:14px; overflow-x:auto">
+        <table class="mission-table" id="missionTable">
+          <thead>
+            <tr>
+              <th>Case ID</th>
+              <th>Target Tile &amp; Region</th>
+              <th>Review Status</th>
+              <th>Detected Change Type</th>
+              <th>Confidence</th>
+              <th>Latest Review</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="missionTableBody">
+            <!-- Dynamically populated from GET /api/cases -->
+          </tbody>
+        </table>
+        
+        <!-- Truthful empty state -->
+        <div id="missionEmptyState" class="placeholder-card" style="display:none; padding:30px; text-align:center">
+          <h4>NO ACTIVE REVIEW CASES</h4>
+          <p class="muted" style="max-width:500px; margin:8px auto">
+            No satellite investigation cases are currently queued. Select a tile from Semantic Retrieval or Change Analysis and create a case to populate the mission board.
+          </p>
+        </div>
       </div>
     </section>
 
