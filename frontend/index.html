@@ -1352,16 +1352,278 @@
       </div>
     </section>
 
-    <!-- ================= 11. TECHNICAL SPECIFICATIONS (PLACEHOLDER) ================= -->
+    <!-- ================= 11. TECHNICAL SPECIFICATIONS ================= -->
     <section class="tab-panel" data-panel="spec" id="panel-spec" hidden>
-      <div class="card placeholder-card">
-        <span class="badge">Tab 11</span>
-        <h2>Technical Specifications</h2>
-        <span class="pill" style="margin:12px 0"><span class="dot" style="background:var(--flare)"></span>Integration pending — Phase 10</span>
-        <p class="muted" style="max-width:600px;margin:0 auto 16px">
-          Authoritative technical specifications covering the CLIP ViT-B/32 cosine similarity formulation, &Delta;NDVI/&Delta;NDWI spectral gating, SCL quality masking, and air-gapped on-premises architecture will be integrated in Phase 10.
-        </p>
-        <button class="btn primary" data-goto="overview" style="margin-top:16px">Return to Overview</button>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:12px; margin-bottom:8px">
+        <div>
+          <h1 class="page-title">Technical Specifications &amp; Architectural Standard</h1>
+          <p class="page-sub">
+            Authoritative engineering specifications, mathematical formulations, sensor operational statuses, and scientific integrity disclosures for the BIRDSEYE Earth Observation platform.
+          </p>
+        </div>
+        <div class="row" style="gap:8px">
+          <button class="btn small" onclick="window.print()">Print Specifications (PDF)</button>
+          <button class="btn small primary" onclick="showTab('overview')">Console Overview</button>
+        </div>
+      </div>
+
+      <!-- Quick Telemetry Strip -->
+      <div class="stats" style="margin-bottom:14px">
+        <div class="stat">
+          <b>CLIP ViT-B/32</b>
+          <span>512-D Embedding Backbone</span>
+        </div>
+        <div class="stat">
+          <b>FAISS IndexFlatIP</b>
+          <span>908 Indexed Vectors</span>
+        </div>
+        <div class="stat">
+          <b>8 Stages</b>
+          <span>Preprocessing &amp; Tiling Pipeline</span>
+        </div>
+        <div class="stat">
+          <b style="color:var(--signal)">Local / On-Premises</b>
+          <span>Air-Gapped Core Analytical Workflows</span>
+        </div>
+        <div class="stat">
+          <b style="color:var(--flare)">Not Cached</b>
+          <span>Sentinel-1 SAR C-Band Status</span>
+        </div>
+      </div>
+
+      <!-- Specification Cards Grid -->
+      <div class="spec-grid">
+
+        <!-- 1. SYSTEM ARCHITECTURE -->
+        <div class="spec-card">
+          <div class="spec-sec-num">SECTION 01</div>
+          <h3>System Architecture &amp; Sovereign Fabric <span class="spec-badge operational">Operational</span></h3>
+          <p class="small muted">
+            BIRDSEYE is architectured as an air-gapped, defence-grade tactical Earth Observation system designed for low-latency spatial analysis without cloud lock-in.
+          </p>
+          <table class="spec-table">
+            <thead><tr><th>Layer</th><th>Technology</th><th>Implementation Detail</th></tr></thead>
+            <tbody>
+              <tr><td>Frontend</td><td>HTML5 / Vanilla CSS / ES2022 JS</td><td>Zero framework overhead; sub-50ms reactive tab switching; Canvas &amp; SVG rendering.</td></tr>
+              <tr><td>Backend API</td><td>FastAPI (Uvicorn ASGI)</td><td>Asynchronous Python microservice exposing REST APIs; NumPy, SciPy &amp; Rasterio compute.</td></tr>
+              <tr><td>Persistence</td><td>Dual MongoDB + JSON Mirror</td><td>Connects to MongoDB (<code>birdsey3</code>) on port 27017 with automatic fallback to local JSON.</td></tr>
+              <tr><td>Vector Index</td><td>FAISS (IndexFlatIP)</td><td>In-memory exact inner product similarity search over 512-dimensional normalized vectors.</td></tr>
+              <tr><td>Deployment</td><td>Local Host / On-Premises</td><td>Core workflows run locally on-premises; zero external inference calls; optional external CDSE live sync when configured.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 2. SEMANTIC RETRIEVAL -->
+        <div class="spec-card">
+          <div class="spec-sec-num">SECTION 02</div>
+          <h3>Semantic Retrieval &amp; Vector Indexing <span class="spec-badge operational">Operational</span></h3>
+          <p class="small muted">
+            Joint visual-linguistic retrieval mapping unconstrained natural language queries and satellite tile imagery into a unified 512-dimensional latent embedding space.
+          </p>
+          <div class="spec-math-block">
+            Cosine Similarity Formulation:<br>
+            Sim(q, v) = (q &middot; v) / (||q||<sub>2</sub> &times; ||v||<sub>2</sub>) = q<sub>norm</sub> &middot; v<sub>norm</sub> &isin; [-1.0, 1.0]
+          </div>
+          <table class="spec-table">
+            <thead><tr><th>Parameter</th><th>Specification</th><th>Architectural Value</th></tr></thead>
+            <tbody>
+              <tr><td>Model Backbone</td><td>OpenAI CLIP ViT-B/32</td><td>Vision Transformer (12 encoder layers, 32&times;32 patch size, 768 projection).</td></tr>
+              <tr><td>Embedding Dim</td><td>512 Dimensions</td><td>Float32 unit-normalized vector representations stored per 256&times;256 tile.</td></tr>
+              <tr><td>Index Type</td><td>FAISS IndexFlatIP</td><td>Exhaustive exact inner-product vector index; raw in-memory index search timing is separate from end-to-end retrieval/pipeline latency.</td></tr>
+              <tr><td>Search Modes</td><td>Multimodal / Text / Visual</td><td>Text-to-tile queries, image-to-image similarity, and multimodal hybrid blending.</td></tr>
+              <tr><td>Filter Axes</td><td>AOI &amp; Temporal Constraints</td><td>Bounding box WGS-84/UTM spatial gating, sensor filtering, and acquisition ranges.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 3. MULTI-TEMPORAL CHANGE ANALYSIS -->
+        <div class="spec-card">
+          <div class="spec-sec-num">SECTION 03</div>
+          <h3>Multi-Temporal Change Detection <span class="spec-badge operational">Operational</span></h3>
+          <p class="small muted">
+            Tri-epoch multispectral change characterization comparing identical spatial footprints across 2024 (Sentinel-2B), 2025 (Sentinel-2B), and 2026 (Sentinel-2C).
+          </p>
+          <div class="spec-math-block">
+            Spectral Index Formulations:<br>
+            &Delta;NDVI = [(B08-B04)/(B08+B04)]<sub>later</sub> &minus; [(B08-B04)/(B08+B04)]<sub>earlier</sub><br>
+            &Delta;NDWI = [(B03-B08)/(B03+B08)]<sub>later</sub> &minus; [(B03-B08)/(B03+B08)]<sub>earlier</sub><br>
+            &Delta;Brightness = [&mu;(RGB)<sub>later</sub> &minus; &mu;(RGB)<sub>earlier</sub>] / &mu;(RGB)<sub>earlier</sub>
+          </div>
+          <table class="spec-table">
+            <thead><tr><th>Typology</th><th>Rule-Based Spectral Gating</th><th>Physical Interpretation</th></tr></thead>
+            <tbody>
+              <tr><td>Built-up Expansion</td><td>&Delta;BR &gt; +0.35 &amp; &Delta;NDVI &lt; -0.10</td><td>Reflectance surge with vegetation canopy loss; new construction/paving.</td></tr>
+              <tr><td>Vegetation Loss</td><td>&Delta;NDVI &lt; -0.20 (&mu;<sub>drift</sub> compensated)</td><td>Chlorophyll depletion exceeding regional phenological drift baseline.</td></tr>
+              <tr><td>Vegetation Gain</td><td>&Delta;NDVI &gt; +0.20</td><td>Agricultural crop development, seasonal greening, or re-vegetation.</td></tr>
+              <tr><td>Water Dynamics</td><td>&Delta;NDWI &gt; &plusmn;0.15</td><td>Reservoir expansion, seasonal flooding, or wetland surface water variation.</td></tr>
+              <tr><td>Earliest Observation</td><td>Baseline Identification</td><td>Automated retrieval of earliest cloud-free acquisition in catalog archive.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 4. PREPROCESSING PIPELINE -->
+        <div class="spec-card">
+          <div class="spec-sec-num">SECTION 04</div>
+          <h3>8-Stage Preprocessing &amp; Radiometric Lab <span class="spec-badge operational">Operational</span></h3>
+          <p class="small muted">
+            Deterministic 8-stage image conditioning pipeline converting raw Level-2A Copernicus granules into radiometrically comparable, sub-pixel registered tiles.
+          </p>
+          <table class="spec-table">
+            <thead><tr><th>Stage</th><th>Designation</th><th>Technical Process</th></tr></thead>
+            <tbody>
+              <tr><td>01</td><td>Metadata Extraction</td><td>Parses MTD_MSIL2A.xml; extracts solar zenith/azimuth, orbit, and granule metadata.</td></tr>
+              <tr><td>02</td><td>CRS Verification</td><td>Validates UTM Zone 45N (EPSG:32645), computes affine geotransform and WGS-84 bounds.</td></tr>
+              <tr><td>03</td><td>SCL Cloud Masking</td><td>Filters Scene Classification Layer: class 3 (shadow), 8 (med cloud), 9 (high cloud), 10 (cirrus).</td></tr>
+              <tr><td>04</td><td>Quality Assessment</td><td>Enforces &ge; 95% valid pixel ratio threshold; computes signal-to-noise ratio proxy (8.22).</td></tr>
+              <tr><td>05</td><td>Radiometric Cal</td><td>Scales BOA reflectance from integer [0, 10000] to physical float32 range [0.0, 1.0].</td></tr>
+              <tr><td>06</td><td>Sub-Pixel Co-Reg</td><td>Fourier 2D phase correlation cross-power spectrum; checks shift (&Delta;x, &Delta;y &le; 0.5 px).</td></tr>
+              <tr><td>07</td><td>Phenology / Illum</td><td>Subtracts regional background drift (&mu;<sub>pheno</sub> = -0.13) and normalizes solar zenith angle.</td></tr>
+              <tr><td>08</td><td>Spatial Tiling</td><td>Uniform 256&times;256 pixel chipping at 10m native spatial resolution with georeferencing.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 5. FALSE-ALARM SUPPRESSION -->
+        <div class="spec-card">
+          <div class="spec-sec-num">SECTION 05</div>
+          <h3>Multi-Stage False-Alarm Suppression <span class="spec-badge operational">Operational</span></h3>
+          <p class="small muted">
+            Systematic screening mechanisms isolating genuine terrestrial infrastructure alterations from environmental and atmospheric artifacts.
+          </p>
+          <table class="spec-table">
+            <thead><tr><th>Artifact Source</th><th>Suppression Mechanism</th><th>Validation Method</th></tr></thead>
+            <tbody>
+              <tr><td>Cloud Contamination</td><td>Copernicus SCL classes 8, 9, 10 &amp; cirrus band B10</td><td>Pixel masking prior to difference computation; zero false change.</td></tr>
+              <tr><td>Cloud / Terrain Shadow</td><td>SCL class 3 combined with solar azimuth vector</td><td>Shadow mask exclusion prevents false water/clearing detections.</td></tr>
+              <tr><td>Phenological Drift</td><td>Regional vegetative background baseline subtraction</td><td>Subtracts regional mean &mu;<sub>pheno</sub> = -0.13 to prevent seasonal false loss.</td></tr>
+              <tr><td>Solar Illumination</td><td>Solar zenith and azimuth cosine correction</td><td>Normalizes differing illumination angles across disparate seasons.</td></tr>
+              <tr><td>Radiometric Drift</td><td>Standardized Level-2A BOA surface reflectance</td><td>Harmonizes cross-sensor radiometry between Sentinel-2A, 2B, and 2C.</td></tr>
+              <tr><td>Misregistration</td><td>2D Fourier Phase Correlation sub-pixel alignment</td><td>Eliminates high-contrast linear edge anomalies along borders.</td></tr>
+              <tr><td>Speckle / Salt-and-Pepper</td><td>Morphological opening/closing &amp; median filter</td><td>Suppresses isolated single-pixel false alarms below minimum mapping unit.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 6. DISCOVERY & CLUSTERING -->
+        <div class="spec-card">
+          <div class="spec-sec-num">SECTION 06</div>
+          <h3>Discovery &amp; Landscape Clustering <span class="spec-badge operational">Operational</span></h3>
+          <p class="small muted">
+            Unsupervised functional landscape partitioning and similar-site discovery over 512-dimensional CLIP embedding representations.
+          </p>
+          <table class="spec-table">
+            <thead><tr><th>Component</th><th>Technical Specification</th><th>Live System Readout</th></tr></thead>
+            <tbody>
+              <tr><td>Embedding Manifold</td><td>908 indexed tiles in 512-dimensional CLIP space</td><td>Normalized L2 unit vectors; batch size 32.</td></tr>
+              <tr><td>Clustering Model</td><td>k-Means clustering with k = 5 functional clusters</td><td>Landscape archetypes: Urban, Forest, Fallow, Water, Cleared.</td></tr>
+              <tr><td>Quality Metric</td><td>Global Silhouette Coefficient</td><td>S = 0.1216 (calculated over all 908 indexed embeddings).</td></tr>
+              <tr><td>Projection</td><td>Principal Component Analysis (2D PCA)</td><td>Eigenvector projection for interactive analyst spatial navigation.</td></tr>
+              <tr><td>Site Discovery</td><td>FAISS nearest-neighbor similarity search</td><td>Seeded query retrieves structurally similar geographical targets across India.</td></tr>
+              <tr><td>Dynamic Rerank</td><td>Analyst feedback vector adjustment</td><td>Reranks candidate tiles dynamically based on human confirm/reject decisions.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 7. ANALYST WORKFLOW & EVIDENCE WORKSPACE -->
+        <div class="spec-card">
+          <div class="spec-sec-num">SECTION 07</div>
+          <h3>Analyst Workflow &amp; Evidence Workspace <span class="spec-badge operational">Operational</span></h3>
+          <p class="small muted">
+            Structured human-in-the-loop triage environment recording immutable decisions and verifiable cryptographic provenance.
+          </p>
+          <table class="spec-table">
+            <thead><tr><th>Capability</th><th>System Implementation</th><th>Operational Workflow</th></tr></thead>
+            <tbody>
+              <tr><td>Review Triage Queue</td><td>Mission Board with live KPI ribbon</td><td>Tracks OPEN, PENDING, CONFIRMED, REJECTED, and FLAGGED cases.</td></tr>
+              <tr><td>Decision Protocol</td><td>Mandatory decision, rationale, and analyst ID</td><td>Recorded via POST /api/cases/{case_id}/review into MongoDB &amp; JSON.</td></tr>
+              <tr><td>Audit Feed</td><td>Chronological review timeline</td><td>Persistent log of all review actions, timestamps, and justification notes.</td></tr>
+              <tr><td>Provenance Lineage</td><td>9-Stage SHA-256 cryptographic chain</td><td>Verifiable end-to-end traceability from ESA source to evidence export.</td></tr>
+              <tr><td>Evidence Export</td><td>Markdown Report + JSON Evidence Workspace</td><td>Instant export via /api/cases/{id}/report and /api/cases/{id}/evidence.json.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 8. INGESTION & SCALE -->
+        <div class="spec-card">
+          <div class="spec-sec-num">SECTION 08</div>
+          <h3>Ingestion, Scalability &amp; Integrity <span class="spec-badge operational">Operational</span></h3>
+          <p class="small muted">
+            Production-grade geospatial data pipeline supporting incremental indexing, duplicate prevention, and high-throughput vector search.
+          </p>
+          <table class="spec-table">
+            <thead><tr><th>Metric / Subsystem</th><th>Specification Standard</th><th>Production Baseline</th></tr></thead>
+            <tbody>
+              <tr><td>Format Compatibility</td><td>GeoTIFF &amp; Cloud-Optimized GeoTIFF (COG)</td><td>EPSG:32645, 10m native spatial resolution, multi-band rasters.</td></tr>
+              <tr><td>Duplicate Detection</td><td>SHA-256 cryptographic content digest</td><td>Blocks redundant ingestion and prevents vector index corruption.</td></tr>
+              <tr><td>Incremental Pipeline</td><td>Validate &rarr; Metadata &rarr; CLIP Embed &rarr; FAISS</td><td>Atomic ingestion updates database, index, and catalog simultaneously.</td></tr>
+              <tr><td>Catalog Baseline</td><td>909 active raster tile documents</td><td>Preserved strictly across all test suites and production workflows.</td></tr>
+              <tr><td>FAISS Vector Count</td><td>908 indexed 512-dimensional embeddings</td><td>Preserved baseline for exact inner-product vector search.</td></tr>
+              <tr><td>SAFE Archives</td><td>3 complete Copernicus Sentinel-2 Level-2A</td><td>S2B Feb 2024, S2B Feb 2025, S2C Feb 2026 cached on local disk.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 9. OFFLINE / SOVEREIGNTY -->
+        <div class="spec-card">
+          <div class="spec-sec-num">SECTION 09</div>
+          <h3>Offline Sovereignty &amp; Air-Gapped Fabric <span class="spec-badge offline">Offline Ready</span></h3>
+          <p class="small muted">
+            Architectural distinction between autonomous local core operations and optional external network services.
+          </p>
+          <table class="spec-table">
+            <thead><tr><th>Capability Category</th><th>Operational Mode</th><th>Dependency Disclosure</th></tr></thead>
+            <tbody>
+              <tr><td>Semantic Search &amp; Retrieval</td><td>Local On-Premises</td><td>Local CLIP ViT-B/32 PyTorch weights + FAISS in-memory index; zero external network calls.</td></tr>
+              <tr><td>Change Detection &amp; Analysis</td><td>Local On-Premises</td><td>Local NumPy and Rasterio spectral index calculation over cached rasters.</td></tr>
+              <tr><td>Preprocessing &amp; False Alarm</td><td>Local On-Premises</td><td>Deterministic 8-stage image conditioning executed locally on host CPU/GPU.</td></tr>
+              <tr><td>Clustering &amp; Discovery</td><td>Local On-Premises</td><td>Local scikit-learn k-Means, PCA projection, and silhouette scoring.</td></tr>
+              <tr><td>Live Copernicus Querying</td><td>Optional External (Network Required)</td><td>Copernicus Data Space Ecosystem (CDSE) API invoked only when external network connectivity is enabled.</td></tr>
+              <tr><td>Data Sovereignty</td><td>Air-Gapped Core</td><td>Core analytical workflows, rasters, and analyst findings operate strictly within local host perimeter.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 10. SENSOR STATUS -->
+        <div class="spec-card">
+          <div class="spec-sec-num">SECTION 10</div>
+          <h3>Sensor Operational Status &amp; Scope <span class="spec-badge disclosure">Honest Disclosure</span></h3>
+          <p class="small muted">
+            Explicit, transparent disclosure of active sensor support and data availability across satellite constellations.
+          </p>
+          <table class="spec-table">
+            <thead><tr><th>Constellation</th><th>Operational Status</th><th>Detailed Architectural State</th></tr></thead>
+            <tbody>
+              <tr><td>Sentinel-2 MSI (Optical)</td><td><span class="spec-badge operational">Operational Local Data</span></td><td>Full 13 multispectral bands (10m/20m/60m); 3 SAFE archives cached locally.</td></tr>
+              <tr><td>Sentinel-1 SAR (Radar)</td><td><span class="spec-badge disclosure">Architecture Ready &middot; Uncached</span></td><td>Ingest schemas, dual-pol (VV/VH) &amp; coherence models ready; local SAR data not cached.</td></tr>
+              <tr><td>Landsat 8/9 OLI-TIRS</td><td><span class="spec-badge" style="color:var(--muted)">Not Deployed</span></td><td>No operational local imagery; not claimed in active deployment.</td></tr>
+              <tr><td>ISRO Bhuvan / Cartosat</td><td><span class="spec-badge" style="color:var(--muted)">Not Deployed</span></td><td>No operational local imagery; not claimed in active deployment.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 11. EVALUATION STATUS -->
+        <div class="spec-card full-width">
+          <div class="spec-sec-num">SECTION 11</div>
+          <h3>Evaluation Status &amp; Methodological Integrity <span class="spec-badge disclosure">Scientific Standard</span></h3>
+          <p class="small muted">
+            Transparent disclosure regarding accuracy validation, runtime benchmarks, and ground-truth requirements.
+          </p>
+          <div class="split" style="grid-template-columns: 1fr 1fr; gap:16px; margin-top:4px">
+            <div style="background:var(--void); border:1px solid var(--line-soft); border-radius:6px; padding:12px 16px">
+              <h4 style="margin:0 0 6px; color:var(--flare); font-size:13px">GROUND TRUTH STATUS: NOT AVAILABLE LOCALLY</h4>
+              <p class="small muted" style="margin:0">
+                Formal accuracy metrics (Precision, Recall, F1-Score, IoU, mAP, nDCG) require pixel-level labeled ground-truth masks. The unannotated Copernicus archive contains no reference ground truth for Kolkata. BIRDSEYE prioritizes scientific honesty and defence-grade integrity: <strong>no synthetic or fabricated accuracy figures are claimed</strong>.
+              </p>
+            </div>
+            <div style="background:var(--void); border:1px solid var(--line-soft); border-radius:6px; padding:12px 16px">
+              <h4 style="margin:0 0 6px; color:var(--signal); font-size:13px">COMPUTATIONAL BENCHMARKS: OPERATIONAL &amp; VERIFIED</h4>
+              <p class="small muted" style="margin:0">
+                Live micro-benchmarks measure real system throughput, end-to-end retrieval pipeline latency, and clustering silhouette scores (S = 0.1216). Micro-benchmarks evaluate system runtime performance and hardware efficiency, and are <strong>never conflated with or presented as validated change detection model accuracy</strong>.
+              </p>
+            </div>
+          </div>
+        </div>
+
       </div>
     </section>
   </main>

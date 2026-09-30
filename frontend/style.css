@@ -1789,6 +1789,101 @@ details.prov summary:hover {
   background: var(--panel-2);
 }
 
+/* ---------------- Technical Specifications (Tab 11) ---------------- */
+.spec-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(460px, 1fr));
+  gap: 16px;
+  margin-top: 14px;
+}
+.spec-card {
+  background: var(--hull);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.spec-card.full-width {
+  grid-column: 1 / -1;
+}
+.spec-sec-num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--signal);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.spec-card h3 {
+  font-size: 15px;
+  margin: 0;
+  color: var(--text);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.spec-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  margin-top: 6px;
+}
+.spec-table th, .spec-table td {
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--line-soft);
+  text-align: left;
+  vertical-align: top;
+}
+.spec-table th {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  background: rgba(0, 0, 0, 0.2);
+}
+.spec-table td:first-child {
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+}
+.spec-badge {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid currentColor;
+  text-transform: uppercase;
+}
+.spec-badge.operational {
+  color: var(--signal);
+  border-color: var(--signal);
+  background: rgba(95, 227, 192, 0.08);
+}
+.spec-badge.disclosure {
+  color: var(--flare);
+  border-color: var(--flare);
+  background: rgba(242, 176, 90, 0.08);
+}
+.spec-badge.offline {
+  color: var(--sky);
+  border-color: var(--sky);
+  background: rgba(121, 190, 234, 0.08);
+}
+.spec-math-block {
+  background: var(--void);
+  border: 1px solid var(--line-soft);
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--signal);
+  overflow-x: auto;
+  line-height: 1.6;
+}
+
 /* ---------------- Footer ---------------- */
 footer.app-footer {
   border-top: 1px solid var(--line);

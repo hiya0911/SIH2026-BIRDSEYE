@@ -952,7 +952,7 @@ async function fetchSystemHealth() {
     if ($("statTilesCount")) $("statTilesCount").textContent = `${data.indexed_tiles_catalog || 909} GeoTIFFs`;
     if ($("statVectorsCount")) $("statVectorsCount").textContent = `${data.faiss_index_vectors || 908} (512-D)`;
     if ($("statModel")) $("statModel").textContent = data.embedding_model || "CLIP ViT-B/32 (512-D)";
-    if ($("statMode")) $("statMode").textContent = data.offline_mode || "100% On-Premises Local";
+    if ($("statMode")) $("statMode").textContent = data.offline_mode || "Local / On-Premises";
     if ($("telemetryBadge")) {
       $("telemetryBadge").textContent = "Operational";
       $("telemetryBadge").className = "badge indexed";
