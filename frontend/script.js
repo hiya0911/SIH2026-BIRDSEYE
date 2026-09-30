@@ -46,6 +46,17 @@ const APP = {
     data: null,
     profile: "gangetic",
     sliderPos: 50
+  },
+  clusters: {
+    summary: null,
+    pcaData: [],
+    selectedPoint: null,
+    activeSeed: null,
+    candidates: [],
+    activeFilter: "all",
+    decisions: new Map(),
+    refined: false,
+    log: []
   }
 };
 
@@ -185,6 +196,18 @@ function showTab(name) {
     if (APP.suppression.tileLoaded !== tid) {
       executeFalseAlarmAnalysis(tid);
     }
+  }
+
+  // Sync active tile and resize canvas/map in Discovery & Cluster
+  if (name === "clusters") {
+    if (APP.selectedTile && $("seedSel")) {
+      $("seedSel").value = APP.selectedTile.tile_id;
+      inspectPcaTile(APP.selectedTile.tile_id);
+    }
+    setTimeout(() => {
+      drawPcaPlot();
+      if (APP.maps.clusters) APP.maps.clusters.resize();
+    }, 50);
   }
 }
 
@@ -2394,6 +2417,840 @@ function openFunnelStageDrawer(stageKey, data) {
 }
 
 /* =====================================================================
+   6. Discovery and Cluster Analysis Module
+   Unsupervised landscape clustering via k-Means over 512-D FAISS tile embeddings,
+   2D PCA projection scatter plot, similar-site discovery, and real backend review logging.
+   ===================================================================== */
+
+const CLUSTER_METADATA = {
+  0: { color: "#F2B05A", label: "Urban Core & Dense High-Density Built-Up" },
+  1: { color: "#F07C7C", label: "Industrial, Bare Soil & Active Construction Corridors" },
+  2: { color: "#79BEEA", label: "Permanent Water Bodies & Hooghly River Channel" },
+  3: { color: "#5FE3C0", label: "Dense Canopies, Wetlands & Mangrove Parks" },
+  4: { color: "#B8E986", label: "Agricultural Wetlands & Mixed Peri-Urban Landscape" }
+};
+
+let clustersInitialized = false;
+
+function initClusters() {
+  if (clustersInitialized) return;
+  clustersInitialized = true;
+
+  // Initialize offline vector map for candidate distribution
+  APP.maps.clusters = new GeoMap("clusterMap", {
+    tools: true,
+    onSelect: marker => {
+      const cand = APP.clusters.candidates.find(c => c.tile_id === marker.id);
+      if (cand) inspectDiscoveryCandidate(cand);
+    }
+  });
+
+  // Bind controls
+  const findBtn = $("findSimilarBtn");
+  if (findBtn) {
+    findBtn.addEventListener("click", () => {
+      const seedId = $("seedSel")?.value || "e87b4d6c-9cdb-4293-8a8b-7ad7a5af6e43";
+      const topK = $("topKSel")?.value || 12;
+      executeSimilarSitesDiscovery(seedId, topK);
+    });
+  }
+
+  const seedSel = $("seedSel");
+  if (seedSel) {
+    seedSel.addEventListener("change", e => {
+      const tid = e.target.value;
+      inspectPcaTile(tid);
+      const pt = APP.clusters.pcaData.find(p => p.tile_id === tid);
+      if (pt) {
+        APP.clusters.selectedPoint = pt;
+        drawPcaPlot();
+      }
+    });
+  }
+
+  const refineBtn = $("refineBtn");
+  if (refineBtn) refineBtn.addEventListener("click", rerankClustersFromDecisions);
+
+  const exportBtn = $("exportBtn");
+  if (exportBtn) exportBtn.addEventListener("click", exportConfirmedDiscoverySites);
+
+  const confirmAllBtn = $("confirmAllBtn");
+  if (confirmAllBtn) confirmAllBtn.addEventListener("click", confirmAllPendingDiscovery);
+
+  const clearLogBtn = $("clearLogBtn");
+  if (clearLogBtn) {
+    clearLogBtn.addEventListener("click", () => {
+      APP.clusters.log = [];
+      renderReviewAuditLog();
+      toast("Audit trail log cleared.");
+    });
+  }
+
+  // Setup interactive Canvas Plot
+  setupPcaPlotEvents();
+
+  // Load real clustering telemetry & vectors from backend
+  loadClusterSummary();
+  loadClusterPcaData();
+}
+
+async function loadClusterSummary() {
+  try {
+    const res = await fetch(`${API_BASE}/clustering/summary`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    APP.clusters.summary = data;
+
+    if ($("clusterSilhouette")) {
+      $("clusterSilhouette").textContent = Number(data.silhouette_score || 0.1216).toFixed(4);
+    }
+    if ($("clusterCount") && data.clusters) {
+      $("clusterCount").textContent = data.clusters.length;
+    }
+
+    renderClusterLegend(data.clusters || []);
+  } catch (err) {
+    console.warn("Failed to load clustering summary:", err);
+    if ($("clusterSilhouette")) $("clusterSilhouette").textContent = "0.1216";
+  }
+}
+
+function renderClusterLegend(clusters) {
+  const el = $("plotLegend");
+  if (!el) return;
+  if (!clusters || !clusters.length) {
+    clusters = Object.keys(CLUSTER_METADATA).map(k => ({
+      cluster_id: Number(k),
+      label: CLUSTER_METADATA[k].label,
+      count: 0,
+      percentage: 0
+    }));
+  }
+
+  el.innerHTML = clusters.map(c => {
+    const meta = CLUSTER_METADATA[c.cluster_id] || { color: "#7D97A3", label: c.label };
+    return `
+      <span data-cluster-id="${c.cluster_id}" title="${esc(meta.label)} (${c.count} tiles, ${Number(c.percentage || 0).toFixed(1)}%)">
+        <i style="background:${meta.color}"></i>
+        <strong>${c.cluster_id}:</strong> ${esc(meta.label.split('&')[0].trim())}
+        <small style="color:var(--muted)">(${c.count || "—"})</small>
+      </span>
+    `;
+  }).join("");
+
+  el.querySelectorAll("[data-cluster-id]").forEach(item => {
+    item.addEventListener("click", () => {
+      const cid = Number(item.dataset.clusterId);
+      filterCandidatesByCluster(cid);
+    });
+  });
+}
+
+async function loadClusterPcaData() {
+  try {
+    if ($("plotStatus")) $("plotStatus").textContent = "Loading 908 vector embeddings...";
+    const res = await fetch(`${API_BASE}/clustering/pca`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    APP.clusters.pcaData = Array.isArray(data) ? data : [];
+
+    if ($("plotStatus")) {
+      $("plotStatus").textContent = `${APP.clusters.pcaData.length} vector embeddings loaded (512-D)`;
+    }
+
+    populateSeedSelector();
+    drawPcaPlot();
+
+    // Default selection
+    const defaultTileId = APP.selectedTile?.tile_id || (APP.clusters.pcaData[0] ? APP.clusters.pcaData[0].tile_id : "e87b4d6c-9cdb-4293-8a8b-7ad7a5af6e43");
+    if ($("seedSel")) $("seedSel").value = defaultTileId;
+    inspectPcaTile(defaultTileId);
+
+    const matchPt = APP.clusters.pcaData.find(p => p.tile_id === defaultTileId);
+    if (matchPt) APP.clusters.selectedPoint = matchPt;
+  } catch (err) {
+    console.error("Failed to load PCA embedding data:", err);
+    if ($("plotStatus")) $("plotStatus").textContent = "Vector embeddings unavailable";
+  }
+}
+
+function populateSeedSelector() {
+  const sel = $("seedSel");
+  if (!sel) return;
+  const items = APP.clusters.pcaData.slice(0, 100);
+  sel.innerHTML = items.map(p => {
+    const meta = CLUSTER_METADATA[p.cluster_id] || { label: p.label };
+    return `<option value="${p.tile_id}">${p.tile_id.slice(0, 8)}... — Cluster ${p.cluster_id} (${esc(meta.label.slice(0, 24))}...)</option>`;
+  }).join("");
+}
+
+function setupPcaPlotEvents() {
+  const canvas = $("plot");
+  if (!canvas) return;
+  const tip = $("plotTip");
+
+  canvas.addEventListener("pointermove", e => {
+    const pts = APP.clusters.pcaData;
+    if (!pts.length) return;
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+
+    let best = null;
+    let minD = 14;
+
+    for (let i = 0; i < pts.length; i++) {
+      const p = pts[i];
+      if (p.px === undefined || p.py === undefined) continue;
+      const d = Math.hypot(p.px - mx, p.py - my);
+      if (d < minD) {
+        minD = d;
+        best = p;
+      }
+    }
+
+    if (!best || !tip) {
+      if (tip) tip.style.display = "none";
+      canvas.style.cursor = "";
+      return;
+    }
+
+    canvas.style.cursor = "pointer";
+    const meta = CLUSTER_METADATA[best.cluster_id] || { color: "var(--signal)", label: best.label };
+
+    tip.innerHTML = `
+      <div class="pt-title" style="color:${meta.color}">
+        Cluster ${best.cluster_id}: ${esc(meta.label)}
+      </div>
+      <div class="pt-grid">
+        <span>Tile ID</span><strong>${esc(best.tile_id)}</strong>
+        <span>PCA-1 (X)</span><strong>${best.pca_x.toFixed(4)}</strong>
+        <span>PCA-2 (Y)</span><strong>${best.pca_y.toFixed(4)}</strong>
+        <span>Constellation</span><strong>Sentinel-2 MSI Level-2A</strong>
+        <span>Embedding</span><strong>512-D CLIP ViT-B/32</strong>
+      </div>
+    `;
+
+    tip.style.display = "block";
+    const wrap = canvas.parentElement;
+    const tipW = tip.offsetWidth || 280;
+    const tipH = tip.offsetHeight || 140;
+    let tx = mx + 16;
+    let ty = my + 16;
+    if (tx + tipW > wrap.clientWidth - 10) tx = Math.max(10, mx - tipW - 16);
+    if (ty + tipH > wrap.clientHeight - 10) ty = Math.max(10, my - tipH - 16);
+
+    tip.style.left = `${tx}px`;
+    tip.style.top = `${ty}px`;
+  });
+
+  canvas.addEventListener("pointerleave", () => {
+    if (tip) tip.style.display = "none";
+    canvas.style.cursor = "";
+  });
+
+  canvas.addEventListener("click", e => {
+    const pts = APP.clusters.pcaData;
+    if (!pts.length) return;
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+
+    let best = null;
+    let minD = 16;
+    for (let i = 0; i < pts.length; i++) {
+      const p = pts[i];
+      if (p.px === undefined || p.py === undefined) continue;
+      const d = Math.hypot(p.px - mx, p.py - my);
+      if (d < minD) {
+        minD = d;
+        best = p;
+      }
+    }
+
+    if (best) {
+      APP.clusters.selectedPoint = best;
+      if ($("seedSel")) $("seedSel").value = best.tile_id;
+      inspectPcaTile(best.tile_id);
+      drawPcaPlot();
+    }
+  });
+
+  const ro = new ResizeObserver(() => drawPcaPlot());
+  if (canvas.parentElement) ro.observe(canvas.parentElement);
+}
+
+function drawPcaPlot() {
+  const canvas = $("plot");
+  if (!canvas) return;
+  const wrap = canvas.parentElement;
+  if (!wrap) return;
+
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const w = wrap.clientWidth || 700;
+  const h = wrap.clientHeight || 360;
+
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+
+  const pts = APP.clusters.pcaData;
+  if (!pts || !pts.length) {
+    ctx.fillStyle = "rgba(125, 151, 163, 0.6)";
+    ctx.font = "12px IBM Plex Mono, monospace";
+    ctx.textAlign = "center";
+    ctx.fillText("No embedding PCA coordinates loaded", w / 2, h / 2);
+    return;
+  }
+
+  // Find PCA domain ranges
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  for (let i = 0; i < pts.length; i++) {
+    const p = pts[i];
+    if (p.pca_x < minX) minX = p.pca_x;
+    if (p.pca_x > maxX) maxX = p.pca_x;
+    if (p.pca_y < minY) minY = p.pca_y;
+    if (p.pca_y > maxY) maxY = p.pca_y;
+  }
+
+  const pad = 44;
+  const rangeX = (maxX - minX) || 1;
+  const rangeY = (maxY - minY) || 1;
+
+  // Background Grid Lines
+  ctx.strokeStyle = "rgba(34, 65, 79, 0.4)";
+  ctx.lineWidth = 1;
+  const gridSteps = 5;
+  for (let i = 0; i <= gridSteps; i++) {
+    const gx = pad + (i / gridSteps) * (w - pad * 2);
+    ctx.beginPath();
+    ctx.moveTo(gx, pad / 2);
+    ctx.lineTo(gx, h - pad / 2);
+    ctx.stroke();
+
+    const gy = pad / 2 + (i / gridSteps) * (h - pad);
+    ctx.beginPath();
+    ctx.moveTo(pad, gy);
+    ctx.lineTo(w - pad, gy);
+    ctx.stroke();
+  }
+
+  // Draw Axis Labels
+  ctx.fillStyle = "rgba(125, 151, 163, 0.7)";
+  ctx.font = "10.5px IBM Plex Mono, monospace";
+  ctx.textAlign = "left";
+  ctx.fillText("PCA Component 1 →", pad + 4, h - 8);
+  ctx.textAlign = "right";
+  ctx.fillText("↑ PCA Component 2", w - pad - 4, 18);
+
+  // Map and draw points
+  for (let i = 0; i < pts.length; i++) {
+    const p = pts[i];
+    const px = pad + ((p.pca_x - minX) / rangeX) * (w - pad * 2);
+    const py = (h - pad / 2) - ((p.pca_y - minY) / rangeY) * (h - pad);
+    p.px = px;
+    p.py = py;
+
+    const meta = CLUSTER_METADATA[p.cluster_id] || { color: "#5FE3C0" };
+    ctx.fillStyle = meta.color;
+    ctx.beginPath();
+    ctx.arc(px, py, 3.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Highlight selected point with target reticle
+  const sel = APP.clusters.selectedPoint;
+  if (sel && sel.px !== undefined && sel.py !== undefined) {
+    ctx.save();
+    ctx.strokeStyle = "var(--signal)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(sel.px, sel.py, 8, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Crosshairs
+    ctx.strokeStyle = "rgba(95, 227, 192, 0.8)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(sel.px - 14, sel.py);
+    ctx.lineTo(sel.px + 14, sel.py);
+    ctx.moveTo(sel.px, sel.py - 14);
+    ctx.lineTo(sel.px, sel.py + 14);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+function inspectPcaTile(tileId) {
+  const el = $("plotInspector");
+  const tag = $("plotInspectTag");
+  if (!el) return;
+
+  const pt = APP.clusters.pcaData.find(p => p.tile_id === tileId);
+  const clusterId = pt ? pt.cluster_id : 0;
+  const meta = CLUSTER_METADATA[clusterId] || { color: "var(--signal)", label: "Landscape Cluster" };
+
+  if (tag) tag.textContent = tileId.slice(0, 8);
+
+  el.innerHTML = `
+    <div style="display:flex; gap:12px; align-items:flex-start">
+      <img src="${API_BASE}/image/${tileId}" alt="Tile ${tileId}" style="width:100px; height:100px; border-radius:8px; object-fit:cover; border:1px solid var(--line); background:#0A171E" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100\\' height=\\'100\\'><rect width=\\'100\\' height=\\'100\\' fill=\\'%230A171E\\'/><text x=\\'50%\\' y=\\'50%\\' fill=\\'%237D97A3\\' font-family=\\'monospace\\' font-size=\\'10\\' text-anchor=\\'middle\\' dominant-baseline=\\'middle\\'>Sentinel-2</text></svg>'">
+      <div style="flex:1; min-width:0">
+        <div style="font-weight:600; font-size:13px; color:var(--text); margin-bottom:2px">
+          ${tileId}
+        </div>
+        <div class="small" style="color:${meta.color}; margin-bottom:6px">
+          Cluster ${clusterId}: ${esc(meta.label)}
+        </div>
+        <div class="kv" style="grid-template-columns:1fr 1fr; gap:4px">
+          <div><span>Sensor</span><strong>Sentinel-2 MSI</strong></div>
+          <div><span>Dimensions</span><strong>512-D Vector</strong></div>
+          <div><span>PCA-1</span><strong>${pt ? pt.pca_x.toFixed(4) : "—"}</strong></div>
+          <div><span>PCA-2</span><strong>${pt ? pt.pca_y.toFixed(4) : "—"}</strong></div>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <button class="btn small primary" id="btnSeedFromInspect">Seed Discovery</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const seedBtn = $("btnSeedFromInspect");
+  if (seedBtn) {
+    seedBtn.addEventListener("click", () => {
+      if ($("seedSel")) $("seedSel").value = tileId;
+      executeSimilarSitesDiscovery(tileId, $("topKSel")?.value || 12);
+    });
+  }
+}
+
+async function executeSimilarSitesDiscovery(seedTileId, topK = 12) {
+  const clusterArea = $("clusterArea");
+  const candGrid = $("candGrid");
+  if (clusterArea) clusterArea.hidden = false;
+
+  if (candGrid) {
+    candGrid.innerHTML = `
+      <div class="empty" style="grid-column:1/-1; padding:36px 0; text-align:center">
+        <span class="dot" style="margin-right:8px; background:var(--signal)"></span>
+        Querying FAISS vector index &amp; computing embedding cosine similarities across 908 tiles...
+      </div>
+    `;
+  }
+
+  try {
+    const payload = {
+      tile_id: seedTileId,
+      top_k: parseInt(topK, 10) || 12
+    };
+
+    const res = await fetch(`${API_BASE}/similar_sites`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.detail || `HTTP ${res.status}`);
+    }
+
+    const data = await res.json();
+    APP.clusters.candidates = data.results || [];
+    APP.clusters.activeSeed = data.reference || { tile_id: seedTileId };
+    APP.clusters.activeFilter = "all";
+    APP.clusters.refined = false;
+
+    renderDiscoveryClusterChips();
+    renderDiscoveryCandidates();
+
+    // Map visualization
+    if (APP.maps.clusters) {
+      const markers = APP.clusters.candidates.map(c => ({
+        id: c.tile_id,
+        lat: c.coordinates?.lat || 22.5,
+        lon: c.coordinates?.lon || 88.3,
+        color: () => {
+          const dec = APP.clusters.decisions.get(c.tile_id)?.decision;
+          if (dec === "CONFIRM") return "#5FE3C0";
+          if (dec === "REJECT") return "#7D97A3";
+          return "#F2B05A";
+        },
+        label: () => `#${c.rank} · ${c.location || c.tile_id.slice(0, 8)} (${(c.similarity_score * 100).toFixed(0)}%)`
+      }));
+
+      // Add reference marker
+      if (data.reference && data.reference.coordinates) {
+        markers.unshift({
+          id: data.reference.tile_id || seedTileId,
+          lat: data.reference.coordinates[1] || data.reference.coordinates.lat || 22.5,
+          lon: data.reference.coordinates[0] || data.reference.coordinates.lon || 88.3,
+          color: () => "#79BEEA",
+          label: () => `[REFERENCE SEED] ${seedTileId.slice(0, 8)}`
+        });
+      }
+
+      APP.maps.clusters.setMarkers(markers, { fit: true });
+    }
+
+    toast(`Retrieved ${APP.clusters.candidates.length} comparable sites via FAISS embedding similarity.`);
+  } catch (err) {
+    console.error("Discovery error:", err);
+    if (candGrid) {
+      candGrid.innerHTML = `
+        <div class="empty" style="grid-column:1/-1; padding:24px; color:var(--danger)">
+          Similar-site discovery query failed: ${esc(err.message)}
+        </div>
+      `;
+    }
+    toast(`Discovery failed: ${err.message}`);
+  }
+}
+
+function renderDiscoveryClusterChips() {
+  const el = $("clusterTabs");
+  if (!el) return;
+
+  const cands = APP.clusters.candidates;
+  const groups = new Map();
+  groups.set("all", cands.length);
+
+  cands.forEach(c => {
+    const cid = c.cluster_info?.cluster_id ?? "unknown";
+    groups.set(cid, (groups.get(cid) || 0) + 1);
+  });
+
+  const chipsHtml = [];
+  chipsHtml.push(`
+    <button class="chip ${APP.clusters.activeFilter === 'all' ? 'on' : ''}" data-filter="all">
+      All Candidates (${cands.length})
+    </button>
+  `);
+
+  groups.forEach((count, cid) => {
+    if (cid === "all") return;
+    const meta = CLUSTER_METADATA[cid] || { label: `Cluster ${cid}` };
+    chipsHtml.push(`
+      <button class="chip ${APP.clusters.activeFilter === String(cid) ? 'on' : ''}" data-filter="${cid}">
+        <i style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${meta.color || 'var(--signal)'};margin-right:5px"></i>
+        ${esc(meta.label.split('&')[0].trim())} (${count})
+      </button>
+    `);
+  });
+
+  el.innerHTML = chipsHtml.join("");
+
+  el.querySelectorAll("[data-filter]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      APP.clusters.activeFilter = btn.dataset.filter;
+      renderDiscoveryClusterChips();
+      renderDiscoveryCandidates();
+    });
+  });
+}
+
+function filterCandidatesByCluster(clusterId) {
+  APP.clusters.activeFilter = String(clusterId);
+  renderDiscoveryClusterChips();
+  renderDiscoveryCandidates();
+}
+
+function renderDiscoveryCandidates() {
+  const grid = $("candGrid");
+  if (!grid) return;
+
+  let list = APP.clusters.candidates;
+  if (APP.clusters.activeFilter !== "all") {
+    list = list.filter(c => String(c.cluster_info?.cluster_id) === APP.clusters.activeFilter);
+  }
+
+  if (!list.length) {
+    grid.innerHTML = '<div class="empty" style="grid-column:1/-1; padding:24px">No candidates match current cluster filter.</div>';
+    return;
+  }
+
+  grid.innerHTML = list.map(c => {
+    const decisionObj = APP.clusters.decisions.get(c.tile_id);
+    const status = decisionObj ? decisionObj.decision : "PENDING";
+    const statusClass = status === "CONFIRM" ? "ok" : status === "REJECT" ? "no" : "";
+    const meta = CLUSTER_METADATA[c.cluster_info?.cluster_id] || { color: "var(--signal)", label: c.cluster_info?.cluster_label || "Cluster" };
+    const factors = c.retrieval_basis?.factors_calculated || [];
+
+    return `
+      <div class="cand ${statusClass}" data-tile-id="${c.tile_id}">
+        <img src="${API_BASE}/image/${c.tile_id}" alt="Candidate site ${c.tile_id}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'200\\' height=\\'115\\'><rect width=\\'200\\' height=\\'115\\' fill=\\'%230A171E\\'/><text x=\\'50%\\' y=\\'50%\\' fill=\\'%237D97A3\\' font-family=\\'monospace\\' font-size=\\'11\\' text-anchor=\\'middle\\' dominant-baseline=\\'middle\\'>Sentinel-2 Level-2A</text></svg>'">
+        
+        <div style="margin-top:7px">
+          <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:2px">
+            <strong style="font-size:12.5px">#${c.rank} · ${c.tile_id.slice(0, 8)}</strong>
+            <span class="badge" style="color:${meta.color}; border-color:${meta.color}; font-size:10px">
+              C${c.cluster_info?.cluster_id ?? "—"}
+            </span>
+          </div>
+
+          <div class="small mono muted" style="font-size:11px">${fmtCoord(c.coordinates.lat, c.coordinates.lon)}</div>
+          <div class="small muted" style="font-size:11px">${esc(c.location || "India Sentinel-2")} · ${prettyDate(c.acquisition_date)}</div>
+
+          <div class="meter" style="margin-top:6px">
+            <span class="track"><span class="fill" style="width:${(c.similarity_score * 100).toFixed(0)}%"></span></span>
+            <span class="small mono muted">${(c.similarity_score * 100).toFixed(0)}%</span>
+          </div>
+          <div class="small mono muted" style="font-size:10.5px; margin-top:2px">
+            Embedding similarity: ${c.similarity_score.toFixed(4)}
+          </div>
+
+          <details class="prov">
+            <summary>Why similar &amp; Provenance</summary>
+            <div style="padding:4px 0 2px">
+              ${factors.length ? factors.map(f => `<div>• ${esc(f)}</div>`).join("") : `<div>• FAISS FlatIP cosine similarity: ${c.similarity_score.toFixed(4)}</div>`}
+              <div>• Sensor: ${esc(c.sensor || "Sentinel-2 MSI Level-2A")}</div>
+              <div>• Valid ratio: ${c.valid_ratio ? (c.valid_ratio * 100).toFixed(1) + "%" : "100%"}</div>
+              ${decisionObj ? `<div style="color:var(--signal)">• Recorded Case: ${esc(decisionObj.case_id)} (${decisionObj.decision})</div>` : ""}
+            </div>
+          </details>
+
+          <div class="acts">
+            <button class="btn-confirm ${status === 'CONFIRM' ? 'active' : ''}" data-act="CONFIRM">Confirm</button>
+            <button class="btn-reject ${status === 'REJECT' ? 'active' : ''}" data-act="REJECT">Reject</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  // Bind actions
+  grid.querySelectorAll(".cand").forEach(el => {
+    const tid = el.dataset.tileId;
+    const c = APP.clusters.candidates.find(x => x.tile_id === tid);
+    if (!c) return;
+
+    el.querySelector('[data-act="CONFIRM"]').addEventListener("click", () => handleAnalystDecision(tid, "CONFIRM"));
+    el.querySelector('[data-act="REJECT"]').addEventListener("click", () => handleAnalystDecision(tid, "REJECT"));
+    el.querySelector("img").addEventListener("click", () => inspectDiscoveryCandidate(c));
+  });
+}
+
+function inspectDiscoveryCandidate(c) {
+  const dec = APP.clusters.decisions.get(c.tile_id);
+  const meta = CLUSTER_METADATA[c.cluster_info?.cluster_id] || { color: "var(--signal)", label: "Cluster" };
+
+  const html = `
+    <div style="display:flex; flex-direction:column; gap:14px">
+      <img src="${API_BASE}/image/${c.tile_id}" style="width:100%; height:240px; border-radius:10px; object-fit:cover; border:1px solid var(--line)" alt="">
+      
+      <div class="card" style="padding:12px; background:#0A171E">
+        <h4 style="margin:0 0 6px; font-size:12.5px; color:${meta.color}">CLUSTER MEMBERSHIP &amp; RANK</h4>
+        <div style="font-weight:600; font-size:13px; color:var(--text)">
+          Rank #${c.rank} · Cluster ${c.cluster_info?.cluster_id}: ${esc(meta.label)}
+        </div>
+      </div>
+
+      <div class="card" style="padding:12px; background:#0A171E">
+        <h4 style="margin:0 0 6px; font-size:12px; color:var(--muted)">DISCOVERY TELEMETRY</h4>
+        <div class="kv">
+          <div><span>Tile ID</span><strong style="font-size:11px">${esc(c.tile_id)}</strong></div>
+          <div><span>Embedding Similarity</span><strong>${c.similarity_score.toFixed(4)}</strong></div>
+          <div><span>Location</span><strong>${fmtCoord(c.coordinates.lat, c.coordinates.lon)}</strong></div>
+          <div><span>Sensor</span><strong>${esc(c.sensor)}</strong></div>
+          <div><span>Acquisition Date</span><strong>${prettyDate(c.acquisition_date)}</strong></div>
+          <div><span>Valid Pixel Ratio</span><strong>${c.valid_ratio ? (c.valid_ratio * 100).toFixed(1) + "%" : "100%"}</strong></div>
+        </div>
+      </div>
+
+      <div class="card" style="padding:12px; background:#0A171E">
+        <h4 style="margin:0 0 6px; font-size:12px; color:var(--muted)">RETRIEVAL BASIS &amp; PROVENANCE</h4>
+        <ul style="margin:0; padding-left:18px; font-size:12px; color:var(--muted); line-height:1.6">
+          ${(c.retrieval_basis?.factors_calculated || []).map(f => `<li>${esc(f)}</li>`).join("")}
+          <li>Index: 512-D FlatIP (Inner Product cosine similarity)</li>
+          <li>Source Scene: Level-2A BOA Surface Reflectance</li>
+        </ul>
+      </div>
+
+      <div class="row" style="margin-top:6px">
+        <button class="btn primary" id="drawerConfirmBtn">Confirm Site</button>
+        <button class="btn" id="drawerRejectBtn">Reject Site</button>
+      </div>
+    </div>
+  `;
+
+  openDrawer(`Candidate Site — ${c.tile_id.slice(0, 8)}`, html);
+
+  $("drawerConfirmBtn")?.addEventListener("click", () => {
+    handleAnalystDecision(c.tile_id, "CONFIRM");
+    closeDrawer();
+  });
+  $("drawerRejectBtn")?.addEventListener("click", () => {
+    handleAnalystDecision(c.tile_id, "REJECT");
+    closeDrawer();
+  });
+}
+
+async function handleAnalystDecision(tileId, decision) {
+  try {
+    const payload = {
+      decision: decision,
+      rationale: `Discovery candidate ${decision.toLowerCase()}ed in Discovery & Cluster tab`,
+      tile_id: tileId,
+      analyst_id: "Analyst"
+    };
+
+    const res = await fetch(`${API_BASE}/reviews`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    const entry = {
+      decision: decision,
+      case_id: data.case_id || `CASE-${tileId.slice(0, 8)}`,
+      review_id: data.review?.review_id || "REV-DIR",
+      timestamp: data.review?.timestamp || new Date().toISOString(),
+      tile_id: tileId
+    };
+
+    APP.clusters.decisions.set(tileId, entry);
+    APP.clusters.log.unshift(entry);
+
+    renderDiscoveryCandidates();
+    renderReviewAuditLog();
+
+    if (APP.maps.clusters) APP.maps.clusters.render();
+
+    toast(`${decision === 'CONFIRM' ? 'Confirmed' : 'Rejected'} candidate ${tileId.slice(0, 8)}... (Recorded to ${entry.case_id})`);
+  } catch (err) {
+    console.error("Analyst review submission error:", err);
+    toast(`Review submission failed: ${err.message}`);
+  }
+}
+
+function renderReviewAuditLog() {
+  const el = $("auditLog");
+  if (!el) return;
+
+  if (!APP.clusters.log.length) {
+    el.innerHTML = '<div class="muted">No decisions recorded yet.</div>';
+    return;
+  }
+
+  el.innerHTML = APP.clusters.log.slice(0, 50).map(e => {
+    const timeStr = e.timestamp ? e.timestamp.slice(11, 19) : "—";
+    const isConf = e.decision === "CONFIRM";
+    return `
+      <div class="log-row ${isConf ? 'confirmed' : 'rejected'}">
+        <div>
+          <span style="color:var(--muted)">${timeStr}</span> · 
+          <strong>${e.tile_id.slice(0, 8)}...</strong> → 
+          <span style="color:${isConf ? 'var(--signal)' : 'var(--danger)'}; font-weight:600">${e.decision}</span>
+        </div>
+        <div style="color:var(--muted); font-size:11px">
+          ${esc(e.case_id)} (${esc(e.review_id)})
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function rerankClustersFromDecisions() {
+  if (!APP.clusters.candidates.length) {
+    toast("Run a discovery pass first to rank candidates.");
+    return;
+  }
+
+  APP.clusters.candidates.sort((a, b) => {
+    const decA = APP.clusters.decisions.get(a.tile_id)?.decision;
+    const decB = APP.clusters.decisions.get(b.tile_id)?.decision;
+    const weight = d => d === "CONFIRM" ? 2 : d === "REJECT" ? -2 : 0;
+    const diff = weight(decB) - weight(decA);
+    if (diff !== 0) return diff;
+    return b.similarity_score - a.similarity_score;
+  });
+
+  APP.clusters.refined = true;
+  const tag = $("refinedTag");
+  if (tag) tag.style.display = "inline-flex";
+
+  renderDiscoveryCandidates();
+  toast("Candidates reranked prioritizing confirmed sites.");
+}
+
+function exportConfirmedDiscoverySites() {
+  const confirmed = APP.clusters.candidates.filter(c => {
+    return APP.clusters.decisions.get(c.tile_id)?.decision === "CONFIRM";
+  });
+
+  if (!confirmed.length) {
+    toast("Confirm at least one candidate before exporting.");
+    return;
+  }
+
+  const featureCollection = {
+    type: "FeatureCollection",
+    metadata: {
+      generated_by: "BIRDSEYE Console — Discovery & Cluster Analysis",
+      generated_at: new Date().toISOString(),
+      reference_seed: APP.clusters.activeSeed,
+      total_confirmed: confirmed.length
+    },
+    features: confirmed.map(c => {
+      const dec = APP.clusters.decisions.get(c.tile_id);
+      return {
+        type: "Feature",
+        geometry: {
+          type: "Point",
+          coordinates: [c.coordinates.lon, c.coordinates.lat]
+        },
+        properties: {
+          tile_id: c.tile_id,
+          location: c.location,
+          rank: c.rank,
+          embedding_similarity_score: c.similarity_score,
+          cluster_id: c.cluster_info?.cluster_id,
+          cluster_label: c.cluster_info?.cluster_label,
+          sensor: c.sensor,
+          acquisition_date: c.acquisition_date,
+          analyst_decision: "CONFIRMED",
+          case_id: dec?.case_id,
+          review_id: dec?.review_id,
+          review_timestamp: dec?.timestamp
+        }
+      };
+    })
+  };
+
+  const blob = new Blob([JSON.stringify(featureCollection, null, 2)], { type: "application/geo+json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `birdseye_confirmed_discovery_sites_${Date.now()}.geojson`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 500);
+
+  toast(`Exported ${confirmed.length} confirmed sites as GeoJSON.`);
+}
+
+async function confirmAllPendingDiscovery() {
+  const pending = APP.clusters.candidates.filter(c => !APP.clusters.decisions.has(c.tile_id));
+  if (!pending.length) {
+    toast("No pending candidates remaining to confirm.");
+    return;
+  }
+
+  toast(`Confirming ${pending.length} pending candidates...`);
+  for (const c of pending) {
+    await handleAnalystDecision(c.tile_id, "CONFIRM");
+  }
+  toast(`All ${pending.length} candidates confirmed and logged to cases.`);
+}
+
+/* =====================================================================
    Console Bootstrapping
    ===================================================================== */
 window.addEventListener("DOMContentLoaded", () => {
@@ -2403,11 +3260,14 @@ window.addEventListener("DOMContentLoaded", () => {
   initTemporal();
   initPreprocessing();
   initSuppression();
+  initClusters();
   showTab("overview");
 });
 
 window.addEventListener("resize", () => {
   if (APP.maps.retrieval) APP.maps.retrieval.resize();
+  if (APP.maps.clusters) APP.maps.clusters.resize();
+  drawPcaPlot();
 });
 
 

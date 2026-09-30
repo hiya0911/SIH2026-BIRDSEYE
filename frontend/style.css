@@ -1254,6 +1254,216 @@ input[type=range].slider-control {
   font-family: var(--font-mono);
 }
 
+/* ---------------- 6. Discovery & Cluster Analysis ---------------- */
+.plotwrap {
+  position: relative;
+  height: 360px;
+  background: #0A171E;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  overflow: hidden;
+}
+
+.plotwrap canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.plot-tip {
+  position: absolute;
+  z-index: 20;
+  pointer-events: none;
+  display: none;
+  min-width: 260px;
+  max-width: 360px;
+  background: rgba(6, 14, 18, .97);
+  border: 1px solid var(--signal);
+  border-radius: 9px;
+  padding: 10px 14px;
+  box-shadow: 0 8px 28px rgba(0,0,0,.6);
+  backdrop-filter: blur(8px);
+}
+
+.plot-tip .pt-title {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 6px;
+  border-bottom: 1px solid var(--line-soft);
+  padding-bottom: 4px;
+}
+
+.plot-tip .pt-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 3px 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.plot-tip .pt-grid span { color: var(--muted); }
+.plot-tip .pt-grid strong { color: var(--text); font-weight: 500; white-space: normal; }
+
+.legend {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  transition: all .15s;
+}
+
+.legend span:hover {
+  background: var(--panel-2);
+  border-color: var(--line-soft);
+  color: var(--text);
+}
+
+.legend i {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.cand-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 12px;
+}
+
+.cand {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: border-color .15s, opacity .15s, box-shadow .15s;
+}
+
+.cand:hover {
+  border-color: var(--signal);
+}
+
+.cand.ok {
+  border-color: var(--signal);
+  box-shadow: 0 0 12px rgba(95, 227, 192, .18);
+  background: linear-gradient(180deg, rgba(95, 227, 192, 0.05), var(--panel));
+}
+
+.cand.no {
+  opacity: 0.45;
+  border-color: var(--danger);
+}
+
+.cand img {
+  width: 100%;
+  height: 115px;
+  border-radius: 7px;
+  object-fit: cover;
+  background: #0A171E;
+  cursor: pointer;
+  border: 1px solid var(--line-soft);
+  transition: transform .15s;
+}
+
+.cand img:hover {
+  transform: scale(1.02);
+}
+
+.cand .acts {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.cand .acts button {
+  flex: 1;
+  font-size: 11.5px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--text);
+  cursor: pointer;
+  transition: all .12s;
+}
+
+.cand .acts button:hover {
+  border-color: var(--signal);
+  color: var(--signal);
+}
+
+.cand .acts button.btn-confirm.active {
+  background: rgba(95, 227, 192, .25);
+  border-color: var(--signal);
+  color: var(--signal);
+  font-weight: 600;
+}
+
+.cand .acts button.btn-reject.active {
+  background: rgba(240, 124, 124, .25);
+  border-color: var(--danger);
+  color: var(--danger);
+  font-weight: 600;
+}
+
+details.prov {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--muted);
+  border-top: 1px dashed var(--line-soft);
+  padding-top: 4px;
+}
+
+details.prov summary {
+  cursor: pointer;
+  user-select: none;
+}
+
+details.prov summary:hover {
+  color: var(--signal);
+}
+
+.log {
+  max-height: 240px;
+  overflow-y: auto;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  display: grid;
+  gap: 4px;
+  padding: 4px 0;
+  scrollbar-width: thin;
+}
+
+.log-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: #0A171E;
+  border-left: 2px solid var(--line);
+}
+
+.log-row.confirmed { border-left-color: var(--signal); }
+.log-row.rejected { border-left-color: var(--danger); }
+
 /* ---------------- Footer ---------------- */
 footer.app-footer {
   border-top: 1px solid var(--line);
