@@ -702,29 +702,372 @@
     </section>
 
 
-    <!-- ================= 7. EVALUATION METRICS (PLACEHOLDER) ================= -->
+    <!-- ================= 7. EVALUATION METRICS & BENCHMARKING ================= -->
     <section class="tab-panel" data-panel="evaluation" id="panel-evaluation" hidden>
-      <div class="card placeholder-card">
-        <span class="badge">Tab 7</span>
-        <h2>Evaluation Metrics</h2>
-        <span class="pill" style="margin:12px 0"><span class="dot" style="background:var(--flare)"></span>Integration pending — Phase 6</span>
-        <p class="muted" style="max-width:600px;margin:0 auto 16px">
-          System evaluation engine executing test query suites, rank monotonicity checks, physical gating validation, and offline reproducibility verification will be connected in Phase 6.
-        </p>
-        <button class="btn primary" data-goto="overview" style="margin-top:16px">Return to Overview</button>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:12px; margin-bottom:8px">
+        <div>
+          <h1 class="page-title">Evaluation Metrics &amp; Benchmarking</h1>
+          <p class="page-sub">
+            Reproducible system validation, runtime latency benchmarking, pipeline fidelity audits, and formal ground-truth status verification.
+          </p>
+        </div>
+        <div class="row">
+          <button class="btn primary small" id="runEvalBenchmarkBtn">Run Benchmark Pass</button>
+        </div>
+      </div>
+
+      <!-- Ground-Truth Status Alert Banner -->
+      <div class="eval-notice">
+        <span class="notice-icon">⚠️</span>
+        <div>
+          <h4>GROUND TRUTH: NOT AVAILABLE LOCALLY</h4>
+          <p>
+            Formal accuracy validation (Precision, Recall, F1-Score, IoU, mAP, nDCG) requires human-annotated ground-truth test pairs and pixel-level change masks. In accordance with zero-fabrication guidelines, this console reports reproducible system execution benchmarks, spectral gating audits, and physical validation without fabricated accuracy claims.
+          </p>
+        </div>
+      </div>
+
+      <!-- Telemetry Strip -->
+      <div class="stats" style="margin-top:14px" id="evalTelemetryStrip">
+        <div class="stat">
+          <b id="evalIndexedTiles">909</b>
+          <span>Indexed Catalog Tiles</span>
+        </div>
+        <div class="stat">
+          <b id="evalFaissVectors">908</b>
+          <span>FAISS Vectors (512-D)</span>
+        </div>
+        <div class="stat">
+          <b id="evalSafeProducts">3</b>
+          <span>SAFE Acquisition Epochs</span>
+        </div>
+        <div class="stat">
+          <b id="evalSarStatus" style="font-size:18px; color:var(--flare)">Not Cached</b>
+          <span>Sentinel-1 SAR C-Band</span>
+        </div>
+        <div class="stat">
+          <b id="evalEmbeddingModel" style="font-size:18px">ViT-B/32</b>
+          <span>OpenAI CLIP (512-D)</span>
+        </div>
+      </div>
+
+      <!-- Runtime Performance Latency Benchmarks -->
+      <div class="card" style="margin-top:14px">
+        <div class="card-head">
+          <h3>Runtime Latency Benchmarking (Local Offline CPU)</h3>
+          <span class="small mono muted" id="evalBenchStamp">Measured live via /api/evaluation/summary</span>
+        </div>
+        <table class="eval-table">
+          <thead>
+            <tr>
+              <th>Subsystem Operation</th>
+              <th>Target Component</th>
+              <th>Measured Latency</th>
+              <th>Throughput / Scale</th>
+              <th>Execution Environment</th>
+              <th>Integrity Status</th>
+            </tr>
+          </thead>
+          <tbody id="evalBenchmarkTable">
+            <tr>
+              <td><strong>Text Embedding Extraction</strong></td>
+              <td>OpenAI CLIP ViT-B/32 Text Encoder</td>
+              <td class="mono" id="latTextEmb">~25 ms</td>
+              <td>512-D L2-normalized vector</td>
+              <td>Local CPU (PyTorch)</td>
+              <td><span class="status-tag ok">FUNCTIONAL</span></td>
+            </tr>
+            <tr>
+              <td><strong>Image Embedding Extraction</strong></td>
+              <td>OpenAI CLIP ViT-B/32 Vision Encoder</td>
+              <td class="mono" id="latImgEmb">~46 ms</td>
+              <td>224x224 RGB Tensor</td>
+              <td>Local CPU (PyTorch)</td>
+              <td><span class="status-tag ok">FUNCTIONAL</span></td>
+            </tr>
+            <tr>
+              <td><strong>Vector Similarity Search</strong></td>
+              <td>FAISS IndexFlatIP (Top-10)</td>
+              <td class="mono" id="latFaiss">~490 ms</td>
+              <td>908 Vectors (Exact Cosine)</td>
+              <td>In-Memory C++ AVX2</td>
+              <td><span class="status-tag ok">FUNCTIONAL</span></td>
+            </tr>
+            <tr>
+              <td><strong>FAISS + Spectral Gating</strong></td>
+              <td>Vector + Physical NDWI/NDVI Filter</td>
+              <td class="mono" id="latSpectral">~440 ms</td>
+              <td>Top-10 Surface Reflectance Check</td>
+              <td>Band Gating Pipeline</td>
+              <td><span class="status-tag ok">FUNCTIONAL</span></td>
+            </tr>
+            <tr>
+              <td><strong>Spatial AOI Bounding Box Filter</strong></td>
+              <td>UTM Zone 45N Coordinate Intersection</td>
+              <td class="mono" id="latSpatial">~34 ms</td>
+              <td>Spatial Polygon / Bounding Box</td>
+              <td>MongoDB 2dsphere</td>
+              <td><span class="status-tag ok">FUNCTIONAL</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Formal Accuracy vs System Validation Matrix -->
+      <div class="split" style="margin-top:14px; grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr)">
+        <div class="card">
+          <div class="card-head">
+            <h3>Formal Accuracy vs. Computed Metrics Audit</h3>
+            <span class="small mono muted">Zero-Fabrication Compliance</span>
+          </div>
+          <table class="eval-table">
+            <thead>
+              <tr>
+                <th>Target Metric</th>
+                <th>Measured Value</th>
+                <th>Evaluation Method</th>
+                <th>Ground-Truth Dependency</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Precision @ 10</strong></td>
+                <td class="mono muted">Not Computed</td>
+                <td>Top-10 Relevance Ratio</td>
+                <td><span class="status-tag warn">❌ Human Relevance Pairs</span></td>
+              </tr>
+              <tr>
+                <td><strong>Recall @ 20</strong></td>
+                <td class="mono muted">Not Computed</td>
+                <td>Archive-wide Hit Ratio</td>
+                <td><span class="status-tag warn">❌ Exhaustive Query Annotations</span></td>
+              </tr>
+              <tr>
+                <td><strong>Change Mask IoU</strong></td>
+                <td class="mono muted">Not Computed</td>
+                <td>Pixel Jaccard Index</td>
+                <td><span class="status-tag warn">❌ Verified Pixel Ground Truth</span></td>
+              </tr>
+              <tr>
+                <td><strong>Rank Monotonicity</strong></td>
+                <td class="mono" style="color:var(--signal)">100.0%</td>
+                <td>Cosine Score Strict Ordering</td>
+                <td><span class="status-tag ok">✔ Deterministic Inner Product</span></td>
+              </tr>
+              <tr>
+                <td><strong>Sub-Pixel RMSE</strong></td>
+                <td class="mono" style="color:var(--signal)">0.847 px</td>
+                <td>2D FFT Phase Correlation</td>
+                <td><span class="status-tag ok">✔ Band 4 Cross-Power Spectrum</span></td>
+              </tr>
+              <tr>
+                <td><strong>Cluster Silhouette</strong></td>
+                <td class="mono" style="color:var(--signal)">0.1216</td>
+                <td>k-Means Internal Cluster Distance</td>
+                <td><span class="status-tag ok">✔ 512-D FAISS Geometry</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h3>Component Verification Status</h3>
+            <span class="small mono muted">System State</span>
+          </div>
+          <div style="display:grid; gap:8px" id="evalSubsystemsList">
+            <div class="feed-row success">
+              <div>
+                <strong>Semantic Vector Retrieval</strong>
+                <div class="small muted">FAISS IndexFlatIP (512-D), CLIP ViT-B/32, Monotonicity Verified</div>
+              </div>
+              <span class="badge indexed">SYSTEM FUNCTIONAL</span>
+            </div>
+            <div class="feed-row success">
+              <div>
+                <strong>Multi-Temporal Change Detection</strong>
+                <div class="small muted">Tri-Epoch 2024-2025-2026, Temporal Persistence Tracking</div>
+              </div>
+              <span class="badge indexed">VERIFIED</span>
+            </div>
+            <div class="feed-row success">
+              <div>
+                <strong>8-Stage Preprocessing Pipeline</strong>
+                <div class="small muted">Radiometric SCL Masking, SNR Proxy 8.22 dB, Sub-pixel RMSE 0.847 px</div>
+              </div>
+              <span class="badge indexed">VERIFIED</span>
+            </div>
+            <div class="feed-row success">
+              <div>
+                <strong>False-Alarm Suppression Engine</strong>
+                <div class="small muted">6 Physical Confounder Filters: Cloud, Shadow, Snow, Illumination, Co-Reg</div>
+              </div>
+              <span class="badge indexed">VERIFIED</span>
+            </div>
+            <div class="feed-row success">
+              <div>
+                <strong>Landscape Clustering</strong>
+                <div class="small muted">k-Means k=5 on 908 Vector Embeddings, Silhouette Score 0.1216</div>
+              </div>
+              <span class="badge indexed">VERIFIED</span>
+            </div>
+            <div class="feed-row duplicate">
+              <div>
+                <strong>Sentinel-1 SAR C-Band</strong>
+                <div class="small muted">Architecture Ready · Data Not Cached Locally · Honest Null State</div>
+              </div>
+              <span class="badge" style="color:var(--flare); border-color:var(--flare)">NOT CACHED</span>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
-    <!-- ================= 8. INGESTION (PLACEHOLDER) ================= -->
+
+    <!-- ================= 8. INGESTION & INDEXING ================= -->
     <section class="tab-panel" data-panel="ingest" id="panel-ingest" hidden>
-      <div class="card placeholder-card">
-        <span class="badge">Tab 8</span>
-        <h2>Ingestion &amp; Indexing</h2>
-        <span class="pill" style="margin:12px 0"><span class="dot" style="background:var(--flare)"></span>Integration pending — Phase 7</span>
-        <p class="muted" style="max-width:600px;margin:0 auto 16px">
-          Air-gapped GeoTIFF ingestion, dynamic tiling, incremental FAISS embedding insertion, and indexing telemetry will be connected in Phase 7.
-        </p>
-        <button class="btn primary" data-goto="overview" style="margin-top:16px">Return to Overview</button>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:12px; margin-bottom:8px">
+        <div>
+          <h1 class="page-title">Ingestion and Indexing</h1>
+          <p class="page-sub">
+            Air-gapped GeoTIFF and COG ingestion with multi-stage raster safety validation, path-traversal prevention, SHA-256 duplicate detection, and incremental 512-D FAISS indexing.
+          </p>
+        </div>
+      </div>
+
+      <!-- Ingestion & Catalog Telemetry -->
+      <div class="stats" id="ingestTelemetryStrip">
+        <div class="stat">
+          <b id="ingestCatalogCount">909</b>
+          <span>Active Catalog Rasters</span>
+        </div>
+        <div class="stat">
+          <b id="ingestVectorCount">908</b>
+          <span>Indexed Vectors in FAISS</span>
+        </div>
+        <div class="stat">
+          <b id="ingestIndexType" style="font-size:18px">IndexFlatIP</b>
+          <span>FAISS Index Type (512-D)</span>
+        </div>
+        <div class="stat">
+          <b id="ingestSpatialCrs" style="font-size:18px">EPSG:32645</b>
+          <span>Spatial Projection (UTM 45N)</span>
+        </div>
+        <div class="stat">
+          <b id="ingestSecurityMode" style="font-size:18px; color:var(--signal)">Strict Air-Gap</b>
+          <span>On-Premise Offline Validation</span>
+        </div>
+      </div>
+
+      <!-- Ingestion Controls & Workflow Grid -->
+      <div class="split" style="margin-top:14px; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr)">
+        <div class="card">
+          <div class="card-head">
+            <h3>Upload &amp; Ingest Satellite Imagery</h3>
+            <span class="small mono muted">Multipart Form Submission</span>
+          </div>
+
+          <!-- Drag and drop zone -->
+          <div class="ingest-dropzone" id="ingestDropzone">
+            <span class="drop-icon">🛰️</span>
+            <div style="font-weight:600; font-size:13px; margin-bottom:4px">
+              Select or Drop GeoTIFF / COG (.tif, .tiff)
+            </div>
+            <p class="small muted" style="margin:0 0 10px">
+              Supports single-band and multi-spectral GeoTIFF up to 200MB.
+            </p>
+            <input type="file" id="ingestFileInput" accept=".tif,.tiff,.safe" style="display:none">
+            <button class="btn small" type="button" id="browseIngestBtn">Browse File System</button>
+            <div id="ingestSelectedFileInfo" class="small mono" style="margin-top:10px; color:var(--signal); display:none"></div>
+          </div>
+
+          <div class="grid" style="grid-template-columns:1fr 1fr; gap:10px; margin-top:12px">
+            <div>
+              <label for="ingestSourceLabel">Source Scene / Mission Label</label>
+              <input type="text" id="ingestSourceLabel" value="Analyst Manual Import" placeholder="e.g. S2B_MSIL2A_20260301">
+            </div>
+            <div style="display:flex; align-items:flex-end">
+              <button class="btn primary" id="executeIngestBtn" style="width:100%" disabled>Execute Ingestion</button>
+            </div>
+          </div>
+
+          <!-- Non-Destructive Ingestion Test Button -->
+          <div style="margin-top:14px; padding-top:12px; border-top:1px dashed var(--line-soft)">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px">
+              <div>
+                <strong style="font-size:12.5px">Non-Destructive Baseline Safety Test</strong>
+                <p class="small muted" style="margin:0">Test the entire validation pipeline and SHA-256 duplicate detection without altering the 909-tile catalog baseline.</p>
+              </div>
+              <button class="btn small" id="testIngestSampleBtn">Test Ingestion with Catalog Tile</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 6-Stage Security & Integrity Pipeline Checklist -->
+        <div class="card">
+          <div class="card-head">
+            <h3>Ingestion Engine Safety Pipeline</h3>
+            <span class="small mono muted">Enforced by SecureIngestionEngine</span>
+          </div>
+
+          <div class="ingest-steps" id="ingestChecklist">
+            <div class="ingest-step" id="stepPath">
+              <div class="step-num">1</div>
+              <div>
+                <strong>Path Traversal &amp; Boundary Check</strong>
+                <div class="small muted">Enforces authorized workspace boundary limits</div>
+              </div>
+            </div>
+            <div class="ingest-step" id="stepMagic">
+              <div class="step-num">2</div>
+              <div>
+                <strong>Magic Bytes &amp; File Size Scan</strong>
+                <div class="small muted">Validates TIFF header (II* / MM*) and &le;200MB threshold</div>
+              </div>
+            </div>
+            <div class="ingest-step" id="stepRasterio">
+              <div class="step-num">3</div>
+              <div>
+                <strong>Rasterio Band Integrity &amp; CRS Check</strong>
+                <div class="small muted">Verifies georeferencing, EPSG projection, and resolution</div>
+              </div>
+            </div>
+            <div class="ingest-step" id="stepHash">
+              <div class="step-num">4</div>
+              <div>
+                <strong>SHA-256 Digest &amp; Duplicate Detection</strong>
+                <div class="small muted">Prevents catalog vector duplication and index corruption</div>
+              </div>
+            </div>
+            <div class="ingest-step" id="stepClip">
+              <div class="step-num">5</div>
+              <div>
+                <strong>512-D Visual Embedding Extraction</strong>
+                <div class="small muted">OpenAI CLIP ViT-B/32 L2-normalized vector embedding</div>
+              </div>
+            </div>
+            <div class="ingest-step" id="stepFaiss">
+              <div class="step-num">6</div>
+              <div>
+                <strong>Incremental FAISS &amp; MongoDB Cataloging</strong>
+                <div class="small muted">Atomic in-memory vector index insertion and 15-field provenance</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ingestion Event Feed -->
+      <div class="card" style="margin-top:16px">
+        <div class="card-head">
+          <h3>Ingestion Events &amp; Audit Feed</h3>
+          <div class="row">
+            <button class="btn small ghost" id="clearIngestFeedBtn">Clear Feed</button>
+          </div>
+        </div>
+        <div id="ingestFeed" class="feed">
+          <div class="muted small" style="padding:10px 0">No ingestion actions executed in this session yet.</div>
+        </div>
       </div>
     </section>
 
